@@ -134,7 +134,9 @@ ecs_pool_add(ecs_Pool* p, ecs_entity_t ett)
     p->traits.init(mem);
   ecs_signal_emit(&p->signal[ECS_SIG_ADD], ett, mem);
   p->count++;
-  // TODO: do some stuffs like sorting or grouping
+
+  if (p->addHook != NULL)
+    p->addHook(p->hookCtx, p, ett, j);
   return mem;
 }
 
@@ -195,19 +197,21 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
   i2 = (p->entities[j2] >> ECS_ENT_IDX_SHIFT) & 0xffff;
 
   void* mem = memoffset(p, j1);
-
   ecs_signal_emit(&p->signal[ECS_SIG_RMV], ett, mem);
 
   // call destructor if any
   if (p->traits.fini != NULL)
     p->traits.fini(mem);
 
+  // invoke hook function
+  if (p->rmvHook != NULL)
+    j1 = p->rmvHook(p->hookCtx, p, j1);
+
   p->entities[j1] = p->entities[j2];
   datacpy(p->data, p->traits.size, j1, j2);
   p->sparse[PAGE(i2)][OFFSET(i2)] = j1;
   p->sparse[page][offset]         = TOMBSTONE;
   p->count--;
-  // TODO: do some stuffs like sorting or grouping
   return TRUE;
 }
 

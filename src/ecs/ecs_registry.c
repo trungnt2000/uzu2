@@ -21,9 +21,11 @@ ecs_registry_create(const ecs_TypeTraits* typeTraitsArr, ecs_size_t cnt)
   reg->typeCnt      = cnt;
   reg->typeTraits   = typeTraitsArr;
   reg->pools        = SDL_calloc(cnt, sizeof(void*));
+  reg->groupCnt     = 0;
+  reg->groups       = NULL;
   for (int i = 0; i < cnt; ++i)
   {
-    reg->pools[i] = ecs_pool_create(typeTraitsArr[i], 16);
+    reg->pools[i] = ecs_pool_create(typeTraitsArr[i], ECS_DEFAULT_SIZE);
   }
   reg->count      = 0;
   reg->size       = ECS_DEFAULT_SIZE;
@@ -157,12 +159,12 @@ ecs_each(ecs_Registry* reg, ecs_Callback callback, void* userData)
 void
 _ecs_raw(ecs_Registry*        reg,
          ecs_size_t           typeId,
-         const ecs_entity_t** pEttArr,
-         void**               pDataArr,
-         ecs_size_t*          pCnt)
+         const ecs_entity_t** etts,
+         void*                comps[],
+         ecs_size_t*          cnt)
 {
   ASSERT_VALID_TYPE_ID(reg, typeId);
-  ecs_pool_data(reg->pools[typeId], pDataArr, pEttArr, pCnt);
+  ecs_pool_data(reg->pools[typeId], comps, etts, cnt);
 }
 
 bool

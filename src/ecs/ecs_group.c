@@ -1,7 +1,7 @@
 #include "ecs_priv.h"
 
 static bool
-ecs_group_contains(ecs_Group* group, ecs_entity_t ett)
+contains_intl(ecs_Group* group, ecs_entity_t ett)
 {
   for (int i = 0; i < group->exclCnt; ++i)
   {
@@ -21,13 +21,22 @@ ecs_group_contains(ecs_Group* group, ecs_entity_t ett)
   return true;
 }
 
+bool
+ecs_group_contains(ecs_Group* g, ecs_entity_t ett)
+{
+  // this group contain given entity when first pool contains the entity
+  // and it index must smaller than group size
+  ecs_size_t idx = ecs_pool_index(g->ownPools[0], ett);
+  return idx != ECS_NULL_IDX && idx < g->size;
+}
+
 static ecs_size_t
 add_hook_impl(ecs_Group*   group,
               ecs_Pool*    pool,
               ecs_entity_t ett,
               ecs_size_t   idx)
 {
-  if (ecs_group_contains(group, ett))
+  if (contains_intl(group, ett))
   {
     // swap given entity to right after last entity in group
     ecs_size_t newIdx = group->size;
@@ -81,24 +90,61 @@ rmv_hook_impl(ecs_Group*   group,
   return idx;
 }
 
-bool
-is_sub_set_of(ecs_Pool** me, ecs_size_t meCnt, ecs_Pool** them, ecs_size_t);
-
-bool
-is_child_of(ecs_Group* a, ecs_Group* b)
+static bool
+has_pool(ecs_Pool** pools, ecs_size_t cnt, ecs_Pool* p)
 {
-  if (a->ownCnt < b->ownCnt)
-    return false;
+  for (int i = 0; i < cnt; ++i)
+    if (pools[i] == p)
+      return true;
+
+  return false;
 }
 
-bool
-is_parent_of(ecs_Group* a, ecs_Group* b)
+/* Check whether or not self group is child of other group */
+static bool
+is_child_of(ecs_Group* self, ecs_Group* other)
 {
-  if (a->ownCnt > b->ownCnt)
+  // this group must have more types to be child of other group
+  if (self->ownCnt < other->ownCnt)
     return false;
+
+  // and all types parent group has this group must have too
+  for (int i = 0; i < other->ownCnt; ++i)
+    if (!has_pool(self->ownPools, self->ownCnt, other->ownPools[i]))
+      return false;
+
+  // and it must not contain any excluded types of other group
+  for (int i = 0; i < other->exclCnt; ++i)
+    if (has_pool(self->ownPools, self->ownCnt, other->exclPools[i]))
+      return false;
+
+  return true;
 }
 
-void
+/* Check whether or not self group is parent of other group */
+static bool
+is_parent_of(ecs_Group* self, ecs_Group* other)
+{
+
+  // to be parent of other group this group must have fewer types than
+  // other group
+  if (self->ownCnt > other->ownCnt)
+    return false;
+
+  // and all types it owns that group must have too
+  for (int i = 0; i < self->ownCnt; ++i)
+    if (!has_pool(other->ownPools, other->ownCnt, self->ownPools[i]))
+      return false;
+
+  // and that group must not contain any excluded types of this group
+  for (int i = 0; i < self->exclCnt; ++i)
+    if (has_pool(other->ownPools, other->ownCnt, self->exclPools[i]))
+      return false;
+
+  return true;
+}
+
+static void
 ecs_group_refresh(ecs_Group* g, ecs_size_t first, ecs_size_t last)
 {
 }
@@ -146,36 +192,39 @@ _ecs_group_init(ecs_Group*    group,
 
   for (int i = 0; i < registry->groupCnt; ++i)
   {
-    ecs_Group* b = registry->groups[i];
-    if (is_child_of(group, b))
+    ecs_Group* otherGroup = registry->groups[i];
+    if (is_child_of(group, otherGroup))
     {
       // walk down to find best place where no more group in this chain or
-      // given group is parent of next group
-      while (b->child != NULL && is_child_of(group, b->child))
-        b = b->child;
+      // given this group is parent of next group
+      while (otherGroup->child != NULL && is_child_of(group, otherGroup->child))
+        otherGroup = otherGroup->child;
 
-      group->child = b->child;
-      b->child     = group;
+      // double check in case this group is not next group parent in case the
+      // next group has excluded types
+
+      group->child      = otherGroup->child;
+      otherGroup->child = group;
 
       group->size = group->child != NULL ? group->child->size : 0;
-      ecs_group_refresh(group, group->size, b->size - 1);
+      ecs_group_refresh(group, group->size, otherGroup->size - 1);
 
       return;
     }
-    else if (is_parent_of(group, b))
+    else if (is_parent_of(group, otherGroup))
     {
       // make it become toplevel group
       registry->groups[i] = group;
 
       // initialize
-      group->child = b;
+      group->child = otherGroup;
       group->size  = 0;
       return;
     }
   }
 
   bool sortable = true;
-  for (int i = 0; i < Tc; ++i)
+  for (int i = 0; i < group->ownCnt; ++i)
   {
     if (!ecs_pool_sortable(group->ownPools[i]))
     {
