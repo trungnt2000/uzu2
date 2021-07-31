@@ -1,0 +1,16 @@
+{
+  "name": "nova_00",
+  "sentences": [
+    "You look like a treasure hunter, aren't you?",
+    "Oh I see, you are stuck by that door.",
+    "I will show you how to get to the next place if you help me",
+    "look this way you can you can see some monsters",
+    "it easy for me, but as you can see ",
+    "You can kill them so I can get out of here",
+    "I will repay you soon."
+  ],
+  "responses": [
+    "accept his request",
+    "forget it"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "demo1",
+  "sentences": [
+    "This world is fill of monsters.",
+    "They hunt and eat any one which they see.",
+    "take this any kill those monsters.",
+    "I counting on you!"
+  ],
+  "responses": [
+    "yes",
+    "no"
+  ]
+}

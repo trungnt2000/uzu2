@@ -1,0 +1,27 @@
+
+|------+-----------------------+-------------|
+| word | meaning               | description |
+|------+-----------------------+-------------|
+| vert | vertex                |             |
+| func | function              |             |
+| mat  | matrix                |             |
+| buf  | buffer                |             |
+| vbo  | vertex buffer object  |             |
+| ebo  | element buffer object |             |
+| vao  | vertex buffer object  |             |
+| cnt  | count                 |             |
+| siz  | size                  |             |
+| pos  | position              |             |
+| scl  | scale                 |             |
+| tbl  | table                 |             |
+| lut  | lookup table          |             |
+| ptr  | pointer               |             |
+| arr  | array                 |             |
+|------+-----------------------+-------------|
+
+|--------+--------------------------|
+| prefix | meaning                  |
+|--------+--------------------------|
+| s      | internal/static variable |
+| g      | external/global variable |
+|--------+--------------------------|

@@ -1,0 +1,33 @@
+jobs.png
+size: 146, 108
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+elf_m
+  rotate: false
+  xy: 1, 58
+  size: 144, 24
+  orig: 144, 28
+  offset: 0, 0
+  index: -1
+knight
+  rotate: false
+  xy: 1, 1
+  size: 144, 28
+  orig: 144, 28
+  offset: 0, 0
+  index: -1
+lizzard
+  rotate: false
+  xy: 1, 84
+  size: 144, 23
+  orig: 144, 28
+  offset: 0, 0
+  index: -1
+wizzard
+  rotate: false
+  xy: 1, 31
+  size: 143, 25
+  orig: 144, 28
+  offset: 1, 0
+  index: -1

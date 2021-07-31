@@ -1,0 +1,10 @@
+build/
+compile_commands.json
+.clangd/
+dist/
+.cproject
+.project
+.settings/
+
+.vscode/c_cpp_properties.json
+CMakeLists.txt.user
