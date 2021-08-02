@@ -271,7 +271,7 @@ ecs_pool_contains(ecs_Pool* p, ecs_entity_t ett)
   u32 page   = idx / PAGE_SIZ;
   u32 offset = idx % PAGE_SIZ;
   return (page < PAGE_CNT && p->sparse[page] != NULL &&
-          p->sparse[page][offset]);
+          p->sparse[page][offset] != TOMBSTONE);
 }
 
 ecs_size_t
@@ -342,4 +342,22 @@ ecs_pool_take_ownership(ecs_Pool*   pool,
   pool->addHook = addHk;
   pool->rmvHook = rmvHk;
   pool->hookCtx = ctx;
+}
+
+ecs_size_t
+ecs_pool_index(ecs_Pool* p, ecs_entity_t ett)
+{
+  u32 idx    = (ett >> ECS_ENT_IDX_SHIFT) & 0xffff;
+  u32 page   = PAGE(idx);
+  u32 offset = OFFSET(idx);
+
+  if (p->sparse[page] == NULL)
+    return TOMBSTONE;
+  return p->sparse[page][offset];
+}
+
+bool
+ecs_pool_sortable(ecs_Pool* pool)
+{
+  return pool->addHook == NULL;
 }

@@ -1,7 +1,7 @@
 #include "components.h"
 #include "graphics.h"
-#include "system_render.h"
 #include "graphics/view.h"
+#include "system_render.h"
 
 #define MAX_SPRITE_PER_BATCH 512
 
@@ -15,9 +15,12 @@ static SpriteRS* sRenderState;
 static GLuint    sShader;
 static int       sViewProjectionMatrixLocation;
 
+static ecs_Group sSpriteGroup;
+
 void
-system_rendering_sprite_init(void)
+system_rendering_sprite_init(ecs_Registry* registry)
 {
+  ecs_group_init(&sSpriteGroup, registry, { Sprite, TransformMatrix });
   sRenderState = sprite_render_state_create(MAX_SPRITE_PER_BATCH);
   if (create_shader("res/shader/sprite.vert",
                     "res/shader/sprite.frag",
@@ -44,7 +47,6 @@ system_rendering_sprite_update(ecs_Registry* registry)
   Dependencies deps;
 
   ecs_view_init(&view, registry, { Sprite, TransformMatrix });
-  
 
   mat4 viewProjectionMatrix;
   view_combined(viewProjectionMatrix);

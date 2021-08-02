@@ -8,6 +8,7 @@
 #include "GL/gl.h"
 #include "config.h"
 #include "constances.h"
+#include "SDL_opengl.h"
 
 static BOOL          sIsRunning = SDL_FALSE;
 static SDL_GLContext sGLCtx;

@@ -85,7 +85,7 @@ void* ecs_pool_set(ecs_Pool* pool, ecs_entity_t ett, const void* data);
 void* ecs_pool_cpy(ecs_Pool* pool, ecs_entity_t ett, const void* other);
 
 /* swap entity in packed array */
-void ecs_pool_swap(ecs_Pool* pool, ecs_entity_t lhs, ecs_entity_t rhs);
+void ecs_pool_swp(ecs_Pool* pool, ecs_entity_t lhs, ecs_entity_t rhs);
 
 ecs_size_t ecs_pool_count(ecs_Pool* pool);
 

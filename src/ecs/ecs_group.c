@@ -47,9 +47,10 @@ add_hook_impl(ecs_Group*   group,
       ecs_entity_t rhs = pools[i]->entities[newIdx];
       if (lhs != rhs)
       {
-        ecs_pool_swap(pools[i], lhs, rhs);
+        ecs_pool_swp(pools[i], lhs, rhs);
       }
     }
+    idx = newIdx;
 
     group->size++;
     if (group->child != NULL)
@@ -72,8 +73,8 @@ rmv_hook_impl(ecs_Group*   group,
     {
       idx = rmv_hook_impl(group, pool, ett, idx);
     }
-    // TODO: remove given entity to the end of this group
-    /* all entities are inside same group will have same index */
+    // move given entity to the end of this group
+    // all entities are inside same group will have same index
     ecs_size_t   lastIdx = group->size - 1;
     ecs_entity_t lhs     = ett;
     ecs_entity_t rhs     = pool->entities[lastIdx];
@@ -82,10 +83,11 @@ rmv_hook_impl(ecs_Group*   group,
     {
       for (ecs_size_t i = 0; i < group->ownCnt; ++i)
       {
-        ecs_pool_swap(pools[i], lhs, rhs);
+        ecs_pool_swp(pools[i], lhs, rhs);
       }
     }
     group->size--;
+    idx = lastIdx;
   }
   return idx;
 }
@@ -108,7 +110,7 @@ is_child_of(ecs_Group* self, ecs_Group* other)
   if (self->ownCnt < other->ownCnt)
     return false;
 
-  // and all types parent group has this group must have too
+  // and all types that parent group has this group must have too
   for (int i = 0; i < other->ownCnt; ++i)
     if (!has_pool(self->ownPools, self->ownCnt, other->ownPools[i]))
       return false;
@@ -156,9 +158,10 @@ _ecs_group_init(ecs_Group*    group,
                 ecs_size_t    Tc)
 {
 
-  ecs_size_t own[Tc];
-  ecs_size_t excl[Tc];
-  ecs_size_t shar[Tc];
+  ecs_Pool*  own[Tc];
+  ecs_Pool*  excl[Tc];
+  ecs_Pool*  shar[Tc];
+  ecs_Pool** pools = registry->pools;
 
   group->exclCnt = 0;
   group->ownCnt  = 0;
@@ -170,15 +173,15 @@ _ecs_group_init(ecs_Group*    group,
   {
     if (Ts[i] & ECS_EXCL_MASK)
     {
-      excl[group->exclCnt++] = Ts[i] & ECS_TYPE_MASK;
+      excl[group->exclCnt++] = pools[Ts[i] & ECS_TYPE_MASK];
     }
     else if (Ts[i] & ECS_SHARED_MASK)
     {
-      shar[group->sharCnt++] = Ts[i] & ECS_TYPE_MASK;
+      shar[group->sharCnt++] = pools[Ts[i] & ECS_TYPE_MASK];
     }
     else
     {
-      own[group->ownCnt++] = Ts[i] & ECS_TYPE_MASK;
+      own[group->ownCnt++] = pools[Ts[i] & ECS_TYPE_MASK];
     }
   }
 
@@ -200,16 +203,18 @@ _ecs_group_init(ecs_Group*    group,
       while (otherGroup->child != NULL && is_child_of(group, otherGroup->child))
         otherGroup = otherGroup->child;
 
-      // double check in case this group is not next group parent in case the
+      // double check in case this group is not parent of next in case the
       // next group has excluded types
+      if (otherGroup->child == NULL || is_parent_of(group, otherGroup->child))
+      {
+        group->child      = otherGroup->child;
+        otherGroup->child = group;
 
-      group->child      = otherGroup->child;
-      otherGroup->child = group;
+        group->size = group->child != NULL ? group->child->size : 0;
+        ecs_group_refresh(group, group->size, otherGroup->size - 1);
 
-      group->size = group->child != NULL ? group->child->size : 0;
-      ecs_group_refresh(group, group->size, otherGroup->size - 1);
-
-      return;
+        return;
+      }
     }
     else if (is_parent_of(group, otherGroup))
     {
@@ -218,7 +223,8 @@ _ecs_group_init(ecs_Group*    group,
 
       // initialize
       group->child = otherGroup;
-      group->size  = 0;
+
+      group->size  = otherGroup->size;
       return;
     }
   }
@@ -247,5 +253,16 @@ _ecs_group_init(ecs_Group*    group,
                               (ecs_RmvHook)rmv_hook_impl,
                               group);
     }
+    return;
   }
+
+  ASSERT(0 && "Could not create group");
+}
+
+void
+ecs_group_destroy(ecs_Group* group)
+{
+  SDL_free(group->exclPools);
+  SDL_free(group->ownPools);
+  SDL_free(group->sharPools);
 }

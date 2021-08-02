@@ -12,7 +12,7 @@ void system_rendering_text_init(void);
 void system_rendering_text_fini(void);
 void system_rendering_text_update(ecs_Registry* registry);
 
-void system_rendering_sprite_init(void);
+void system_rendering_sprite_init(ecs_Registry* registry);
 void system_rendering_sprite_fini(void);
 void system_rendering_sprite_update(ecs_Registry* registry);
 
