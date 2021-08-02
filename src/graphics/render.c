@@ -2,76 +2,71 @@
 #include "graphics.h"
 #include "toolbox.h"
 
-/* structure keep track rendering state and all releated gl object*/
-struct SpriteRS
-{
-  /* texture to use */
-  const Texture* texture;
+/* texture to use */
+static const Texture* sTexture;
 
-  /* wheather or not drawing */
-  BOOL isDrawing;
+/* wheather or not drawing */
+static BOOL sIsDrawing;
 
-  /* EBO */
-  GLuint ebo;
+/* EBO */
+static GLuint sEbo;
 
-  /* VBO (position, uv, color)*/
-  GLuint vbo;
+/* VBO (position, uv, color)*/
+static GLuint sVbo;
 
-  /* VAO */
-  GLuint vao;
+/* VAO */
+static GLuint sVao;
 
-  /* vertex buffer*/
-  Vertex* vertBuf;
+/* vertex buffer*/
+static Vertex* sVertBuf;
 
-  /* next vertex pointer in vertex buffer */
-  Vertex* nextVertPtr;
+/* next vertex pointer in vertex buffer */
+static Vertex* sNextVertPtr;
 
-  /* how many sprite are stored in buffer */
-  u32 spriteCnt;
+/* how many sprite are stored in buffer */
+static u32 sSpriteCnt;
 
-  /* how many sprite we can batch together in one draw call */
-  u32 maxSprites;
+/* how many sprite we can batch together in one draw call */
+static u32 sMaxSprites;
 
-  /* draw call count between begin and end call */
-  u32 drawCallCnt;
-};
+/* draw call count between begin and end call */
+static u32 sDrawCallCnt;
 
 static void
-flush(SpriteRS* state)
+flush(void)
 {
   GLsizei vboUpdtSiz;
   GLsizei numIndices;
 
-  vboUpdtSiz = sizeof(Vertex) * 4 * state->spriteCnt;
-  numIndices = state->spriteCnt * 6;
+  vboUpdtSiz = sizeof(Vertex) * 4 * sSpriteCnt;
+  numIndices = sSpriteCnt * 6;
 
   /* update vertex buffer data */
-  glBindBuffer(GL_ARRAY_BUFFER, state->vbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, vboUpdtSiz, state->vertBuf);
+  glBindBuffer(GL_ARRAY_BUFFER, sVbo);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, vboUpdtSiz, sVertBuf);
 
-  glBindTexture(GL_TEXTURE_2D, state->texture->handle);
+  glBindTexture(GL_TEXTURE_2D, sTexture->handle);
 
   /* draw all sprite in buffer */
-  glBindVertexArray(state->vao);
+  glBindVertexArray(sVao);
   glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
 
   /* reset state */
-  state->spriteCnt   = 0;
-  state->nextVertPtr = state->vertBuf;
-  state->drawCallCnt++;
+  sSpriteCnt   = 0;
+  sNextVertPtr = sVertBuf;
+  sDrawCallCnt++;
 }
 
 void
-draw_sprite(SpriteRS*            state,
-            vec2                 size,
+draw_sprite(vec2                 size,
             vec2                 center,
             vec4                 color,
             float                depth,
             const TextureRegion* textureRegion,
             mat3                 transMat)
 {
-  ASSERT_MSG(state->isDrawing, "call begin first!");
+  ASSERT_MSG(sIsDrawing, "call begin first!");
 
   float    u1, v1, u2, v2; /* texture coordinates                          */
   Vertex*  vert;           /* vertex mem ptr                               */
@@ -79,25 +74,25 @@ draw_sprite(SpriteRS*            state,
   vec3     worldPos;       /* transformed position in world space          */
   SDL_bool hasEnoughSpace; /* do we have enough space for one more sprite? */
 
-  hasEnoughSpace = state->spriteCnt < state->maxSprites;
+  hasEnoughSpace = sSpriteCnt < sMaxSprites;
 
   /* if we do not have enough space for new one,
    * send all current draw commands to gpu */
   if (!hasEnoughSpace)
-    flush(state);
+    flush();
 
   /* if current texture to use diffrent from previous
    * texture flush current draw commands to gpu */
-  if (state->texture != textureRegion->texture)
+  if (sTexture != textureRegion->texture)
   {
-    if (state->texture != NULL)
+    if (sTexture != NULL)
     {
-      flush(state);
+      flush();
     }
-    state->texture = textureRegion->texture;
+    sTexture = textureRegion->texture;
   }
 
-  vert = state->nextVertPtr;
+  vert = sNextVertPtr;
 
   u1 = textureRegion->u1;
   v1 = textureRegion->v1;
@@ -161,19 +156,18 @@ draw_sprite(SpriteRS*            state,
   glm_vec4_copy(color, vert->color);
   ++vert;
 
-  state->nextVertPtr = vert;
-  state->spriteCnt++;
+  sNextVertPtr = vert;
+  sSpriteCnt++;
 }
 
-SpriteRS*
-sprite_render_state_create(u32 maxSprites)
+void
+sprite_renderer_init(u32 maxSprites)
 {
-  GLsizei   vboSize, eboSize;
-  SpriteRS* state = SDL_malloc(sizeof(SpriteRS));
+  GLsizei vboSize, eboSize;
 
-  state->maxSprites  = maxSprites;
-  state->spriteCnt   = 0;
-  state->drawCallCnt = 0;
+  sMaxSprites  = maxSprites;
+  sSpriteCnt   = 0;
+  sDrawCallCnt = 0;
 
   /* four vertcies per single sprite */
   vboSize = maxSprites * sizeof(Vertex) * 4;
@@ -192,19 +186,19 @@ sprite_render_state_create(u32 maxSprites)
     indices[(i * 6) + 5] = (i * 4) + 3;
   }
 
-  glGenVertexArrays(1, &state->vao);
-  glGenBuffers(1, &state->vbo);
-  glGenBuffers(1, &state->ebo);
+  glGenVertexArrays(1, &sVao);
+  glGenBuffers(1, &sVbo);
+  glGenBuffers(1, &sEbo);
 
-  /*set up vao with one vbo for position, texture coordinates, color and static
+  /*set up vao with one sVbo for position, texture coordinates, color and static
    * a ebo for indices */
-  glBindVertexArray(state->vao);
+  glBindVertexArray(sVao);
 
-  /*pre-allocate memory for vbo*/
-  glBindBuffer(GL_ARRAY_BUFFER, state->vbo);
+  /*pre-allocate memory for sVbo*/
+  glBindBuffer(GL_ARRAY_BUFFER, sVbo);
   glBufferData(GL_ARRAY_BUFFER, vboSize, NULL, GL_DYNAMIC_DRAW);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sEbo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, eboSize, indices, GL_STATIC_DRAW);
 
   /* store position attribute in vertex attribute list */
@@ -236,42 +230,37 @@ sprite_render_state_create(u32 maxSprites)
 
   glBindVertexArray(0);
 
-  state->texture   = NULL;
-  state->isDrawing = FALSE;
-  state->vertBuf   = SDL_malloc(vboSize);
+  sTexture   = NULL;
+  sIsDrawing = FALSE;
+  sVertBuf   = SDL_malloc(vboSize);
 
   SDL_free(indices);
-  return state;
 }
 
 void
-sprite_render_state_destroy(SpriteRS* state)
+sprite_renderer_shutdown()
 {
-  if (state)
-  {
-    glDeleteBuffers(1, &state->ebo);
-    glDeleteBuffers(1, &state->vbo);
-    glDeleteVertexArrays(1, &state->vao);
-    SDL_free(state->vertBuf);
-    SDL_free(state);
-  }
+  glDeleteBuffers(1, &sEbo);
+  glDeleteBuffers(1, &sVbo);
+  glDeleteVertexArrays(1, &sVao);
+  SDL_free(sVertBuf);
 }
 
 void
-begin_draw_sprite(SpriteRS* state)
+sprite_batch_begin()
 {
-  ASSERT_MSG(!state->isDrawing, "already drawing");
-  state->isDrawing   = TRUE;
-  state->nextVertPtr = state->vertBuf;
-  state->texture     = NULL;
-  state->spriteCnt   = 0;
-  state->drawCallCnt = 0;
+  ASSERT_MSG(!sIsDrawing, "already drawing");
+  sIsDrawing   = TRUE;
+  sNextVertPtr = sVertBuf;
+  sTexture     = NULL;
+  sSpriteCnt   = 0;
+  sDrawCallCnt = 0;
 }
 
 void
-end_draw_sprite(SpriteRS* state)
+sprite_batch_end()
 {
-  ASSERT_MSG(state->isDrawing, "call begin first!");
-  flush(state);
-  state->isDrawing = FALSE;
+  ASSERT_MSG(sIsDrawing, "call begin first!");
+  flush();
+  sIsDrawing = FALSE;
 }

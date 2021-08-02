@@ -72,30 +72,37 @@ typedef struct Vertex
  */
 int create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram);
 
-/* Quad Rendering State*/
-typedef struct SpriteRS SpriteRS;
-
-/* create new sprite render state */
-SpriteRS* sprite_render_state_create(u32 maxSprites);
-
-/* destroy sprite render state */
-void sprite_render_state_destroy(SpriteRS* rs);
-
 /* prepare draw sprite batch */
-void begin_draw_sprite(SpriteRS* rs);
+void sprite_batch_begin(void);
 
 /* \brief end sprite batch flush all draw command to gpu */
-void end_draw_sprite(SpriteRS* rs);
+void sprite_batch_end(void);
 
 /* \brief draw sprite, draw commands is send to gpu by
- *  changing texture or by calling end_draw_sprite */
-void draw_sprite(SpriteRS*            rs,
-                 vec2                 size,
+ *        changing texture or by calling end_draw_sprite
+ * \param size sprite's size
+ * \param color sprite's color
+ * \param depth effect draw order of sprite
+ * \param textureRegion texture use to draw given sprite
+ * \param transformMatrix use to transform given sprite
+ */
+void draw_sprite(vec2                 size,
                  vec2                 center,
                  vec4                 color,
                  float                depth,
                  const TextureRegion* textureRegion,
                  mat3                 transformMatrix);
+/**
+ * \brief init sprite renderer
+ * 
+ * \param maxSprites how many sprites can batch together in one draw call
+ */
+void sprite_renderer_init(u32 maxSprites);
+
+/**
+ * \brief shutdown sprite renderer release all dynamic allocation
+ */
+void sprite_renderer_shutdown(void);
 
 /* shader use to drawing sprite */
 typedef struct

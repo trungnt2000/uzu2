@@ -7,7 +7,7 @@
 #define WIN_HEIGHT 240
 #define SCL_X 4.0
 #define SCL_Y 4.0
-#define WIN_TITLE L"My Game ^^ ư"
+#define WIN_TITLE "My Game ^^ ư"
 
 
 extern const char gCmdTalk[];
