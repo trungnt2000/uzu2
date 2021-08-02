@@ -5,6 +5,14 @@
 
 #define MAX_SPRITE_PER_BATCH 512
 
+//typedef union  Dependencies {
+//  void* comps[2];
+//  struct {
+//    _Sprite*          sprite;
+//    _TransformMatrix* transformMatrix;
+//  };
+//} Dependencies;
+
 typedef struct Dependencies
 {
   _Sprite*          sprite;

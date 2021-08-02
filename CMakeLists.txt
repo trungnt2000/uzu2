@@ -49,6 +49,10 @@ endif()
 
 target_compile_features(${APP_NAME} INTERFACE c_std_11)
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	target_compile_options(${APP_NAME} "-fno-strict-aliasing")
+endif()
+
 target_link_libraries(${APP_NAME} PRIVATE 
 	project_warnings
 	SDL2::SDL2
@@ -56,15 +60,13 @@ target_link_libraries(${APP_NAME} PRIVATE
 	$<TARGET_NAME_IF_EXISTS:PkgConfig::JSON_C>
 	$<TARGET_NAME_IF_EXISTS:json-c::json-c>
 	OpenGL::GL
-	${SDL2_IMAGE_LIBRARIES}
-	${SDL2_MIXER_LIBRARIES}
+	SDL2::image
+	SDL2::mixer
 	${LUA_LIBRARIES}
 	cglm_headers
 )
 
 target_include_directories(${APP_NAME} PRIVATE 
-		${SDL2_IMAGE_INCLUDE_DIRS} 
-	  ${SDL2_MIXER_INCLUDE_DIRS} 
 		${Glad_INCLUDE_DIR}
 		${LUA_INCLUDE_DIR}
 		${CMAKE_SOURCE_DIR}/include
@@ -80,9 +82,24 @@ if(ENABLE_PCH)
 )
 endif()
 
+macro(post_build_copy APP FILE_LIST)
+	foreach(_file ${FILE_LIST})
+		add_custom_command(TARGET ${APP} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}" $<TARGET_FILE_DIR:${APP}>)
+	endforeach()
+endmacro()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	#set_target_properties(${APP_NAME} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
 	target_compile_definitions(${APP_NAME} PUBLIC NOMINMAX PRIVATE HAVE_M_PI)
+
+	get_target_property(SDL2_DLL SDL2::SDL2 LOCATION)
+	get_target_property(SDL2_IMAGE_DLLS SDL2::image LOCATION)
+	get_target_property(SDL2_MIXER_DLLS SDL2::mixer LOCATION)
+
+	post_build_copy(${APP_NAME} "${SDL2_DLL}")
+	post_build_copy(${APP_NAME} "${SDL2_IMAGE_DLLS}")
+	post_build_copy(${APP_NAME} "${SDL2_MIXER_DLLS}")
 endif()
 
 add_custom_command(TARGET ${APP_NAME} PRE_BUILD
@@ -90,7 +107,7 @@ add_custom_command(TARGET ${APP_NAME} PRE_BUILD
 
 set(DIST_DIR ${CMAKE_SOURCE_DIR}/dist)
 
-install(TARGETS ${APP_NAME} 
-		DESTINATION ${DIST_DIR})
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/res 
-		DESTINATION ${DIST_DIR})
+#install(TARGETS ${APP_NAME} 
+#		DESTINATION ${DIST_DIR})
+#install(DIRECTORY ${CMAKE_SOURCE_DIR}/res 
+#		DESTINATION ${DIST_DIR})

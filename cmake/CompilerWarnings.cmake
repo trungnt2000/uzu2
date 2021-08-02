@@ -9,8 +9,8 @@ function(set_project_warnings project_name)
       /W4 # Baseline reasonable warnings
       /wd4996 # _CRT_SECURE_NO_WARNINGS
       /wd4200 # nonstandard extension used: zero-sized array in struct/union
-      #/wd4324 # 'identifier': structure was padded due to alignment specifier
-      #/wd4100 # 'identifier': unreferenced formal parameter
+      /wd4324 # 'identifier': structure was padded due to alignment specifier
+      /wd4100 # 'identifier': unreferenced formal parameter
 
       /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
       /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data

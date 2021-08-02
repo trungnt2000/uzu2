@@ -27,8 +27,8 @@
           "type": "PATH"
         },
         {
-          "name": "SDL2_IMAGE_INCLUDE_DIR",
-          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt/include",
+          "name": "SDL2_IMAGE_DIR",
+          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt",
           "type": "PATH"
         },
         {
