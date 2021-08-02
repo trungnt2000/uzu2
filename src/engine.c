@@ -7,6 +7,7 @@
 #include "toolbox.h"
 #include "config.h"
 #include "constances.h"
+#include "SDL_opengl.h"
 
 static BOOL          sIsRunning = UZU_FALSE;
 static SDL_GLContext sGLCtx;
@@ -64,7 +65,7 @@ init()
     SDL_WINDOWPOS_CENTERED,
     (int) (WIN_WIDTH * SCL_X),
     (int) (WIN_HEIGHT * SCL_Y),
-    SDL_WINDOW_OPENGL);
+    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
   sGLCtx = SDL_GL_CreateContext(sWindow);
 

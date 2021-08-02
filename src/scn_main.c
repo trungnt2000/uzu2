@@ -94,8 +94,8 @@ scene_main_create(void)
   anim_init_tmpl(&lizzardAnim, &tmpl);
 
   map_render_init();
-  system_rendering_sprite_init();
   sRegistry = ecs_registry_create(gCompTraits, COMPONENT_CNT);
+  system_rendering_sprite_init(sRegistry);
 
   entity1 = ecs_create(sRegistry);
 

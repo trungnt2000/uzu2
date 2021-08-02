@@ -134,7 +134,9 @@ ecs_pool_add(ecs_Pool* p, ecs_entity_t ett)
     p->traits.init(mem);
   ecs_signal_emit(&p->signal[ECS_SIG_ADD], ett, mem);
   p->count++;
-  // TODO: do some stuffs like sorting or grouping
+
+  if (p->addHook != NULL)
+    p->addHook(p->hookCtx, p, ett, j);
   return mem;
 }
 
@@ -195,12 +197,15 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
   i2 = (p->entities[j2] >> ECS_ENT_IDX_SHIFT) & 0xffff;
 
   void* mem = memoffset(p, j1);
-
   ecs_signal_emit(&p->signal[ECS_SIG_RMV], ett, mem);
 
   // call destructor if any
   if (p->traits.fini != NULL)
     p->traits.fini(mem);
+
+  // invoke hook function
+  if (p->rmvHook != NULL)
+    j1 = p->rmvHook(p->hookCtx, p, j1);
 
   p->entities[j1] = p->entities[j2];
   datacpy(p->data, p->traits.size, j1, j2);
@@ -267,7 +272,7 @@ ecs_pool_contains(ecs_Pool* p, ecs_entity_t ett)
   u32 page   = idx / PAGE_SIZ;
   u32 offset = idx % PAGE_SIZ;
   return (page < PAGE_CNT && p->sparse[page] != NULL &&
-          p->sparse[page][offset]);
+          p->sparse[page][offset] != TOMBSTONE);
 }
 
 ecs_size_t
@@ -338,4 +343,22 @@ ecs_pool_take_ownership(ecs_Pool*   pool,
   pool->addHook = addHk;
   pool->rmvHook = rmvHk;
   pool->hookCtx = ctx;
+}
+
+ecs_size_t
+ecs_pool_index(ecs_Pool* p, ecs_entity_t ett)
+{
+  u32 idx    = (ett >> ECS_ENT_IDX_SHIFT) & 0xffff;
+  u32 page   = PAGE(idx);
+  u32 offset = OFFSET(idx);
+
+  if (p->sparse[page] == NULL)
+    return TOMBSTONE;
+  return p->sparse[page][offset];
+}
+
+bool
+ecs_pool_sortable(ecs_Pool* pool)
+{
+  return pool->addHook == NULL;
 }

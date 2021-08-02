@@ -1,7 +1,7 @@
 #include "ecs_priv.h"
 
 static bool
-ecs_group_contains(ecs_Group* group, ecs_entity_t ett)
+contains_intl(ecs_Group* group, ecs_entity_t ett)
 {
   for (int i = 0; i < group->exclCnt; ++i)
   {
@@ -21,13 +21,22 @@ ecs_group_contains(ecs_Group* group, ecs_entity_t ett)
   return true;
 }
 
+bool
+ecs_group_contains(ecs_Group* g, ecs_entity_t ett)
+{
+  // this group contain given entity when first pool contains the entity
+  // and it index must smaller than group size
+  ecs_size_t idx = ecs_pool_index(g->ownPools[0], ett);
+  return idx != ECS_NULL_IDX && idx < g->size;
+}
+
 static ecs_size_t
 add_hook_impl(ecs_Group*   group,
               ecs_Pool*    pool,
               ecs_entity_t ett,
               ecs_size_t   idx)
 {
-  if (ecs_group_contains(group, ett))
+  if (contains_intl(group, ett))
   {
     // swap given entity to right after last entity in group
     ecs_size_t newIdx = group->size;
@@ -38,9 +47,10 @@ add_hook_impl(ecs_Group*   group,
       ecs_entity_t rhs = pools[i]->entities[newIdx];
       if (lhs != rhs)
       {
-        ecs_pool_swap(pools[i], lhs, rhs);
+        ecs_pool_swp(pools[i], lhs, rhs);
       }
     }
+    idx = newIdx;
 
     group->size++;
     if (group->child != NULL)
@@ -63,8 +73,8 @@ rmv_hook_impl(ecs_Group*   group,
     {
       idx = rmv_hook_impl(group, pool, ett, idx);
     }
-    // TODO: remove given entity to the end of this group
-    /* all entities are inside same group will have same index */
+    // move given entity to the end of this group
+    // all entities are inside same group will have same index
     ecs_size_t   lastIdx = group->size - 1;
     ecs_entity_t lhs     = ett;
     ecs_entity_t rhs     = pool->entities[lastIdx];
@@ -73,34 +83,78 @@ rmv_hook_impl(ecs_Group*   group,
     {
       for (ecs_size_t i = 0; i < group->ownCnt; ++i)
       {
-        ecs_pool_swap(pools[i], lhs, rhs);
+        ecs_pool_swp(pools[i], lhs, rhs);
       }
     }
     group->size--;
+    idx = lastIdx;
   }
   return idx;
 }
 
-bool
-is_sub_set_of(ecs_Pool** me, ecs_size_t meCnt, ecs_Pool** them, ecs_size_t);
-
-bool
-is_child_of(ecs_Group* a, ecs_Group* b)
+static bool
+has_pool(ecs_Pool** pools, ecs_size_t cnt, ecs_Pool* p)
 {
-  if (a->ownCnt < b->ownCnt)
-    return false;
+  for (int i = 0; i < cnt; ++i)
+    if (pools[i] == p)
+      return true;
+
+  return false;
 }
 
-bool
-is_parent_of(ecs_Group* a, ecs_Group* b)
+/* Check whether or not self group is child of other group */
+static bool
+is_child_of(ecs_Group* self, ecs_Group* other)
 {
-  if (a->ownCnt > b->ownCnt)
+  // this group must have more types to be child of other group
+  if (self->ownCnt < other->ownCnt)
     return false;
+
+  // and all types that parent group has this group must have too
+  for (int i = 0; i < other->ownCnt; ++i)
+    if (!has_pool(self->ownPools, self->ownCnt, other->ownPools[i]))
+      return false;
+
+  // and it must not contain any excluded types of other group
+  for (int i = 0; i < other->exclCnt; ++i)
+    if (has_pool(self->ownPools, self->ownCnt, other->exclPools[i]))
+      return false;
+
+  return true;
 }
 
-void
+/* Check whether or not self group is parent of other group */
+static bool
+is_parent_of(ecs_Group* self, ecs_Group* other)
+{
+
+  // to be parent of other group this group must have fewer types than
+  // other group
+  if (self->ownCnt > other->ownCnt)
+    return false;
+
+  // and all types it owns that group must have too
+  for (int i = 0; i < self->ownCnt; ++i)
+    if (!has_pool(other->ownPools, other->ownCnt, self->ownPools[i]))
+      return false;
+
+  // and that group must not contain any excluded types of this group
+  for (int i = 0; i < self->exclCnt; ++i)
+    if (has_pool(other->ownPools, other->ownCnt, self->exclPools[i]))
+      return false;
+
+  return true;
+}
+
+static void
 ecs_group_refresh(ecs_Group* g, ecs_size_t first, ecs_size_t last)
 {
+}
+
+static void _esc_pool_init_free_variables(ecs_size_t Tc, ecs_Pool** own, ecs_Pool** excl, ecs_Pool** shar) {
+  SDL_free(own);
+  SDL_free(excl);
+  SDL_free(shar);
 }
 
 void
@@ -109,10 +163,16 @@ _ecs_group_init(ecs_Group*    group,
                 ecs_size_t*   Ts,
                 ecs_size_t    Tc)
 {
+  
+  ecs_Pool**  own;
+  ecs_Pool**  excl;
+  ecs_Pool**  shar;
+  
+  own = SDL_malloc(sizeof(ecs_Pool*) * Tc);
+  excl = SDL_malloc(sizeof(ecs_Pool*) * Tc);
+  shar = SDL_malloc(sizeof(ecs_Pool*) * Tc);
 
-  ecs_size_t own[Tc];
-  ecs_size_t excl[Tc];
-  ecs_size_t shar[Tc];
+  ecs_Pool** pools = registry->pools;
 
   group->exclCnt = 0;
   group->ownCnt  = 0;
@@ -124,15 +184,15 @@ _ecs_group_init(ecs_Group*    group,
   {
     if (Ts[i] & ECS_EXCL_MASK)
     {
-      excl[group->exclCnt++] = Ts[i] & ECS_TYPE_MASK;
+      excl[group->exclCnt++] = pools[Ts[i] & ECS_TYPE_MASK];
     }
     else if (Ts[i] & ECS_SHARED_MASK)
     {
-      shar[group->sharCnt++] = Ts[i] & ECS_TYPE_MASK;
+      shar[group->sharCnt++] = pools[Ts[i] & ECS_TYPE_MASK];
     }
     else
     {
-      own[group->ownCnt++] = Ts[i] & ECS_TYPE_MASK;
+      own[group->ownCnt++] = pools[Ts[i] & ECS_TYPE_MASK];
     }
   }
 
@@ -146,36 +206,43 @@ _ecs_group_init(ecs_Group*    group,
 
   for (int i = 0; i < registry->groupCnt; ++i)
   {
-    ecs_Group* b = registry->groups[i];
-    if (is_child_of(group, b))
+    ecs_Group* otherGroup = registry->groups[i];
+    if (is_child_of(group, otherGroup))
     {
       // walk down to find best place where no more group in this chain or
-      // given group is parent of next group
-      while (b->child != NULL && is_child_of(group, b->child))
-        b = b->child;
+      // given this group is parent of next group
+      while (otherGroup->child != NULL && is_child_of(group, otherGroup->child))
+        otherGroup = otherGroup->child;
 
-      group->child = b->child;
-      b->child     = group;
+      // double check in case this group is not parent of next in case the
+      // next group has excluded types
+      if (otherGroup->child == NULL || is_parent_of(group, otherGroup->child))
+      {
+        group->child      = otherGroup->child;
+        otherGroup->child = group;
 
-      group->size = group->child != NULL ? group->child->size : 0;
-      ecs_group_refresh(group, group->size, b->size - 1);
-
-      return;
+        group->size = group->child != NULL ? group->child->size : 0;
+        ecs_group_refresh(group, group->size, otherGroup->size - 1);
+        _esc_pool_init_free_variables(Tc, own, excl, shar);
+        return;
+      }
     }
-    else if (is_parent_of(group, b))
+    else if (is_parent_of(group, otherGroup))
     {
       // make it become toplevel group
       registry->groups[i] = group;
 
       // initialize
-      group->child = b;
-      group->size  = 0;
+      group->child = otherGroup;
+
+      group->size  = otherGroup->size;
+      _esc_pool_init_free_variables(Tc, own, excl, shar);
       return;
     }
   }
 
   bool sortable = true;
-  for (int i = 0; i < Tc; ++i)
+  for (int i = 0; i < group->ownCnt; ++i)
   {
     if (!ecs_pool_sortable(group->ownPools[i]))
     {
@@ -198,5 +265,19 @@ _ecs_group_init(ecs_Group*    group,
                               (ecs_RmvHook)rmv_hook_impl,
                               group);
     }
+
+    _esc_pool_init_free_variables(Tc, own, excl, shar);
+    return;
   }
+
+  _esc_pool_init_free_variables(Tc, own, excl, shar);
+  ASSERT(0 && "Could not create group");
+}
+
+void
+ecs_group_destroy(ecs_Group* group)
+{
+  SDL_free(group->exclPools);
+  SDL_free(group->ownPools);
+  SDL_free(group->sharPools);
 }

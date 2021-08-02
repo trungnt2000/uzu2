@@ -19,8 +19,6 @@ struct ecs_Registry
   ecs_Group**           groups;
 };
 
-typedef void (*ecs_Callback)(void* ctx, ecs_entity_t ett, void* mem);
-
 typedef struct ecs_Slot
 {
   ecs_Callback callback;
@@ -55,7 +53,7 @@ typedef struct ecs_Pool
   ecs_Signal     signal[ECS_SIG_CNT];
   ecs_AddHook    addHook;
   ecs_RmvHook    rmvHook;
-  void*          hookCtx; /* add hook context */
+  void*          hookCtx; 
 } ecs_Pool;
 
 ecs_Pool* ecs_pool_create(ecs_TypeTraits traits, ecs_size_t initialSize);
@@ -87,7 +85,7 @@ void* ecs_pool_set(ecs_Pool* pool, ecs_entity_t ett, const void* data);
 void* ecs_pool_cpy(ecs_Pool* pool, ecs_entity_t ett, const void* other);
 
 /* swap entity in packed array */
-void ecs_pool_swap(ecs_Pool* pool, ecs_entity_t lhs, ecs_entity_t rhs);
+void ecs_pool_swp(ecs_Pool* pool, ecs_entity_t lhs, ecs_entity_t rhs);
 
 ecs_size_t ecs_pool_count(ecs_Pool* pool);
 
@@ -115,4 +113,10 @@ void ecs_pool_take_ownership(ecs_Pool*   pool,
                              ecs_AddHook addHk,
                              ecs_RmvHook rmvHk,
                              void*       ctx);
+
+/**
+ * \brief get index of given entity
+ * \param ett a valid entity
+ */
+ecs_size_t ecs_pool_index(ecs_Pool* p, ecs_entity_t ett);
 #endif // ECS_PRIV_H

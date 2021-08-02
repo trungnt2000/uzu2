@@ -24,8 +24,7 @@ typedef void (*ecs_FiniFunc)(void*);
 typedef void (*ecs_CpyFunc)(void*, const void*);
 typedef int (*ecs_CmpFunc)(const void*, const void*);
 
-typedef void (*ecs_Callback)(void*, ecs_entity_t, void* mem);
-
+typedef void (*ecs_Callback)(void* ctx, ecs_entity_t ett, void* mem);
 /**
  * \brief Hook function to modify component location in internal array
  *        after entity have added in to the pool which invoke this hook
