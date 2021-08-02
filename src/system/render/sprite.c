@@ -23,7 +23,7 @@ system_rendering_sprite_init(void)
                     "res/shader/sprite.frag",
                     &sShader) != 0)
   {
-    ERROR("Faild to load shader...\n");
+    UZU_ERROR("Faild to load shader...\n");
   }
   sViewProjectionMatrixLocation =
       glGetUniformLocation(sShader, "u_viewProjectionMatrix");

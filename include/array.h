@@ -1,7 +1,7 @@
 // ngotrung Fri 23 Jul 2021 07:41:56 PM +07
 #ifndef ARRAY_H
 #define ARRAY_H
-#include "SDL2/SDL.h"
+#include <SDL2/SDL.h>
 #include <stdint.h>
 typedef struct ArrayHeader
 {

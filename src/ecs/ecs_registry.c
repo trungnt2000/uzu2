@@ -144,13 +144,15 @@ ecs_each(ecs_Registry* reg, ecs_Callback callback, void* userData)
   ecs_entity_t* entities;
 
   size     = reg->size;
+  //ASSERT(size > 0);
+
   entities = reg->entities;
   if (reg->destroyIdx == ECS_NULL_IDX)
     for (int i = size - 1; i >= 0; --i)
       callback(userData, entities[i], NULL);
   else
     for (int i = size - 1; i >= 0; --i)
-      if (ECS_ENT_IDX(entities[i]) == i)
+      if (ECS_ENT_IDX(entities[i]) == (ecs_size_t) i)
         callback(userData, entities[i], NULL);
 }
 

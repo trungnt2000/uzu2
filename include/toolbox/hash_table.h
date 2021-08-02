@@ -1,4 +1,4 @@
-#include "SDL.h"
+#include <SDL2/SDL.h>
 #include "toolbox/common.h"
 
 typedef struct HashTable HashTable;

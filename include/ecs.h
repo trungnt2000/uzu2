@@ -111,8 +111,7 @@ typedef struct ecs_TypeTraits
 
 #define IS_POWER_OF_TWO(x) ((x) && (((x) & ((x)-1)) == 0))
 
-STATIC_ASSERT(IS_POWER_OF_TWO(ECS_SPARSE_SET_PAGE_SIZ),
-              ECS_SPARSE_SET_PAGE_SIZ_IS_POWER_OF_TWO);
+STATIC_ASSERT(IS_POWER_OF_TWO(ECS_SPARSE_SET_PAGE_SIZ), ECS_SPARSE_SET_PAGE_SIZ_IS_POWER_OF_TWO);
 /**
  * \brief Struct keep track all entities we created
  */
