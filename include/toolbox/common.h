@@ -1,6 +1,18 @@
 #ifndef COMMON_H
 #define COMMON_H
-#include "SDL.h"
+
+#if defined(_WIN32) || defined(WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <windef.h>
+#undef min
+#undef max
+
+#endif
+
+#include <SDL2/SDL.h>
 #include <stdbool.h>
 
 typedef Sint8  s8;
@@ -9,6 +21,8 @@ typedef Sint16 s16;
 typedef Uint16 u16;
 typedef Sint32 s32;
 typedef Uint32 u32;
+typedef Sint64 s64;
+typedef Uint64 u64;
 
 typedef void (*Func)();
 typedef void* pointer_t;
@@ -23,16 +37,23 @@ typedef u32 (*HashFunc)(const void* v);
 #define INOUT
 
 #define BOOL SDL_bool
-#define TRUE SDL_TRUE
-#define FALSE SDL_FALSE
+#define UZU_TRUE SDL_TRUE
+#define UZU_FALSE SDL_FALSE
 
 #define ASSERT(cd) SDL_assert(cd)
+#if defined(_MSC_VER)
+#define ASSERT_MSG(cd, msg) __pragma(warning(push)) \
+  __pragma(warning(disable:4127))                   \
+  ASSERT((cd) && (msg))                             \
+  __pragma(warning(pop))                            
+#else
 #define ASSERT_MSG(cd, msg) ASSERT((cd) && (msg))
+#endif
 
 #ifdef __GNUC__
 #define STATIC_ASSERT(con, msg) _Static_assert(con, #msg)
 #else
-#define STATIC_ASSERT(con, msg) typedef static_assert_##msg[(con) ? 1 : -1]
+#define STATIC_ASSERT(con, msg) typedef void* static_assert_##msg[(con) ? 1 : -1]
 #endif
 
 #define INLINE static inline
@@ -40,7 +61,7 @@ typedef u32 (*HashFunc)(const void* v);
 #define BIT(x) (1 << (x))
 
 // clang-format off
-INLINE int
+INLINE int 
 max(int a, int b)
 { return a > b ? a : b; }
 

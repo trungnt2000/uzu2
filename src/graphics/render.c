@@ -237,7 +237,7 @@ sprite_render_state_create(u32 maxSprites)
   glBindVertexArray(0);
 
   state->texture   = NULL;
-  state->isDrawing = FALSE;
+  state->isDrawing = UZU_FALSE;
   state->vertBuf   = SDL_malloc(vboSize);
 
   SDL_free(indices);
@@ -261,7 +261,7 @@ void
 begin_draw_sprite(SpriteRS* state)
 {
   ASSERT_MSG(!state->isDrawing, "already drawing");
-  state->isDrawing   = TRUE;
+  state->isDrawing   = UZU_TRUE;
   state->nextVertPtr = state->vertBuf;
   state->texture     = NULL;
   state->spriteCnt   = 0;
@@ -273,5 +273,5 @@ end_draw_sprite(SpriteRS* state)
 {
   ASSERT_MSG(state->isDrawing, "call begin first!");
   flush(state);
-  state->isDrawing = FALSE;
+  state->isDrawing = UZU_FALSE;
 }

@@ -151,16 +151,27 @@ ecs_group_refresh(ecs_Group* g, ecs_size_t first, ecs_size_t last)
 {
 }
 
+static void _esc_pool_init_free_variables(ecs_size_t Tc, ecs_Pool** own, ecs_Pool** excl, ecs_Pool** shar) {
+  SDL_free(own);
+  SDL_free(excl);
+  SDL_free(shar);
+}
+
 void
 _ecs_group_init(ecs_Group*    group,
                 ecs_Registry* registry,
                 ecs_size_t*   Ts,
                 ecs_size_t    Tc)
 {
+  
+  ecs_Pool**  own;
+  ecs_Pool**  excl;
+  ecs_Pool**  shar;
+  
+  own = SDL_malloc(sizeof(ecs_Pool*) * Tc);
+  excl = SDL_malloc(sizeof(ecs_Pool*) * Tc);
+  shar = SDL_malloc(sizeof(ecs_Pool*) * Tc);
 
-  ecs_Pool*  own[Tc];
-  ecs_Pool*  excl[Tc];
-  ecs_Pool*  shar[Tc];
   ecs_Pool** pools = registry->pools;
 
   group->exclCnt = 0;
@@ -212,7 +223,7 @@ _ecs_group_init(ecs_Group*    group,
 
         group->size = group->child != NULL ? group->child->size : 0;
         ecs_group_refresh(group, group->size, otherGroup->size - 1);
-
+        _esc_pool_init_free_variables(Tc, own, excl, shar);
         return;
       }
     }
@@ -225,6 +236,7 @@ _ecs_group_init(ecs_Group*    group,
       group->child = otherGroup;
 
       group->size  = otherGroup->size;
+      _esc_pool_init_free_variables(Tc, own, excl, shar);
       return;
     }
   }
@@ -253,9 +265,12 @@ _ecs_group_init(ecs_Group*    group,
                               (ecs_RmvHook)rmv_hook_impl,
                               group);
     }
+
+    _esc_pool_init_free_variables(Tc, own, excl, shar);
     return;
   }
 
+  _esc_pool_init_free_variables(Tc, own, excl, shar);
   ASSERT(0 && "Could not create group");
 }
 

@@ -1,5 +1,5 @@
 #include "toolbox/event.h"
-#include "SDL.h"
+#include <SDL2/SDL.h>
 #define SIGNAL_DEFAULT_CAPACITY 16
 
 typedef struct _Node
@@ -44,8 +44,8 @@ node_free(_Node* node)
 static Event*
 event_init(Event* event)
 {
-  event->hasRemovedSlot = FALSE;
-  event->isEmiting      = FALSE;
+  event->hasRemovedSlot = UZU_FALSE;
+  event->isEmiting      = UZU_FALSE;
   event->head           = NULL;
   return event;
 }
@@ -104,8 +104,8 @@ conn_dispose(conn_t* connRef)
   {
     if (receiver->event->isEmiting)
     {
-      receiver->isRemoved             = TRUE;
-      receiver->event->hasRemovedSlot = TRUE;
+      receiver->isRemoved             = UZU_TRUE;
+      receiver->event->hasRemovedSlot = UZU_TRUE;
     }
     else
     {
@@ -118,12 +118,12 @@ conn_dispose(conn_t* connRef)
 void
 event_publish(Event* event, const void* data)
 {
-  event->isEmiting = TRUE;
+  event->isEmiting = UZU_TRUE;
   for (_Node* node = event->head; node != NULL; node = node->next)
   {
     node->receiver.fn(node->receiver.ctx, data);
   }
-  event->isEmiting = FALSE;
+  event->isEmiting = UZU_FALSE;
   if (event->hasRemovedSlot)
   {
     _Node* node = event->head;
@@ -136,7 +136,7 @@ event_publish(Event* event, const void* data)
       node = next;
     }
   }
-  event->hasRemovedSlot = FALSE;
+  event->hasRemovedSlot = UZU_FALSE;
 }
 
 Event*

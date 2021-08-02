@@ -1,5 +1,5 @@
 #include "main.h"
-#include "GL/gl.h"
+#include "graphics/gl.h"
 #include "SDL_image.h"
 #include "constances.h"
 #include "ecs.h"
@@ -71,7 +71,7 @@ create()
   scene_select_character_create();
   set_scene(SCENE_MAIN);
   printf("game created\n");
-  return TRUE;
+  return UZU_TRUE;
 }
 
 void

@@ -165,7 +165,7 @@ map_tick()
 BOOL
 is_roof(tile_t tile)
 {
-#define _(x) [x]      = TRUE
+#define _(x) [x]      = UZU_TRUE
   static BOOL lut[65] = { _(19), _(20), _(25), _(26), _(45), _(46),
                           _(49), _(50), _(58), _(59), _(60), _(61),
                           _(62), _(63), _(64), _(40), _(18) };

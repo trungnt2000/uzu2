@@ -1,5 +1,5 @@
 #include "level_loader.h"
-#include "json-c/json.h"
+#include <json-c/json.h>
 #include "json_helper.h"
 #include "map.h"
 
@@ -91,9 +91,9 @@ static void parse_item_list(Item items[5], u16* num_items, const char* input)
 */
 static json_object* find_layer(json_object* layers, const char* layerName)
 {
-  int          nlayer = json_object_array_length(layers);
+  size_t          nlayer = json_object_array_length(layers);
   json_object* jsoLayer;
-  for (int i = 0; i < nlayer; ++i)
+  for (size_t i = 0; i < nlayer; ++i)
   {
     jsoLayer = json_object_array_get_idx(layers, i);
     if (!SDL_strcmp(layerName, json_get_string(jsoLayer, "name")))
@@ -104,13 +104,13 @@ static json_object* find_layer(json_object* layers, const char* layerName)
 
 static int parse_tilelayer(const json_object* jsoTileLayer, tile_t* data)
 {
-  int                datalen;
+  size_t                datalen;
   const json_object* jsaData;
 
   jsaData = json_object_object_get(jsoTileLayer, "data");
   datalen = json_object_array_length(jsaData);
 
-  for (int i = 0; i < datalen; ++i)
+  for (size_t i = 0; i < datalen; ++i)
     data[i] = json_array_get_int(jsaData, i);
 
   return 0;
@@ -276,7 +276,7 @@ static int direction_from_string(const char* value)
       return lut[i].int_value;
   }
 
-  ASSERT(FALSE && "invalid value");
+  ASSERT(UZU_FALSE && "invalid value");
   return -1;
 }
 

@@ -1,0 +1,130 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "ENABLE_PCH",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "WARNINGS_AS_ERRORS",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "SDL2_DIR",
+          "value": "E:/common/sdl2/sdl2-build/install",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_IMAGE_DIR",
+          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_IMAGE_LIBRARY",
+          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt/lib/x64/SDL2_image.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_MIXER_INCLUDE_DIR",
+          "value": "E:/common/sdl2/SDL2_mixer-2.0.4_prebuilt/include",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_MIXER_LIBRARY",
+          "value": "E:/common/sdl2/SDL2_mixer-2.0.4_prebuilt/lib/x64/SDL2_mixer.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "json_c_DIR",
+          "value": "E:/common/json-c/install/lib/cmake/json-c",
+          "type": "PATH"
+        },
+        {
+          "name": "Glad_DIR",
+          "value": "E:/common/uzu2/external/glad",
+          "type": "PATH"
+        },
+        {
+          "name": "LUA_DIR",
+          "value": "C:/Program Files (x86)/Lua/5.1",
+          "type": "PATH"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "ENABLE_PCH",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "WARNINGS_AS_ERRORS",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "SDL2_DIR",
+          "value": "E:/common/sdl2/sdl2-build/install",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_IMAGE_INCLUDE_DIR",
+          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt/include",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_IMAGE_LIBRARY",
+          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt/lib/x64/SDL2_image.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_MIXER_INCLUDE_DIR",
+          "value": "E:/common/sdl2/SDL2_mixer-2.0.4_prebuilt/include",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_MIXER_LIBRARY",
+          "value": "E:/common/sdl2/SDL2_mixer-2.0.4_prebuilt/lib/x64/SDL2_mixer.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "json_c_DIR",
+          "value": "E:/common/json-c/install/lib/cmake/json-c",
+          "type": "PATH"
+        },
+        {
+          "name": "Glad_DIR",
+          "value": "E:/common/uzu2/external/glad",
+          "type": "PATH"
+        },
+        {
+          "name": "LUA_DIR",
+          "value": "C:/Program Files (x86)/Lua/5.1",
+          "type": "PATH"
+        }
+      ]
+    }
+  ]
+}
