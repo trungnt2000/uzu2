@@ -1,9 +1,10 @@
-#include "SDL.h"
+#include <SDL2/SDL.h>
 #include "constances.h"
 #include "graphics.h"
 #include "graphics/view.h"
 #include "input.h"
 #include "map.h"
+#include "toolbox/common.h"
 
 /* how many float components in one vertex                   */
 /* each vertex contains two floats for position,             */
@@ -126,10 +127,10 @@ map_render(void)
         idx = 0;
       }
 
-      x1    = x;
-      x2    = x + TILE_SIZE;
-      y1    = y;
-      y2    = y + TILE_SIZE;
+      x1    = (float) x;
+      x2    = (float) (x + TILE_SIZE);
+      y1    = (float) y;
+      y2    = (float) (y + TILE_SIZE);
       wallz = getwallz(x, y);
       tile  = sTileset[tileId - 1];
 
@@ -181,10 +182,10 @@ map_render(void)
         idx = 0;
       }
 
-      x1   = x;
-      x2   = x + TILE_SIZE;
-      y1   = y;
-      y2   = y + TILE_SIZE;
+      x1    = (float) x;
+      x2    = (float) (x + TILE_SIZE);
+      y1    = (float) y;
+      y2    = (float) (y + TILE_SIZE);
       tile = sTileset[tileId - 1];
 
       /* top-left */
@@ -258,7 +259,7 @@ load_resources(void)
   if (create_shader("res/shader/tile.vert", "res/shader/tile.frag", &sShader) !=
       0)
   {
-    ERROR("fail to load map shader\n");
+    UZU_ERROR("fail to load map shader\n");
     return -1;
   }
   sViewProjectMatrixLocation = glGetUniformLocation(sShader, "u_vpMat");
@@ -266,7 +267,7 @@ load_resources(void)
   /* load textures */
   if (texture_load(&sTilesetTex, "res/titleset.png") != 0)
   {
-    ERROR("fail to load titleset texture\n");
+    UZU_ERROR("fail to load titleset texture\n");
     return -1;
   }
   return 0;
@@ -340,8 +341,8 @@ init_tileset(void)
   int   colCnt    = sTilesetTex.width / TILE_SIZE;
   int   rowCnt    = sTilesetTex.height / TILE_SIZE;
   int   idx       = 0;
-  float texWidth  = sTilesetTex.width;
-  float texHeight = sTilesetTex.height;
+  float texWidth  = (float) sTilesetTex.width;
+  float texHeight = (float) sTilesetTex.height;
 
   for (int i = 0; i < rowCnt; ++i)
   {

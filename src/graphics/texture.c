@@ -18,8 +18,8 @@ get_gl_pixel_format(SDL_Surface* img)
     else
       return GL_BGR;
   }
-  ASSERT_MSG(0, "unhandled pixel format");
-  return 0;
+  //ASSERT_MSG(0, "unhandled pixel format");
+  //return 0;
 }
 
 int
@@ -28,12 +28,12 @@ texture_load(Texture* texture, const char* file)
   SDL_Surface* img = IMG_Load(file);
   if (!file || !texture)
   {
-    ERROR("Invalid Argument");
+    UZU_ERROR("Invalid Argument");
     return -1;
   }
   if (!img)
   {
-    ERROR("Failed to read image file %s: %s", file, IMG_GetError());
+    UZU_ERROR("Failed to read image file %s: %s", file, IMG_GetError());
     return -1;
   }
 

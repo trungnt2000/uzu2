@@ -6,9 +6,9 @@
 #  SDL2_MIXER_VERSION_STRING - human-readable string containing the version of SDL2_mixer
 #
 # For backward compatiblity the following variables are also set:
-#  SDLMIXER_LIBRARY (same value as SDL2_MIXER_LIBRARIES)
-#  SDLMIXER_INCLUDE_DIR (same value as SDL2_MIXER_INCLUDE_DIRS)
-#  SDLMIXER_FOUND (same value as SDL2_MIXER_FOUND)
+#  SDL2_MIXER_LIBRARY (same value as SDL2_MIXER_LIBRARIES)
+#  SDL2_MIXER_INCLUDE_DIR (same value as SDL2_MIXER_INCLUDE_DIRS)
+#  SDL2_MIXER_FOUND (same value as SDL2_MIXER_FOUND)
 #
 # $SDLDIR is an environment variable that would
 # correspond to the ./configure --prefix=$SDLDIR
@@ -32,25 +32,29 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
-if(NOT SDL2_MIXER_INCLUDE_DIR AND SDLMIXER_INCLUDE_DIR)
-  set(SDL2_MIXER_INCLUDE_DIR ${SDLMIXER_INCLUDE_DIR} CACHE PATH "directory cache
+if(NOT SDL2_MIXER_INCLUDE_DIR AND SDL2_MIXER_INCLUDE_DIR)
+  set(SDL2_MIXER_INCLUDE_DIR ${SDL2_MIXER_INCLUDE_DIR} CACHE PATH "directory cache
 entry initialized from old variable name")
 endif()
+
 find_path(SDL2_MIXER_INCLUDE_DIR SDL_mixer.h
   HINTS
-    ENV SDLMIXERDIR
+    ENV SDL2_MIXER_DIR
+    ENV SDL2_MIXERDIR
     ENV SDLDIR
   PATH_SUFFIXES include/SDL2 include/SDL2.0 include
 )
 
-if(NOT SDL2_MIXER_LIBRARY AND SDLMIXER_LIBRARY)
-  set(SDL2_MIXER_LIBRARY ${SDLMIXER_LIBRARY} CACHE FILEPATH "file cache entry
+if(NOT SDL2_MIXER_LIBRARY AND SDL2_MIXER_LIBRARY)
+  set(SDL2_MIXER_LIBRARY ${SDL2_MIXER_LIBRARY} CACHE FILEPATH "file cache entry
 initialized from old variable name")
 endif()
+
 find_library(SDL2_MIXER_LIBRARY
   NAMES SDL2_mixer
   HINTS
-    ENV SDLMIXERDIR
+    ENV SDL2_MIXER_DIR
+    ENV SDL2_MIXERDIR
     ENV SDLDIR
   PATH_SUFFIXES lib
 )
@@ -81,8 +85,27 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(SDL2_mixer
                                   VERSION_VAR SDL2_MIXER_VERSION_STRING)
 
 # for backward compatiblity
-set(SDLMIXER_LIBRARY ${SDL2_MIXER_LIBRARIES})
-set(SDLMIXER_INCLUDE_DIR ${SDL2_MIXER_INCLUDE_DIRS})
-set(SDLMIXER_FOUND ${SDL2_MIXER_FOUND})
+set(SDL2_MIXER_LIBRARY ${SDL2_MIXER_LIBRARIES})
+set(SDL2_MIXER_INCLUDE_DIR ${SDL2_MIXER_INCLUDE_DIRS})
+set(SDL2_MIXER_FOUND ${SDL2_MIXER_FOUND})
+
+if(SDL2_MIXER_FOUND AND NOT TARGET SDL2::mixer)
+  add_library(SDL2::mixer SHARED IMPORTED)
+  get_filename_component(SDL2_MIXER_LIBRARY_DIR ${SDL2_MIXER_LIBRARY} DIRECTORY)
+  
+  if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(SDL2_MIXER_DLLS SDL2_mixer libFLAC-8 libmodplug-1 libmpg123-0 libogg-0 libopus-0 libopusfile-0 libvorbis-0 libvorbisfile-3)
+    foreach( _file ${SDL2_MIXER_DLLS} )
+      list( APPEND SDL2_MIXER_DLL_LIBRARIES  "${SDL2_MIXER_LIBRARY_DIR}/${_file}.dll" )
+    endforeach( _file ${SDL2_MIXER_DLLS})
+  endif()
+
+  set_target_properties(SDL2::mixer PROPERTIES
+    IMPORTED_IMPLIB "${SDL2_MIXER_LIBRARY}"
+    IMPORTED_LOCATION "${SDL2_MIXER_DLL_LIBRARIES}"
+    INTERFACE_COMPILE_OPTIONS "${PC_SDL2_MIXER_CFLAGS_OTHER}"
+    INTERFACE_INCLUDE_DIRECTORIES "${SDL2_MIXER_INCLUDE_DIR}"
+  )
+endif()
 
 mark_as_advanced(SDL2_MIXER_LIBRARY SDL2_MIXER_INCLUDE_DIR)

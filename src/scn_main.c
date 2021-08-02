@@ -74,12 +74,12 @@ scene_main_create(void)
 
   if (texture_load(&texture, "res/test.png") != 0)
   {
-    ERROR("Could not load test texture\n");
+    UZU_ERROR("Could not load test texture\n");
   }
 
   if (texture_load(&lizzardTexture, "res/job/lizzard.png") != 0)
   {
-    ERROR("Could not load lizzard texture\n");
+    UZU_ERROR("Could not load lizzard texture\n");
   }
 
   AnimationTemplate tmpl = { 0 };
@@ -187,9 +187,9 @@ scene_main_tick(float deltaTime)
   int x, y;
   SDL_GetMouseState(&x, &y);
   tx->position[0] =
-      lerpf(tx->position[0], (x) / SCL_X - WIN_WIDTH / 2, deltaTime * 5.f);
+      lerpf(tx->position[0], (x / (float) SCL_X) - (WIN_WIDTH / 2.f), deltaTime * 5.f);
   tx->position[1] =
-      lerpf(tx->position[1], (y) / SCL_Y - WIN_HEIGHT / 2, deltaTime * 5.f);
+      lerpf(tx->position[1], (y / (float) SCL_Y) - (WIN_HEIGHT / 2.f), deltaTime * 5.f);
   tx->rotation += 1.f;
 }
 

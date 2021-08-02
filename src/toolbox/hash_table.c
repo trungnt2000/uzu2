@@ -165,7 +165,7 @@ hash_table_insert(HashTable* self, void* key, void* value)
                                key,
                                hashCode,
                                self->equalFunc,
-                               NULL)))
+                               NULL)) != NULL)
   {
     entry->value = value;
   }
@@ -226,7 +226,7 @@ hash_table_lookup(HashTable* self, void* key)
                                key,
                                hashCode,
                                self->equalFunc,
-                               NULL)))
+                               NULL)) != NULL)
     return entry->value;
   return NULL;
 }
@@ -244,16 +244,16 @@ hash_table_remove(HashTable* self, void* key)
                                key,
                                hashCode,
                                self->equalFunc,
-                               &prevEntry)))
+                               &prevEntry)) != NULL)
   {
     entry_list_remove(&self->entries[index], entry, prevEntry);
     if (self->freeFunc)
       self->freeFunc(entry->value);
     SDL_free(entry);
     --self->count;
-    return TRUE;
+    return UZU_TRUE;
   }
-  return FALSE;
+  return UZU_FALSE;
 }
 
 void*
@@ -269,7 +269,7 @@ hash_table_steal(HashTable* self, void* key)
                                key,
                                hashCode,
                                self->equalFunc,
-                               &prevEntry)))
+                               &prevEntry)) != NULL)
   {
     entry_list_remove(&self->entries[index], entry, prevEntry);
     SDL_free(entry);

@@ -5,6 +5,14 @@
 
 #define MAX_SPRITE_PER_BATCH 512
 
+//typedef union  Dependencies {
+//  void* comps[2];
+//  struct {
+//    _Sprite*          sprite;
+//    _TransformMatrix* transformMatrix;
+//  };
+//} Dependencies;
+
 typedef struct Dependencies
 {
   _Sprite*          sprite;
@@ -25,7 +33,7 @@ system_rendering_sprite_init(ecs_Registry* registry)
                     "res/shader/sprite.frag",
                     &sShader) != 0)
   {
-    ERROR("Faild to load shader...\n");
+    UZU_ERROR("Faild to load shader...\n");
   }
   sViewProjectionMatrixLocation =
       glGetUniformLocation(sShader, "u_viewProjectionMatrix");

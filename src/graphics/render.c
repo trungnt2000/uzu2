@@ -231,7 +231,7 @@ sprite_renderer_init(u32 maxSprites)
   glBindVertexArray(0);
 
   sTexture   = NULL;
-  sIsDrawing = FALSE;
+  sIsDrawing = UZU_FALSE;
   sVertBuf   = SDL_malloc(vboSize);
 
   SDL_free(indices);
@@ -250,7 +250,7 @@ void
 sprite_batch_begin()
 {
   ASSERT_MSG(!sIsDrawing, "already drawing");
-  sIsDrawing   = TRUE;
+  sIsDrawing   = UZU_FALSE;
   sNextVertPtr = sVertBuf;
   sTexture     = NULL;
   sSpriteCnt   = 0;
@@ -262,5 +262,5 @@ sprite_batch_end()
 {
   ASSERT_MSG(sIsDrawing, "call begin first!");
   flush();
-  sIsDrawing = FALSE;
+  sIsDrawing = UZU_FALSE;
 }

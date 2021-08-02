@@ -6,10 +6,10 @@ read_entrie_file(const char* file)
   SDL_RWops* rwops;
   char*      buff;
 
-  if ((rwops = SDL_RWFromFile(file, "r")))
+  if ((rwops = SDL_RWFromFile(file, "r")) != NULL)
   {
     SDL_RWseek(rwops, 0, RW_SEEK_END);
-    int length = SDL_RWtell(rwops);
+    s64 length = SDL_RWtell(rwops);
     buff       = SDL_malloc(length + 1);
 
     SDL_RWseek(rwops, 0, RW_SEEK_SET);
@@ -32,8 +32,8 @@ compile_file(const char* file, GLenum type, GLuint* out)
   source = read_entrie_file(file);
   if (!source)
   {
-    ERROR("Fail to read file: %s\n", file);
-    return FALSE;
+    UZU_ERROR("Fail to read file: %s\n", file);
+    return UZU_FALSE;
   }
 
   shader = glCreateShader(type);
@@ -49,13 +49,13 @@ compile_file(const char* file, GLenum type, GLuint* out)
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
     infoLog = SDL_malloc(infoLogLength);
     glGetShaderInfoLog(shader, infoLogLength, &infoLogLength, infoLog);
-    ERROR("Fail to compile_file shader: %s\n", infoLog);
+    UZU_ERROR("Fail to compile_file shader: %s\n", infoLog);
     SDL_free(infoLog);
-    return FALSE;
+    return UZU_FALSE;
   }
   *out = shader;
 
-  return TRUE;
+  return UZU_TRUE;
 }
 
 int
@@ -68,19 +68,19 @@ create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram)
 
   if (!vsFile || !fsFile || !outProgram)
   {
-    ERROR("Invalid argument\n");
+    UZU_ERROR("Invalid argument\n");
     return -1;
   }
 
   if (!compile_file(vsFile, GL_VERTEX_SHADER, &vertShader))
   {
-    ERROR("Fail to compile vertex shader\n");
+    UZU_ERROR("Fail to compile vertex shader\n");
     return -1;
   }
 
   if (!compile_file(fsFile, GL_FRAGMENT_SHADER, &fragShader))
   {
-    ERROR("Fail to compile fragment shader");
+    UZU_ERROR("Fail to compile fragment shader");
     glDeleteShader(vertShader);
     return -1;
   }
@@ -94,7 +94,7 @@ create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram)
   {
     glGetProgramInfoLog(program, 512, NULL, linkingInfo);
     glDeleteProgram(program);
-    ERROR("Fail to link program %s", linkingInfo);
+    UZU_ERROR("Fail to link program %s", linkingInfo);
     return -1;
   }
 
@@ -111,7 +111,7 @@ sprite_shader_load(SpriteShader* shader)
                     "res/shader/sprite.frag",
                     &shader->handle) != 0)
   {
-    ERROR("Failed to create program\n");
+    UZU_ERROR("Failed to create program\n");
     return -1;
   }
   shader->uProjMatLocation =

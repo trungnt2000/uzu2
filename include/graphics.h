@@ -2,8 +2,7 @@
 #ifndef GRAPHICS
 #define GRAPHICS
 #include "toolbox.h"
-#define GL_GLEXT_PROTOTYPES
-#include "GL/gl.h"
+#include "graphics/gl.h"
 #include "cglm/cglm.h"
 
 // clang-format off

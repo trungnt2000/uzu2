@@ -187,11 +187,11 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
   u32        offset = OFFSET(idx);
   ecs_size_t i2, j1, j2;
   if (p->sparse[page] == NULL)
-    return FALSE;
+    return UZU_FALSE;
 
   j1 = p->sparse[page][offset];
   if (j1 == TOMBSTONE)
-    return FALSE;
+    return UZU_FALSE;
 
   j2 = p->count - 1;
   i2 = (p->entities[j2] >> ECS_ENT_IDX_SHIFT) & 0xffff;
@@ -212,7 +212,8 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
   p->sparse[PAGE(i2)][OFFSET(i2)] = j1;
   p->sparse[page][offset]         = TOMBSTONE;
   p->count--;
-  return TRUE;
+  // TODO: do some stuffs like sorting or grouping
+  return UZU_TRUE;
 }
 
 void*
