@@ -1,4 +1,4 @@
-#include "SDL2/SDL.h"
+#include "SDL.h"
 #include "graphics/gl.h"
 #include "engine.h"
 #include "SDL_image.h"

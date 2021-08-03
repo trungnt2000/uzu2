@@ -22,8 +22,23 @@
           "type": "BOOL"
         },
         {
-          "name": "SDL2_DIR",
+          "name": "SDL_DIR",
           "value": "E:/common/sdl2/sdl2-build/install",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL_LIBRARY",
+          "value": "E:/common/sdl2/sdl2-build/install/lib/SDL2.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL_MAIN_LIBRARY",
+          "value": "E:/common/sdl2/sdl2-build/install/lib/SDL2main.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL_INCLUDE_DIR",
+          "value": "E:/common/sdl2/sdl2-build/install/include/SDL2",
           "type": "PATH"
         },
         {

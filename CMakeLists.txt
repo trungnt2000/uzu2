@@ -55,8 +55,7 @@ endif()
 
 target_link_libraries(${APP_NAME} PRIVATE 
 	project_warnings
-	SDL2::SDL2
-	SDL2::SDL2main
+	${SDL2_LIBRARIES}
 	$<TARGET_NAME_IF_EXISTS:PkgConfig::JSON_C>
 	$<TARGET_NAME_IF_EXISTS:json-c::json-c>
 	OpenGL::GL
@@ -67,6 +66,7 @@ target_link_libraries(${APP_NAME} PRIVATE
 )
 
 target_include_directories(${APP_NAME} PRIVATE 
+		${SDL2_INCLUDE_DIRS}
 		${Glad_INCLUDE_DIR}
 		${LUA_INCLUDE_DIR}
 		${CMAKE_SOURCE_DIR}/include
@@ -93,7 +93,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	#set_target_properties(${APP_NAME} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
 	target_compile_definitions(${APP_NAME} PUBLIC NOMINMAX PRIVATE HAVE_M_PI)
 
-	get_target_property(SDL2_DLL SDL2::SDL2 LOCATION)
+	#get_target_property(SDL2_DLL SDL::SDL LOCATION)
 	get_target_property(SDL2_IMAGE_DLLS SDL2::image LOCATION)
 	get_target_property(SDL2_MIXER_DLLS SDL2::mixer LOCATION)
 
@@ -103,7 +103,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   get_filename_component(__LUA_LIBRARY_DIR ${__LUA_FIRST_LIB} DIRECTORY)
 	set(LUA_DLL "${__LUA_LIBRARY_DIR}/${__LUA_LIBRARY_FILE_NAME}.dll")
 	
-	post_build_copy(${APP_NAME} "${SDL2_DLL}")
+	#post_build_copy(${APP_NAME} "${SDL2_DLL}")
 	post_build_copy(${APP_NAME} "${SDL2_IMAGE_DLLS}")
 	post_build_copy(${APP_NAME} "${SDL2_MIXER_DLLS}")
 	post_build_copy(${APP_NAME} "${LUA_DLL}")
