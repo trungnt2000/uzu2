@@ -58,7 +58,7 @@
         },
         {
           "name": "LUA_DIR",
-          "value": "C:/Program Files (x86)/Lua/5.1",
+          "value": "E:/common/lua5.2.4",
           "type": "PATH"
         }
       ]
@@ -121,7 +121,7 @@
         },
         {
           "name": "LUA_DIR",
-          "value": "C:/Program Files (x86)/Lua/5.1",
+          "value": "E:/common/lua5.2.4",
           "type": "PATH"
         }
       ]

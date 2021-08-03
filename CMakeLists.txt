@@ -28,11 +28,11 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	find_package(json_c REQUIRED)
 endif()
 
-find_package(SDL2 2.0 REQUIRED)
-find_package(SDL2_image 2.0.5 REQUIRED)
-find_package(SDL2_mixer 2.0.4 REQUIRED)
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image 2.0 REQUIRED)
+find_package(SDL2_mixer 2.0 REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(Lua 5.1 REQUIRED)
+find_package(Lua REQUIRED)
 add_subdirectory(external/cglm EXCLUDE_FROM_ALL)
 
 set(APP_NAME "uzu_app")
@@ -97,9 +97,17 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	get_target_property(SDL2_IMAGE_DLLS SDL2::image LOCATION)
 	get_target_property(SDL2_MIXER_DLLS SDL2::mixer LOCATION)
 
+	# hacky way to get lua dll
+	list(GET LUA_LIBRARIES 0 __LUA_FIRST_LIB)
+	get_filename_component(__LUA_LIBRARY_FILE_NAME ${__LUA_FIRST_LIB} NAME_WE)
+  get_filename_component(__LUA_LIBRARY_DIR ${__LUA_FIRST_LIB} DIRECTORY)
+	set(LUA_DLL "${__LUA_LIBRARY_DIR}/${__LUA_LIBRARY_FILE_NAME}.dll")
+	
 	post_build_copy(${APP_NAME} "${SDL2_DLL}")
 	post_build_copy(${APP_NAME} "${SDL2_IMAGE_DLLS}")
 	post_build_copy(${APP_NAME} "${SDL2_MIXER_DLLS}")
+	post_build_copy(${APP_NAME} "${LUA_DLL}")
+
 endif()
 
 add_custom_command(TARGET ${APP_NAME} PRE_BUILD
