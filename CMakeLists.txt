@@ -11,24 +11,25 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(JSON_C REQUIRED json-c)
   set(JSON_C_LIBRARIES ${JSON_C_STATIC_LDFLAGS})
+  set(OpenGL_GL_PREFERENCE "GLVND")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	if(Glad_DIR)
-		set(Glad_INCLUDE_DIR ${Glad_DIR}/include)
-	  set(Glad_SOURCE ${Glad_DIR}/src/gl.c)
-		if(NOT EXISTS "${Glad_INCLUDE_DIR}")
-			message(FATAL_ERROR "Unable to find Glad2's include directory")
-		endif()
-		if(NOT EXISTS "${Glad_SOURCE}")
-			message(FATAL_ERROR "Unable to find Glad2's source file")
-		endif()
-	else()
-	  message(FATAL_ERROR "Glad2 is required")
-	endif()
-	set(SOURCE_FILES ${SOURCE_FILES} ${Glad_SOURCE})
-	find_package(json_c REQUIRED)
+  if(Glad_DIR)
+    set(Glad_INCLUDE_DIR ${Glad_DIR}/include)
+    set(Glad_SOURCE ${Glad_DIR}/src/gl.c)
+    if(NOT EXISTS "${Glad_INCLUDE_DIR}")
+      message(FATAL_ERROR "Unable to find Glad2's include directory")
+    endif()
+    if(NOT EXISTS "${Glad_SOURCE}")
+      message(FATAL_ERROR "Unable to find Glad2's source file")
+    endif()
+  else()
+    message(FATAL_ERROR "Glad2 is required")
+  endif()
+  set(SOURCE_FILES ${SOURCE_FILES} ${Glad_SOURCE})
+  find_package(json_c REQUIRED)
 endif()
 
-find_package(SDL REQUIRED)
+find_package(SDL2 REQUIRED)
 find_package(SDL2_image 2.0 REQUIRED)
 find_package(SDL2_mixer 2.0 REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -50,31 +51,38 @@ endif()
 target_compile_features(${APP_NAME} INTERFACE c_std_11)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	target_compile_options(${APP_NAME} PRIVATE "-fno-strict-aliasing")
+  target_compile_options(${APP_NAME} PRIVATE "-fno-strict-aliasing")
 endif()
 
 target_link_libraries(${APP_NAME} PRIVATE 
-	project_warnings
-	${SDL_LIBRARIES}
-	${SDL_MAIN_LIBRARY}
-	${SDL2_IMAGE_LIBRARIES} 
-	${SDL2_MIXER_LIBRARIES}
-	${OPENGL_LIBRARIES}
-	${JSON_C_LIBRARIES}
-	$<TARGET_NAME_IF_EXISTS:json-c::json-c>
-	${LUA_LIBRARIES}
-	cglm_headers
+  project_warnings
+  ${SDL2_LIBRARIES}
+  ${SDL2_IMAGE_LIBRARIES} 
+  ${SDL2_MIXER_LIBRARIES}
+  ${OPENGL_LIBRARIES}
+  ${JSON_C_LIBRARIES}
+  $<TARGET_NAME_IF_EXISTS:json-c::json-c>
+  $<TARGET_NAME_IF_EXISTS:SDL2::SDL2>
+  $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+  ${LUA_LIBRARIES}
+  cglm_headers
 )
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  #hack because SDL2 cmake support is so good
+  get_target_property(SDL2_INCLUDE_DIRS SDL2::SDL2 INTERFACE_INCLUDE_DIRECTORIES)
+  set(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_DIRS}/SDL2)
+endif()
+
 target_include_directories(${APP_NAME} PRIVATE 
-		${SDL_INCLUDE_DIRS}
-		${SDL2_IMAGE_INCLUDE_DIRS} 
-		${SDL2_MIXER_INCLUDE_DIRS} 
-		${OPENGL_INCLUDE_DIR}
-		${Glad_INCLUDE_DIR}
-		${JSON_C_INCLUDE_DIRS}
-		${LUA_INCLUDE_DIR}
-		${CMAKE_SOURCE_DIR}/include
+  ${SDL2_INCLUDE_DIRS}
+  ${SDL2_IMAGE_INCLUDE_DIRS} 
+  ${SDL2_MIXER_INCLUDE_DIRS} 
+  ${OPENGL_INCLUDE_DIR}
+  ${Glad_INCLUDE_DIR}
+  ${JSON_C_INCLUDE_DIRS}
+  ${LUA_INCLUDE_DIR}
+  ${CMAKE_SOURCE_DIR}/include
 )
 
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
@@ -82,65 +90,68 @@ if(ENABLE_PCH)
   target_precompile_headers(
     ${APP_NAME}
     PRIVATE
-		"src/precompiled.h"
+    "src/precompiled.h"
 )
 endif()
 
 macro(post_build_copy APP FILE_LIST)
-	foreach(_file ${FILE_LIST})
-		if(EXISTS "${_file}")
-			add_custom_command(TARGET ${APP} POST_BUILD
-				COMMAND ${CMAKE_COMMAND} 
-				-E copy_if_different "${_file}" $<TARGET_FILE_DIR:${APP}>)
-	  endif()
-	endforeach()
+  foreach(_file ${FILE_LIST})
+    if(EXISTS "${_file}")
+      add_custom_command(TARGET ${APP} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} 
+        -E copy_if_different "${_file}" $<TARGET_FILE_DIR:${APP}>)
+    endif()
+  endforeach()
 endmacro()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	#set_target_properties(${APP_NAME} PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
-	target_compile_definitions(${APP_NAME} PUBLIC NOMINMAX PRIVATE HAVE_M_PI)
+  #set_target_properties(${APP_NAME} 
+    #PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
+  target_compile_definitions(${APP_NAME} PUBLIC NOMINMAX PRIVATE HAVE_M_PI)
 
-	if(SDL_FOUND)
-		get_filename_component(SDL2_LIBRARY_DIR ${SDL_LIBRARIES} DIRECTORY)
-		get_filename_component(SDL2_DIR ${SDL2_LIBRARY_DIR} DIRECTORY)
-		set(SDL_DLL "${SDL2_DIR}/bin/SDL2.dll")
-		post_build_copy(${APP_NAME} "${SDL_DLL}")
-	endif()
+  if(SDL2_FOUND)
+    get_target_property(SDL2_DLL SDL2::SDL2 LOCATION)
+    post_build_copy(${APP_NAME} "${SDL2_DLL}")
+  endif()
 
-	if(LUA_FOUND)
-		list(GET LUA_LIBRARIES 0 __LUA_FIRST_LIB)
-		get_filename_component(__LUA_LIBRARY_FILE_NAME ${__LUA_FIRST_LIB} NAME_WE)
-		get_filename_component(__LUA_LIBRARY_DIR ${__LUA_FIRST_LIB} DIRECTORY)
-		set(LUA_DLL "${__LUA_LIBRARY_DIR}/${__LUA_LIBRARY_FILE_NAME}.dll")
-		post_build_copy(${APP_NAME} "${LUA_DLL}")
-	endif()
+  if(LUA_FOUND)
+    list(GET LUA_LIBRARIES 0 __LUA_FIRST_LIB)
+    get_filename_component(__LUA_LIBRARY_FILE_NAME ${__LUA_FIRST_LIB} NAME_WE)
+    get_filename_component(__LUA_LIBRARY_DIR ${__LUA_FIRST_LIB} DIRECTORY)
+    set(LUA_DLL "${__LUA_LIBRARY_DIR}/${__LUA_LIBRARY_FILE_NAME}.dll")
+    post_build_copy(${APP_NAME} "${LUA_DLL}")
+  endif()
 
-	if(SDL2_IMAGE_FOUND)
-		get_filename_component(SDL2_IMAGE_LIBRARY_DIR ${SDL2_IMAGE_LIBRARY} DIRECTORY)
-		set(_DLLS SDL2_image libjpeg-9 libpng16-16 libtiff-5 libwebp-7 zlib1)
-		foreach( _file ${_DLLS} )
-			list( APPEND SDL2_IMAGE_DLLS  "${SDL2_IMAGE_LIBRARY_DIR}/${_file}.dll" )
-		endforeach()
-		post_build_copy(${APP_NAME} "${SDL2_IMAGE_DLLS}")
-	endif()
+  if(SDL2_IMAGE_FOUND)
+    get_filename_component(SDL2_IMAGE_LIBRARY_DIR
+      ${SDL2_IMAGE_LIBRARY} DIRECTORY)
+    set(_DLLS SDL2_image libjpeg-9 libpng16-16 libtiff-5 libwebp-7 zlib1)
+    foreach( _file ${_DLLS} )
+      list( APPEND SDL2_IMAGE_DLLS  "${SDL2_IMAGE_LIBRARY_DIR}/${_file}.dll" )
+    endforeach()
+    post_build_copy(${APP_NAME} "${SDL2_IMAGE_DLLS}")
+  endif()
 
-	if(SDL2_MIXER_FOUND)
-		get_filename_component(SDL2_MIXER_LIBRARY_DIR ${SDL2_MIXER_LIBRARY} DIRECTORY)
-    set(_DLLS SDL2_mixer libFLAC-8 libmodplug-1 libmpg123-0 libogg-0 libopus-0 libopusfile-0 libvorbis-0 libvorbisfile-3)
+  if(SDL2_MIXER_FOUND)
+    get_filename_component(SDL2_MIXER_LIBRARY_DIR 
+      ${SDL2_MIXER_LIBRARY} DIRECTORY)
+    set(_DLLS SDL2_mixer libFLAC-8 libmodplug-1 libmpg123-0 libogg-0 libopus-0 
+    libopusfile-0 libvorbis-0 libvorbisfile-3)
     foreach( _file ${_DLLS} )
       list( APPEND SDL2_MIXER_DLLS  "${SDL2_MIXER_LIBRARY_DIR}/${_file}.dll" )
     endforeach()
-		post_build_copy(${APP_NAME} "${SDL2_MIXER_DLLS}")
-	endif()
+    post_build_copy(${APP_NAME} "${SDL2_MIXER_DLLS}")
+  endif()
 
 endif()
 
 add_custom_command(TARGET ${APP_NAME} PRE_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${APP_NAME}>/res)
+  COMMAND ${CMAKE_COMMAND} 
+  -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${APP_NAME}>/res)
 
 set(DIST_DIR ${CMAKE_SOURCE_DIR}/dist)
 
 #install(TARGETS ${APP_NAME} 
-#		DESTINATION ${DIST_DIR})
+#    DESTINATION ${DIST_DIR})
 #install(DIRECTORY ${CMAKE_SOURCE_DIR}/res 
-#		DESTINATION ${DIST_DIR})
+#    DESTINATION ${DIST_DIR})
