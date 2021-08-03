@@ -22,11 +22,6 @@
           "type": "BOOL"
         },
         {
-          "name": "SDL_DIR",
-          "value": "E:/common/sdl2/sdl2-build/install",
-          "type": "PATH"
-        },
-        {
           "name": "SDL_LIBRARY",
           "value": "E:/common/sdl2/sdl2-build/install/lib/SDL2.lib",
           "type": "PATH"
@@ -91,7 +86,7 @@
       "variables": [
         {
           "name": "ENABLE_PCH",
-          "value": "True",
+          "value": "False",
           "type": "BOOL"
         },
         {
@@ -100,13 +95,23 @@
           "type": "BOOL"
         },
         {
-          "name": "SDL2_DIR",
-          "value": "E:/common/sdl2/sdl2-build/install",
+          "name": "SDL_LIBRARY",
+          "value": "E:/common/sdl2/sdl2-build/install/lib/SDL2.lib",
           "type": "PATH"
         },
         {
-          "name": "SDL2_IMAGE_INCLUDE_DIR",
-          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt/include",
+          "name": "SDL_MAIN_LIBRARY",
+          "value": "E:/common/sdl2/sdl2-build/install/lib/SDL2main.lib",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL_INCLUDE_DIR",
+          "value": "E:/common/sdl2/sdl2-build/install/include/SDL2",
+          "type": "PATH"
+        },
+        {
+          "name": "SDL2_IMAGE_DIR",
+          "value": "E:/common/sdl2/SDL2_image-2.0.5_prebuilt",
           "type": "PATH"
         },
         {
