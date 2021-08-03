@@ -93,7 +93,7 @@ ecs_pool_create(ecs_TypeTraits traits, ecs_size_t size)
   p->data_buffer  = SDL_malloc(data_size + ALIGNMENT_EXTRA_SPACE);
   ASSERT_MSG(p->data_buffer, "unable to allocate ecs_pool buffer");
 
-  p->data = assure_alignment(p->data_buffer, traits.align, size);
+  p->data = assure_alignment(p->data_buffer, traits.align, data_size);
 
   p->size        = size;
   p->count       = 0;
