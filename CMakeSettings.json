@@ -52,6 +52,11 @@
           "type": "PATH"
         },
         {
+          "name": "check_DIR",
+          "value": "E:/common/check/install",
+          "type": "PATH"
+        },
+        {
           "name": "Glad_DIR",
           "value": "E:/common/uzu2/external/glad",
           "type": "PATH"

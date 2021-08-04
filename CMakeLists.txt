@@ -5,6 +5,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(uzu LANGUAGES C)
 
+option(ENABLE_TESTING "Enable Test Builds" ON)
+
 include(src/CMakeLists.txt)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -83,6 +85,7 @@ target_include_directories(${APP_NAME} PRIVATE
   ${JSON_C_INCLUDE_DIRS}
   ${LUA_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/include
+  
 )
 
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
@@ -149,8 +152,13 @@ add_custom_command(TARGET ${APP_NAME} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} 
   -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${APP_NAME}>/res)
 
-set(DIST_DIR ${CMAKE_SOURCE_DIR}/dist)
 
+if(ENABLE_TESTING)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
+#set(DIST_DIR ${CMAKE_SOURCE_DIR}/dist)
 #install(TARGETS ${APP_NAME} 
 #    DESTINATION ${DIST_DIR})
 #install(DIRECTORY ${CMAKE_SOURCE_DIR}/res 
