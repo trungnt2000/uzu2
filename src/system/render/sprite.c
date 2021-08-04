@@ -35,12 +35,14 @@ void
 system_rendering_sprite_fini(void)
 {
   sprite_renderer_shutdown();
+  ecs_group_destroy(&sSpriteGroup);
   glDeleteProgram(sShader);
 }
 
 void
 system_rendering_sprite_update(ecs_Registry* registry)
 {
+#if 0
   ecs_View     view;
   ecs_entity_t ett;
   Dependencies deps;
@@ -68,4 +70,32 @@ system_rendering_sprite_update(ecs_Registry* registry)
   }
   glDisable(GL_DEPTH_TEST);
   sprite_batch_end();
+#endif
+
+#if 1
+  _Sprite*            sp  = ecs_group_data_begin(&sSpriteGroup, 0);
+  _TransformMatrix*   tx  = ecs_group_data_begin(&sSpriteGroup, 1);
+  const ecs_entity_t* ett = ecs_group_ett_begin(&sSpriteGroup);
+  int                 siz = ecs_group_size(&sSpriteGroup);
+
+  mat4 viewProjectionMatrix;
+  view_combined(viewProjectionMatrix);
+  glUseProgram(sShader);
+  glUniformMatrix4fv(sViewProjectionMatrixLocation,
+                     1,
+                     GL_FALSE,
+                     viewProjectionMatrix[0]);
+
+  sprite_batch_begin();
+  for (int i = 0; i < siz; ++i)
+  {
+    draw_sprite(sp[i].size,
+                sp[i].origin,
+                sp[i].color,
+                0,
+                &sp[i].textureRegion,
+                tx[i].value);
+  }
+  sprite_batch_end();
+#endif
 }

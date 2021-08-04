@@ -325,6 +325,9 @@ void _ecs_group_init(ecs_Group*    group,
     _ecs_group_init(group, registry, __Ts, __Tc);                              \
   } while (0)
 
+void
+ecs_group_destroy(ecs_Group* group);
+
 void* ecs_group_data_begin(ecs_Group* group, ecs_size_t index);
 
 const ecs_entity_t* ecs_group_ett_begin(ecs_Group* group);

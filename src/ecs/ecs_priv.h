@@ -53,7 +53,7 @@ typedef struct ecs_Pool
   ecs_Signal     signal[ECS_SIG_CNT];
   ecs_AddHook    addHook;
   ecs_RmvHook    rmvHook;
-  void*          hookCtx; 
+  void*          hookCtx;
 } ecs_Pool;
 
 ecs_Pool* ecs_pool_create(ecs_TypeTraits traits, ecs_size_t initialSize);
@@ -98,6 +98,8 @@ const ecs_entity_t* ecs_pool_ett_rbegin(ecs_Pool* pool);
 const ecs_entity_t* ecs_pool_ett_rend(ecs_Pool* pool);
 void*               ecs_pool_data_rbegin(ecs_Pool* pool);
 void*               ecs_pool_data_rend(ecs_Pool* pool);
+void*               ecs_pool_data_begin(ecs_Pool* pool);
+const ecs_entity_t* ecs_pool_ett_begin(ecs_Pool* pool);
 
 void ecs_pool_disconnect(ecs_Pool*    pool,
                          int          signal,

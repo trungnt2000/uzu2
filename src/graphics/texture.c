@@ -98,3 +98,4 @@ texture_region_set_texture(TextureRegion* t,
   t->texture = texture;
   texture_region_set_rect(t, rect);
 }
+

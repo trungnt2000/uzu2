@@ -94,7 +94,7 @@ void draw_sprite(vec2                 size,
                  mat3                 transformMatrix);
 /**
  * \brief init sprite renderer
- * 
+ *
  * \param maxSprites how many sprites can batch together in one draw call
  */
 void sprite_renderer_init(u32 maxSprites);
@@ -152,4 +152,5 @@ typedef struct AnimationTemplate
 void anim_init_tmpl(Animation* anim, const AnimationTemplate* tmpl);
 void anim_destroy(Animation* anim);
 const TextureRegion* anim_get_frame(const Animation* anim, float elapsedTime);
+
 #endif // GRAPHICS

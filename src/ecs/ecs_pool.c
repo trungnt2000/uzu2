@@ -361,3 +361,14 @@ ecs_pool_sortable(ecs_Pool* pool)
 {
   return pool->addHook == NULL;
 }
+
+void*
+ecs_pool_data_begin(ecs_Pool* pool)
+{
+  return pool->data;
+}
+const ecs_entity_t*
+ecs_pool_ett_begin(ecs_Pool* pool)
+{
+  return pool->entities;
+}

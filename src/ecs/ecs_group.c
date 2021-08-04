@@ -146,7 +146,7 @@ is_parent_of(ecs_Group* self, ecs_Group* other)
   return true;
 }
 
-static void
+void
 ecs_group_refresh(ecs_Group* g, ecs_size_t first, ecs_size_t last)
 {
 }
@@ -224,7 +224,7 @@ _ecs_group_init(ecs_Group*    group,
       // initialize
       group->child = otherGroup;
 
-      group->size  = otherGroup->size;
+      group->size = otherGroup->size;
       return;
     }
   }
@@ -265,4 +265,24 @@ ecs_group_destroy(ecs_Group* group)
   SDL_free(group->exclPools);
   SDL_free(group->ownPools);
   SDL_free(group->sharPools);
+}
+
+void*
+ecs_group_data_begin(ecs_Group* group, ecs_size_t index)
+{
+  ASSERT_MSG(index < group->ownCnt, "invalid component type index");
+
+  return ecs_pool_data_begin(group->ownPools[index]);
+}
+
+const ecs_entity_t*
+ecs_group_ett_begin(ecs_Group* group)
+{
+  return ecs_pool_ett_begin(group->ownPools[0]);
+}
+
+ecs_size_t
+ecs_group_size(ecs_Group* group)
+{
+  return group->size;
 }
