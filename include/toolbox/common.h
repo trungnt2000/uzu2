@@ -12,7 +12,7 @@
 
 #endif
 
-#include <SDL2/SDL.h>
+#include "SDL.h"
 #include <stdbool.h>
 
 typedef Sint8  s8;

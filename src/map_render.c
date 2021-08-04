@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include "SDL.h"
 #include "constances.h"
 #include "graphics.h"
 #include "graphics/view.h"

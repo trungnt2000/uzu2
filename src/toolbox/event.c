@@ -1,5 +1,5 @@
 #include "toolbox/event.h"
-#include <SDL2/SDL.h>
+#include "SDL.h"
 #define SIGNAL_DEFAULT_CAPACITY 16
 
 typedef struct _Node

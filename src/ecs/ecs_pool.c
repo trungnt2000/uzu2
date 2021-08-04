@@ -1,4 +1,6 @@
 #include "ecs_priv.h"
+#include "toolbox/memory.h"
+
 /**
  * i1 means sparse index 1
  * j1 means dense index 1
@@ -12,6 +14,8 @@
 
 #define PAGE(idx) ((idx) / PAGE_SIZ)
 #define OFFSET(idx) ((idx) & (PAGE_SIZ - 1u))
+
+#define ALIGNMENT_EXTRA_SPACE 64u
 
 static inline void
 dataswp(u8* data, register size_t ts, u32 j1, u32 j2)
@@ -55,6 +59,17 @@ memoffset(ecs_Pool* p, int idx)
   return (char*)p->data + p->traits.size * idx;
 }
 
+static void*
+assure_alignment(void* buffer, size_t alignment, size_t dataSize)
+{
+  size_t bufferSize = dataSize + ALIGNMENT_EXTRA_SPACE;
+  if (align(alignment, dataSize, &buffer, &bufferSize) == NULL)
+  {
+    ASSERT_MSG(false, "extra space is too small for data to be aligned");
+  }
+  return buffer;
+}
+
 static inline void
 grow_if_need(ecs_Pool* p)
 {
@@ -62,7 +77,10 @@ grow_if_need(ecs_Pool* p)
   {
     p->size     = p->size * 2;
     p->entities = SDL_realloc(p->entities, p->size * sizeof(ecs_entity_t));
-    p->data     = SDL_realloc(p->data, p->size * p->traits.size);
+    const size_t dataSize = p->size * p->traits.size;
+    p->dataBuffer =
+        SDL_realloc(p->dataBuffer, dataSize + ALIGNMENT_EXTRA_SPACE);
+    p->data = assure_alignment(p->dataBuffer, p->traits.align, dataSize);
   }
 }
 
@@ -73,13 +91,19 @@ ecs_pool_create(ecs_TypeTraits traits, ecs_size_t size)
 
   /* initialize */
   p->entities = SDL_malloc(sizeof(ecs_entity_t) * size);
-  p->data     = SDL_malloc(traits.size * size);
-  p->size     = size;
-  p->count    = 0;
-  p->traits   = traits;
-  p->addHook  = NULL;
-  p->rmvHook  = NULL;
-  p->hookCtx  = NULL;
+
+  const size_t dataSize = traits.size * size;
+  p->dataBuffer          = SDL_malloc(dataSize + ALIGNMENT_EXTRA_SPACE);
+  ASSERT_MSG(p->dataBuffer, "unable to allocate ecs_pool buffer");
+
+  p->data = assure_alignment(p->dataBuffer, traits.align, dataSize);
+
+  p->size    = size;
+  p->count   = 0;
+  p->traits  = traits;
+  p->addHook = NULL;
+  p->rmvHook = NULL;
+  p->hookCtx = NULL;
 
   for (int i = 0; i < ECS_SIG_CNT; ++i)
     ecs_signal_init(&p->signal[i]);
@@ -108,7 +132,7 @@ ecs_pool_free(ecs_Pool* p)
       mem = mem + p->traits.size;
     }
   }
-  SDL_free(p->data);
+  SDL_free(p->dataBuffer);
   SDL_free(p->entities);
   SDL_free(p);
 }
