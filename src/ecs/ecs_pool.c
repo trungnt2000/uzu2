@@ -25,7 +25,7 @@ dataswp(u8* data, register size_t ts, u32 j1, u32 j2)
 
   do
   {
-    u8 tmp = *mem1;
+    u8 tmp  = *mem1;
     *mem1++ = *mem2;
     *mem2++ = tmp;
   } while (--ts > 0);
@@ -45,7 +45,7 @@ assure_page(ecs_size_t** sparse, u32 page)
   ASSERT(page < PAGE_CNT);
   if (sparse[page] == NULL)
   {
-    sparse[page] = SDL_malloc(sizeof(ecs_size_t) * PAGE_SIZ);
+    sparse[page]    = SDL_malloc(sizeof(ecs_size_t) * PAGE_SIZ);
     ecs_size_t* mem = sparse[page];
     for (int i = 0; i < PAGE_SIZ; ++i)
       mem[i] = TOMBSTONE;
@@ -59,25 +59,28 @@ memoffset(ecs_Pool* p, int idx)
   return (char*)p->data + p->traits.size * idx;
 }
 
-static void* assure_alignment(void* buffer, size_t alignment, size_t data_size) {
-  size_t buffer_size = data_size + ALIGNMENT_EXTRA_SPACE;
-  if (align(alignment, data_size, &buffer, &buffer_size) == NULL) {
+static void*
+assure_alignment(void* buffer, size_t alignment, size_t dataSize)
+{
+  size_t bufferSize = dataSize + ALIGNMENT_EXTRA_SPACE;
+  if (align(alignment, dataSize, &buffer, &bufferSize) == NULL)
+  {
     ASSERT_MSG(false, "extra space is too small for data to be aligned");
   }
   return buffer;
 }
-
 
 static inline void
 grow_if_need(ecs_Pool* p)
 {
   if (p->count == p->size - 1)
   {
-    p->size = p->size * 2;
+    p->size     = p->size * 2;
     p->entities = SDL_realloc(p->entities, p->size * sizeof(ecs_entity_t));
-    const size_t data_size = p->size * p->traits.size;
-    p->data_buffer = SDL_realloc(p->data_buffer, data_size + ALIGNMENT_EXTRA_SPACE);
-    p->data = assure_alignment(p->data_buffer, p->traits.align, data_size);
+    const size_t dataSize = p->size * p->traits.size;
+    p->dataBuffer =
+        SDL_realloc(p->dataBuffer, dataSize + ALIGNMENT_EXTRA_SPACE);
+    p->data = assure_alignment(p->dataBuffer, p->traits.align, dataSize);
   }
 }
 
@@ -89,18 +92,18 @@ ecs_pool_create(ecs_TypeTraits traits, ecs_size_t size)
   /* initialize */
   p->entities = SDL_malloc(sizeof(ecs_entity_t) * size);
 
-  const size_t data_size = traits.size * size;
-  p->data_buffer  = SDL_malloc(data_size + ALIGNMENT_EXTRA_SPACE);
-  ASSERT_MSG(p->data_buffer, "unable to allocate ecs_pool buffer");
+  const size_t dataSize = traits.size * size;
+  p->dataBuffer          = SDL_malloc(dataSize + ALIGNMENT_EXTRA_SPACE);
+  ASSERT_MSG(p->dataBuffer, "unable to allocate ecs_pool buffer");
 
-  p->data = assure_alignment(p->data_buffer, traits.align, data_size);
+  p->data = assure_alignment(p->dataBuffer, traits.align, dataSize);
 
-  p->size        = size;
-  p->count       = 0;
-  p->traits      = traits;
-  p->addHook     = NULL;
-  p->rmvHook     = NULL;
-  p->hookCtx     = NULL;
+  p->size    = size;
+  p->count   = 0;
+  p->traits  = traits;
+  p->addHook = NULL;
+  p->rmvHook = NULL;
+  p->hookCtx = NULL;
 
   for (int i = 0; i < ECS_SIG_CNT; ++i)
     ecs_signal_init(&p->signal[i]);
@@ -129,7 +132,7 @@ ecs_pool_free(ecs_Pool* p)
       mem = mem + p->traits.size;
     }
   }
-  SDL_free(p->data_buffer);
+  SDL_free(p->dataBuffer);
   SDL_free(p->entities);
   SDL_free(p);
 }

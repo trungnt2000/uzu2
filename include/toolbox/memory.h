@@ -1,6 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 #include "common.h"
+#include <stddef.h>
 
 INLINE void*
 align(size_t align, size_t size, void** ptr, size_t* space)

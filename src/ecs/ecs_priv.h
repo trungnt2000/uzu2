@@ -46,7 +46,7 @@ typedef struct ecs_Pool
 {
   ecs_size_t*    sparse[ECS_SPARSE_SET_PAGE_CNT];
   ecs_entity_t*  entities;
-  void*          data_buffer;
+  void*          dataBuffer;
   void*          data;
   ecs_size_t     count;
   ecs_size_t     size;
