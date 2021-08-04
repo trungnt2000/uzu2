@@ -3,7 +3,8 @@
 #define TYPE_TRAITS(T, initFn, finiFn)                                         \
   [T] = { .size = sizeof(_##T),                                                \
           .init = (ecs_InitFunc)initFn,                                        \
-          .fini = (ecs_FiniFunc)finiFn }
+          .fini = (ecs_FiniFunc)finiFn,                                        \
+          .align = _Alignof(_##T) }
 /* clang-format off */
 /* component traits table */
 const ecs_TypeTraits gCompTraits[] = {

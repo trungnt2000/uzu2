@@ -1,7 +1,7 @@
 // ngotrung Thu 15 Jul 2021 09:17:19 PM +07
 #ifndef VIEW_H
 #define VIEW_H
-#include <SDL2/SDL.h>
+#include "SDL.h"
 #include "cglm/cglm.h"
 #include "toolbox.h"
 

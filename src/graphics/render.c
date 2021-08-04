@@ -66,7 +66,7 @@ draw_sprite(vec2                 size,
             const TextureRegion* textureRegion,
             mat3                 transMat)
 {
-  ASSERT_MSG(sIsDrawing, "call begin first!");
+  //ASSERT_MSG(sIsDrawing, "call begin first!");
 
   float    u1, v1, u2, v2; /* texture coordinates                          */
   Vertex*  vert;           /* vertex mem ptr                               */
@@ -260,7 +260,7 @@ sprite_batch_begin()
 void
 sprite_batch_end()
 {
-  ASSERT_MSG(sIsDrawing, "call begin first!");
+  //ASSERT_MSG(sIsDrawing, "call begin first!");
   flush();
   sIsDrawing = UZU_FALSE;
 }
