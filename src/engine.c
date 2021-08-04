@@ -137,6 +137,7 @@ static void
 cleanup(void)
 {
   destroy();
+  SDL_GL_DeleteContext(sGLCtx);
   SDL_DestroyWindow(sWindow);
   IMG_Quit();
   Mix_Quit();

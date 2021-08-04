@@ -20,23 +20,6 @@ static ecs_entity_t entity1;
 static ecs_entity_t entity2;
 static Animation    lizzardAnim;
 
-/*
-static BOOL sHasPendingLevel;
-static char sPendingLevel[LADDER_ATTRS_MAX_LEVEL_NAME_LEN + 1];
-static char sTargetPortal[LADDER_ATTRS_MAX_DEST_LEN + 1];
-static BOOL sIsPaused;
-static BOOL sIsPlayerDied;
-
-#if DEBUG
-static BOOL sIsTileColliderDebugEnabled;
-static BOOL sIsHitboxDebugEnabled;
-static BOOL sIsPosDebugEnabled;
-static BOOL sIsRtreeDebugEnabled;
-static BOOL sIsGirdDebugEnabled;
-static BOOL sIsPathDebugEnabled;
-#endif
-*/
-
 static void preupdate(float deltaTime);
 static void update(float deltaTime);
 static void postupdate(float deltaTime);
@@ -93,7 +76,7 @@ scene_main_create(void)
 
   anim_init_tmpl(&lizzardAnim, &tmpl);
 
-  map_render_init();
+  map_renderer_init();
   sRegistry = ecs_registry_create(gCompTraits, COMPONENT_CNT);
   system_rendering_sprite_init(sRegistry);
 
@@ -163,7 +146,7 @@ scene_main_create(void)
 void
 scene_main_destroy(void)
 {
-  map_render_fini();
+  map_renderer_fini();
   printf("scene_main destroyed!\n");
   ecs_registry_free(sRegistry);
   system_rendering_sprite_fini();
@@ -175,6 +158,8 @@ scene_main_destroy(void)
 void
 scene_main_tick(float deltaTime)
 {
+  static int c = 0;
+  printf("loop %d\n", c++);
   map_tick();
   map_render();
   system_rendering_transform_update(sRegistry);
@@ -191,6 +176,7 @@ scene_main_tick(float deltaTime)
   tx->position[1] =
       lerpf(tx->position[1], (y / (float) SCL_Y) - (WIN_HEIGHT / 2.f), deltaTime * 5.f);
   tx->rotation += 1.f;
+  engine_stop();
 }
 
 void

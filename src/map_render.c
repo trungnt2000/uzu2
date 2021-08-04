@@ -68,7 +68,7 @@ static void prepare(void);
 static void flush(void);
 
 void
-map_render_init(void)
+map_renderer_init(void)
 {
   load_resources();
   init_tileset();
@@ -76,7 +76,7 @@ map_render_init(void)
 }
 
 void
-map_render_fini(void)
+map_renderer_fini(void)
 {
   glDeleteProgram(sShader);
   glDeleteBuffers(1, &sVbo);
