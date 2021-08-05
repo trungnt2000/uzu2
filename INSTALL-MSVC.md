@@ -55,14 +55,14 @@ Example:
 `
 | VARIABLE               | VALUE                                            |
 |------------------------|--------------------------------------------------|
-| SDL2_DIR               | <SDL2 installation path>                         |
-| SDL2_IMAGE_INCLUDE_DIR | <SDL_image installation path>/include            |
-| SDL2_IMAGE_LIBRARY     | <SDL_image installation path>/x64/SDL2_image.lib |
-| SDL2_MIXER_INCLUDE_DIR | <SDL_mixer installation path>/include            |
-| SDL2_MIXER_LIBRARY     | <SDL_mixer installation path>/x64/SDL2_mixer.lib |
-| json_c_DIR             | <json-c installation path>                       |
-| Glad_DIR               | <uzu project path>/external/glad                 |
-| LUA_DIR                | <lua installation path>                          |
+| SDL2_DIR               | \<SDL2 installation path\>                         |
+| SDL2_IMAGE_INCLUDE_DIR | \<SDL_image installation path\>/include            |
+| SDL2_IMAGE_LIBRARY     | \<SDL_image installation path\>/x64/SDL2_image.lib |
+| SDL2_MIXER_INCLUDE_DIR | \<SDL_mixer installation path\>/include            |
+| SDL2_MIXER_LIBRARY     | \<SDL_mixer installation path\>/x64/SDL2_mixer.lib |
+| json_c_DIR             | \<json-c installation path\>                       |
+| Glad_DIR               | \<uzu project path\>/external/glad                 |
+| LUA_DIR                | \<lua installation path\>                          |
   
 Do this for both `Debug` and `Release` configurations   
   
