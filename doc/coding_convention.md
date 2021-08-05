@@ -18,10 +18,12 @@
   - If struct have namespace use '_'. Ex: ecs_Pool
   - Function to create dynamic allocated struct name with __create__. Ex: Foo* foo_create(...params)
   - Function to free dynamic allocated struct name with __free__. Ex: void foo_free(Foo* foo)
-  - Funtion to create stack allocated struct name same to struct name in snake_case. Ex: SomeStruct some_struct(...params)
+  - Function to create stack allocated struct name same to struct name in snake_case. Ex: SomeStruct some_struct(...params)
   - Function to initialize struct name with __init__. Ex: SomeStruct* some_struct_init(SomeStruct* ss, ...prams)
   - Function to finalize struct but not free struct memory it self name with __destory__. Ex: some_struct_destroy(SomeStruct* some_struct)
   - Function to initialize struct which hold some resource like texture, shader use __load__ to prefix that function. Ex: tile_shader_load(TileShader* ts)
+  - Macro to initialize struct: COLOR_BLACK_INIT { 0.f, 0.f, 0.f, 1.f } 
+  - Macro to create compound literals: COLOT_BLACK ((vec4) COLOR_BLACK_INIT)
 
 **Modules**
   - moudule's initializer function name with __init__. Ex: system_renderer_sprite_init()
