@@ -62,13 +62,13 @@ input_update()
   }
 }
 
-SDL_bool
+bool
 button_pressed(u16 btn)
 {
   return sCurrButtonState & BUTTON_MASK(btn);
 }
 
-SDL_bool
+bool
 button_just_pressed(u16 btn)
 {
   return (sCurrButtonState & BUTTON_MASK(btn)) &&
@@ -103,38 +103,38 @@ update_mouse_state()
   sCurrMouseBtnState = SDL_GetMouseState(NULL, NULL);
 }
 
-BOOL
+bool
 mouse_button_just_pressed(u16 msBtn)
 {
   return !(sPrevMouseBtnState & SDL_BUTTON(msBtn)) &&
          (sCurrMouseBtnState & SDL_BUTTON(msBtn));
 }
 
-BOOL
+bool
 mouse_button_pressed(u16 msBtn)
 {
   return sCurrMouseBtnState & SDL_BUTTON(msBtn);
 }
 
-BOOL
+bool
 key_just_pressed(SDL_Scancode scancode)
 {
   return sCurrKeyState[scancode] && !sPrevKeyState[scancode];
 }
 
-BOOL
+bool
 key_just_released(SDL_Scancode scancode)
 {
   return !sCurrKeyState[scancode] && sPrevKeyState[scancode];
 }
 
-BOOL
+bool
 key_pressed(SDL_Scancode scancode)
 {
   return sCurrKeyState[scancode];
 }
 
-BOOL
+bool
 key_released(SDL_Scancode scancode)
 {
   return !sCurrKeyState[scancode];
