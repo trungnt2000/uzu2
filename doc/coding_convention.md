@@ -21,6 +21,7 @@
   - Funtion to create stack allocated struct name same to struct name in snake_case. Ex: SomeStruct some_struct(...params)
   - Function to initialize struct name with __init__. Ex: SomeStruct* some_struct_init(SomeStruct* ss, ...prams)
   - Function to finalize struct but not free struct memory it self name with __destory__. Ex: some_struct_destroy(SomeStruct* some_struct)
+  - Function to initialize struct which hold some resource like texture, shader use __load__ to prefix that function. Ex: tile_shader_load(TileShader* ts)
 
 **Modules**
   - moudule's initializer function name with __init__. Ex: system_renderer_sprite_init()
