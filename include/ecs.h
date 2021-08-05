@@ -15,8 +15,8 @@
 #endif
 
 /* use enum to easier debug */
-#ifndef ECS_COMPONENT_IDENTIFIER_TYPE
-#define ECS_COMPONENT_IDENTIFIER_TYPE ecs_size_t
+#ifndef ECS_TYPE_ID
+#define ECS_TYPE_ID ecs_size_t
 #endif
 
 enum
@@ -27,58 +27,24 @@ enum
   ECS_SIG_CNT
 };
 
-typedef ECS_ENTITY_TYPE               ecs_entity_t;
-typedef ECS_SIZE_TYPE                 ecs_size_t;
-typedef ECS_COMPONENT_IDENTIFIER_TYPE ecs_comp_id_t;
-typedef struct ecs_Pool               ecs_Pool;
-typedef struct ecs_Registry           ecs_Registry;
+typedef ECS_ENTITY_TYPE     ecs_entity_t;
+typedef ECS_SIZE_TYPE       ecs_size_t;
+typedef ECS_TYPE_ID         ecs_type_id_t;
+typedef struct ecs_Pool     ecs_Pool;
+typedef struct ecs_Registry ecs_Registry;
 
-typedef void (*ecs_InitFunc)(void*);
 typedef void (*ecs_FiniFunc)(void*);
 typedef void (*ecs_CpyFunc)(void*, const void*);
-typedef int (*ecs_CmpFunc)(const void*, const void*);
 
 typedef void (*ecs_Callback)(void* ctx, ecs_entity_t ett, void* mem);
-/**
- * \brief Hook function to modify component location in internal array
- *        after entity have added in to the pool which invoke this hook
- *        function
- * \param ctx hook function context
- * \param pool the pool which invoke this function
- * \param ett newlly added entity
- * \param idx component index
- * \return new component location
- * */
-typedef ecs_size_t (*ecs_AddHook)(void*        ctx,
-                                  ecs_Pool*    pool,
-                                  ecs_entity_t ett,
-                                  ecs_size_t   idx);
-
-/**
- * \brief Hook function to move component & entity to the end of the pool
- *        which invoke is hook function
- * \param ctx hook function contex
- * \param pool the pool which invoke this hook function
- * \param new component location
- */
-typedef ecs_size_t (*ecs_RmvHook)(void*        ctx,
-                                  ecs_Pool*    pool,
-                                  ecs_entity_t ett,
-                                  ecs_size_t   idx);
 
 typedef struct ecs_TypeTraits
 {
-  /* component constructor */
-  ecs_InitFunc init;
-
   /* component destructor */
   ecs_FiniFunc fini;
 
   /* component copy constructor */
   ecs_CpyFunc cpy;
-
-  /* component compare function */
-  ecs_CmpFunc cmp;
 
   /* component size in byte */
   size_t size;
@@ -121,6 +87,7 @@ typedef struct ecs_TypeTraits
 #define ECS_SPARSE_SET_PAGE_CNT 64
 #endif
 
+/* determine component data struct name relatived to it's identifier */
 #ifndef ECS_COMP_NM
 #define ECS_COMP_NM(T) _##T
 #endif
@@ -167,8 +134,7 @@ ecs_entity_t ecs_create(ecs_Registry* reg);
 void ecs_destroy(ecs_Registry* reg, ecs_entity_t ett);
 
 /**
- * \brief Assign component to given entity. Component's constructor will be
- *        invoke.
+ * \brief Assign component to given entity. returned component is uninitialized
  *
  * \param reg a registry which manage given entity
  * \param ett a valid entity
@@ -188,19 +154,16 @@ void* _ecs_add(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
  */
 #define ecs_add(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_add(reg, ett, T))
 
-/**
- * \brief Remove comonent from an entity. Component destructor will be invoke
- *
- * \param reg registry which manage given entity
- * \param ett a valid entity
- * \param typeId component type to be removed
- */
-void ecs_rmv(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
+void* _ecs_add_ex(ecs_Registry* reg,
+                  ecs_entity_t,
+                  ecs_size_t  typeId,
+                  const void* data);
+
+#define ecs_add_ex(reg, ett, T, ...)                                           \
+  (_ecs_add_ex(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
 
 /**
- * \brief Set component data for given entity, if given entity does not have
- *        given type it will be assigned that component.Component data will be
- *        copied by memcpy.
+ * \brief Set component data for given entity.
  *
  * \param reg registry which manage given entity
  * \param ett a valid entity
@@ -216,6 +179,23 @@ void* _ecs_set(ecs_Registry* reg,
 #define ecs_set(reg, ett, T, ...)                                              \
   ((ECS_COMP_NM(T)*)_ecs_set(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
 
+void* _ecs_add_or_set(ecs_Registry* reg,
+                      ecs_entity_t  ett,
+                      ecs_size_t    typeId,
+                      const void*   data);
+
+#define ecs_add_or_set(reg, ett, T, ...)                                       \
+  ((ECS_COMP_NM(T)*)_ecs_add_or_set(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
+
+/**
+ * \brief Remove comonent from an entity. Component destructor will be invoke
+ *
+ * \param reg registry which manage given entity
+ * \param ett a valid entity
+ * \param typeId component type to be removed
+ */
+void ecs_rmv(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
+
 void ecs_rmv_all(ecs_Registry* reg, ecs_entity_t ett);
 
 void* _ecs_get(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
@@ -226,9 +206,9 @@ void ecs_each(ecs_Registry* reg, ecs_Callback callback, void* ctx);
 
 void ecs_raw(ecs_Registry*        reg,
              ecs_size_t           typeId,
-             const ecs_entity_t** pEttArr,
-             void**               pDataArr,
-             ecs_size_t*          pCnt);
+             const ecs_entity_t** ettPtr,
+             void**               dataPtr,
+             ecs_size_t*          cntPtr);
 
 bool ecs_has(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
 

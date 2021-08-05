@@ -20,7 +20,7 @@ read_entrie_file(const char* file)
   return NULL;
 }
 
-static BOOL
+static bool
 compile_file(const char* file, GLenum type, GLuint* out)
 {
   char*  source;
@@ -33,7 +33,7 @@ compile_file(const char* file, GLenum type, GLuint* out)
   if (!source)
   {
     UZU_ERROR("Fail to read file: %s\n", file);
-    return UZU_FALSE;
+    return false;
   }
 
   shader = glCreateShader(type);
@@ -51,11 +51,11 @@ compile_file(const char* file, GLenum type, GLuint* out)
     glGetShaderInfoLog(shader, infoLogLength, &infoLogLength, infoLog);
     UZU_ERROR("Fail to compile_file shader: %s\n", infoLog);
     SDL_free(infoLog);
-    return UZU_FALSE;
+    return false;
   }
   *out = shader;
 
-  return UZU_TRUE;
+  return true;
 }
 
 int
@@ -102,8 +102,6 @@ create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram)
   return 0;
 }
 
-/***************************************************************/
-
 int
 sprite_shader_load(SpriteShader* shader)
 {
@@ -131,4 +129,10 @@ void
 sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat)
 {
   glUniformMatrix4fv(shader->uProjMatLocation, 1, GL_FALSE, (float*)projMat);
+}
+
+void
+sprite_shader_bind(SpriteShader* shader)
+{
+  glUseProgram(shader->handle);
 }

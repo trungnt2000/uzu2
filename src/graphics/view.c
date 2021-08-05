@@ -6,8 +6,8 @@ static vec3  sScl;
 static vec2  sSiz;
 static float sRot;
 static mat4  sProjMat;
-static mat4  sViewMat; /* combined view and projection matrix */
-static BOOL  sDirty;
+static mat4  sViewMat;
+static bool  sDirty;
 
 void
 view_combined(mat4 outVpMat)
@@ -33,17 +33,20 @@ view_combined(mat4 outVpMat)
          -b * sine,   b * cosine, b * ty + d,
           0.f,        0.f,        1.f        );
 #endif
-    glm_translate_make(sViewMat, (vec2){ -(sPos[0] - sSiz[0] / 2.f), - (sPos[1] - sSiz[1] / 2.f) });
-    sDirty = UZU_FALSE;
+    glm_translate_make(
+        sViewMat,
+        (vec3){ -(sPos[0] - sSiz[0] / 2.f), -(sPos[1] - sSiz[1] / 2.f), 0 });
+    glm_scale(sViewMat, sScl);
+    sDirty = false;
   }
   glm_mat4_mul(sProjMat, sViewMat, outVpMat);
-  //glm_mat4_copy(sProjMat, outVpMat);
+  // glm_mat4_copy(sProjMat, outVpMat);
 }
 
 void
 view_translate(vec2 v)
 {
-  sDirty = UZU_TRUE;
+  sDirty = true;
   sPos[0] += v[0];
   sPos[1] += v[1];
 }
@@ -51,14 +54,14 @@ view_translate(vec2 v)
 void
 view_rotate(float angle)
 {
-  sDirty = UZU_TRUE;
+  sDirty = true;
   sRot += angle;
 }
 
 void
 view_zoom(vec2 v)
 {
-  sDirty = UZU_TRUE;
+  sDirty = true;
   sScl[0] *= v[0];
   sScl[1] *= v[1];
 }
@@ -77,7 +80,7 @@ view_reset(float x, float y, float w, float h)
   sPos[1] = y;
 
   sRot   = 0.f;
-  sDirty = UZU_TRUE;
+  sDirty = true;
 
   glm_ortho(0, w, h, 0, 100, -100.f, sProjMat);
 }
@@ -109,8 +112,8 @@ view_right(void)
 void
 viww_rect(SDL_Rect* outRect)
 {
-  outRect->x = (int) view_left();
-  outRect->y = (int) view_top();
-  outRect->w = (int) sSiz[0];
-  outRect->h = (int) sSiz[1];
+  outRect->x = (int)view_left();
+  outRect->y = (int)view_top();
+  outRect->w = (int)sSiz[0];
+  outRect->h = (int)sSiz[1];
 }

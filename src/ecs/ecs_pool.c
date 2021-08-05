@@ -10,7 +10,7 @@
 
 #define PAGE_SIZ ECS_SPARSE_SET_PAGE_SIZ
 
-#define TOMBSTONE (0xffff)
+#define TOMBSTONE ECS_NULL_IDX
 
 #define PAGE(idx) ((idx) / PAGE_SIZ)
 #define OFFSET(idx) ((idx) & (PAGE_SIZ - 1u))
@@ -54,7 +54,7 @@ assure_page(ecs_size_t** sparse, u32 page)
 }
 
 static inline void*
-memoffset(ecs_Pool* p, int idx)
+memoffset(ecs_Pool* p, ecs_size_t idx)
 {
   return (char*)p->data + p->traits.size * idx;
 }
@@ -71,9 +71,9 @@ assure_alignment(void* buffer, size_t alignment, size_t dataSize)
 }
 
 static inline void
-grow_if_need(ecs_Pool* p)
+assure_size(ecs_Pool* p, ecs_size_t minSize)
 {
-  if (p->count == p->size - 1)
+  if (p->size < minSize)
   {
     p->size     = p->size * 2;
     p->entities = SDL_realloc(p->entities, p->size * sizeof(ecs_entity_t));
@@ -93,7 +93,7 @@ ecs_pool_create(ecs_TypeTraits traits, ecs_size_t size)
   p->entities = SDL_malloc(sizeof(ecs_entity_t) * size);
 
   const size_t dataSize = traits.size * size;
-  p->dataBuffer          = SDL_malloc(dataSize + ALIGNMENT_EXTRA_SPACE);
+  p->dataBuffer         = SDL_malloc(dataSize + ALIGNMENT_EXTRA_SPACE);
   ASSERT_MSG(p->dataBuffer, "unable to allocate ecs_pool buffer");
 
   p->data = assure_alignment(p->dataBuffer, traits.align, dataSize);
@@ -148,20 +148,48 @@ ecs_pool_add(ecs_Pool* p, ecs_entity_t ett)
 
   ASSERT(pagemem[offset] == TOMBSTONE);
 
-  grow_if_need(p);
+  assure_size(p, p->count + 1);
 
   ecs_size_t j    = p->count;
   pagemem[offset] = j;
   p->entities[j]  = ett;
-  void* mem       = memoffset(p, j);
-  if (p->traits.init != NULL)
-    p->traits.init(mem);
-  ecs_signal_emit(&p->signal[ECS_SIG_ADD], ett, mem);
   p->count++;
 
+  ecs_signal_emit(&p->signal[ECS_SIG_ADD], ett, memoffset(p, j));
   if (p->addHook != NULL)
-    p->addHook(p->hookCtx, p, ett, j);
-  return mem;
+    j = p->addHook(p->hookCtx, p, ett, j);
+  return memoffset(p, j);
+}
+
+void*
+ecs_pool_add_ex(ecs_Pool* p, ecs_entity_t ett, const void* data)
+{
+  return SDL_memcpy(ecs_pool_add(p, ett), data, p->traits.size);
+}
+
+void*
+ecs_pool_add_or_set(ecs_Pool* p, ecs_entity_t ett, const void* data)
+{
+  u32 j = ecs_pool_index(p, ett);
+  if (j == TOMBSTONE)
+  {
+    return SDL_memcpy(ecs_pool_add(p, ett), data, p->traits.size);
+  }
+  else
+  {
+    void* mem = (u8*)p->data + p->traits.size * j;
+    SDL_memcpy(mem, data, p->traits.size);
+    ecs_signal_emit(&p->signal[ECS_SIG_SET], ett, mem);
+    return mem;
+  }
+}
+
+void*
+ecs_pool_set(ecs_Pool* p, ecs_entity_t ett, const void* data)
+{
+  ecs_size_t j = ecs_pool_index(p, ett);
+  ASSERT_MSG(j != TOMBSTONE, "This pool does not contains given entity!");
+  return SDL_memcpy(memoffset(p, j), data, p->traits.size);
 }
 
 void*
@@ -186,7 +214,7 @@ ecs_pool_cpy(ecs_Pool* p, ecs_entity_t ett, const void* other)
   ecs_size_t* pagemem = assure_page(p->sparse, page);
   ASSERT(pagemem[offset] == TOMBSTONE);
 
-  grow_if_need(p);
+  assure_size(p, p->count + 1);
 
   ecs_size_t j    = p->count;
   pagemem[offset] = j;
@@ -196,11 +224,12 @@ ecs_pool_cpy(ecs_Pool* p, ecs_entity_t ett, const void* other)
     p->traits.cpy(mem, other);
   else
     SDL_memcpy(mem, other, p->traits.size);
-
   ecs_signal_emit(&p->signal[ECS_SIG_ADD], ett, mem);
+
+  if (p->addHook != NULL)
+    j = p->addHook(p->hookCtx, p, ett, j);
   p->count++;
-  // TODO: do some stuffs like sorting or grouping
-  return mem;
+  return memoffset(p, j);
 }
 
 bool
@@ -211,11 +240,11 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
   u32        offset = OFFSET(idx);
   ecs_size_t i2, j1, j2;
   if (p->sparse[page] == NULL)
-    return UZU_FALSE;
+    return false;
 
   j1 = p->sparse[page][offset];
   if (j1 == TOMBSTONE)
-    return UZU_FALSE;
+    return false;
 
   j2 = p->count - 1;
   i2 = (p->entities[j2] >> ECS_ENT_IDX_SHIFT) & 0xffff;
@@ -231,38 +260,15 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
   if (p->rmvHook != NULL)
     j1 = p->rmvHook(p->hookCtx, p, ett, j1);
 
-  p->entities[j1] = p->entities[j2];
-  datacpy(p->data, p->traits.size, j1, j2);
-  p->sparse[PAGE(i2)][OFFSET(i2)] = j1;
-  p->sparse[page][offset]         = TOMBSTONE;
+  if (j1 != j2) /* already at the end of this pool */
+  {
+    p->entities[j1] = p->entities[j2];
+    datacpy(p->data, p->traits.size, j1, j2);
+    p->sparse[PAGE(i2)][OFFSET(i2)] = j1;
+  }
+  p->sparse[page][offset] = TOMBSTONE;
   p->count--;
-  // TODO: do some stuffs like sorting or grouping
-  return UZU_TRUE;
-}
-
-void*
-ecs_pool_set(ecs_Pool* p, ecs_entity_t ett, const void* data)
-{
-  u32 idx    = (ett >> ECS_ENT_IDX_SHIFT) & 0xffff;
-  u32 page   = PAGE(idx);
-  u32 offset = OFFSET(idx);
-
-  ecs_size_t* pagemem = assure_page(p->sparse, page);
-
-  u32   j   = pagemem[offset];
-  void* mem = NULL;
-  if (j == TOMBSTONE)
-  {
-    mem = ecs_pool_add(p, ett);
-    SDL_memcpy(mem, data, p->traits.size);
-  }
-  else
-  {
-    mem = (u8*)p->data + p->traits.size * j;
-    SDL_memcpy(mem, data, p->traits.size);
-    ecs_signal_emit(&p->signal[ECS_SIG_SET], ett, mem);
-  }
-  return mem;
+  return true;
 }
 
 void
@@ -293,8 +299,8 @@ bool
 ecs_pool_contains(ecs_Pool* p, ecs_entity_t ett)
 {
   u32 idx    = (ett >> ECS_ENT_IDX_SHIFT) & 0xffff;
-  u32 page   = idx / PAGE_SIZ;
-  u32 offset = idx % PAGE_SIZ;
+  u32 page   = PAGE(idx);
+  u32 offset = OFFSET(idx);
   return (page < PAGE_CNT && p->sparse[page] != NULL &&
           p->sparse[page][offset] != TOMBSTONE);
 }

@@ -6,6 +6,33 @@
 
 typedef struct ecs_Pool ecs_Pool;
 
+/**
+ * \brief Hook function to modify component location in internal array
+ *        after entity have added in to the pool which invoke this hook
+ *        function
+ * \param ctx hook function context
+ * \param pool the pool which invoke this function
+ * \param ett newlly added entity
+ * \param idx component index
+ * \return new component location
+ * */
+typedef ecs_size_t (*ecs_AddHook)(void*        ctx,
+                                  ecs_Pool*    pool,
+                                  ecs_entity_t ett,
+                                  ecs_size_t   idx);
+
+/**
+ * \brief Hook function to move component & entity to the end of the pool
+ *        which invoke is hook function
+ * \param ctx hook function contex
+ * \param pool the pool which invoke this hook function
+ * \param new component location
+ */
+typedef ecs_size_t (*ecs_RmvHook)(void*        ctx,
+                                  ecs_Pool*    pool,
+                                  ecs_entity_t ett,
+                                  ecs_size_t   idx);
+
 struct ecs_Registry
 {
   const ecs_TypeTraits* typeTraits;
@@ -65,6 +92,13 @@ void ecs_pool_free(ecs_Pool* pool);
  * component memory block */
 void* ecs_pool_add(ecs_Pool* pool, ecs_entity_t ett);
 
+/**
+ * add given entity to this pool also initialize it with given data
+ */
+void* ecs_pool_add_ex(ecs_Pool* pool, ecs_entity_t ett, const void* data);
+
+void* ecs_pool_add_or_set(ecs_Pool*, ecs_entity_t ett, const void* data);
+
 /* get component memory associated with given entity if any
  * otherwise return NULL */
 void* ecs_pool_get(ecs_Pool* pool, ecs_entity_t ett);
@@ -88,8 +122,10 @@ void* ecs_pool_cpy(ecs_Pool* pool, ecs_entity_t ett, const void* other);
 /* swap entity in packed array */
 void ecs_pool_swp(ecs_Pool* pool, ecs_entity_t lhs, ecs_entity_t rhs);
 
+/* get entity/component count */
 ecs_size_t ecs_pool_count(ecs_Pool* pool);
 
+/* chech whether or not this contains given entity */
 bool ecs_pool_contains(ecs_Pool* pool, ecs_entity_t ett);
 
 void
@@ -107,9 +143,6 @@ void ecs_pool_disconnect(ecs_Pool*    pool,
                          ecs_Callback callback,
                          void*        ctx);
 
-/**
- * \brief return true if this pool is sortable
- */
 bool ecs_pool_sortable(ecs_Pool* pool);
 
 void ecs_pool_take_ownership(ecs_Pool*   pool,
@@ -117,9 +150,6 @@ void ecs_pool_take_ownership(ecs_Pool*   pool,
                              ecs_RmvHook rmvHk,
                              void*       ctx);
 
-/**
- * \brief get index of given entity
- * \param ett a valid entity
- */
+/* get index of given entity */
 ecs_size_t ecs_pool_index(ecs_Pool* p, ecs_entity_t ett);
 #endif // ECS_PRIV_H

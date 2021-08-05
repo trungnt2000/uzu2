@@ -12,6 +12,7 @@ enum
   TransformChanged,
   TransformMatrix,
   AnimationPool,
+  DrawOrder,
   COMPONENT_CNT
 };
 
@@ -50,4 +51,9 @@ typedef struct _AnimationPool
   int        animCnt;
   float      elapsedTime;
 } _AnimationPool;
+
+typedef struct _DrawOrder
+{
+  float value;
+} _DrawOrder;
 #endif // COMPONENTS_H

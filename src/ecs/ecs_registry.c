@@ -110,6 +110,28 @@ _ecs_add(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId)
   return ecs_pool_add(reg->pools[typeId], ett);
 }
 
+void*
+_ecs_add_ex(ecs_Registry* reg,
+            ecs_entity_t  ett,
+            ecs_size_t    typeId,
+            const void*   data)
+{
+  ASSERT_VALID_TYPE_ID(reg, typeId);
+  ASSERT_VALID_ENTITY(reg, ett);
+  return ecs_pool_add_ex(reg->pools[typeId], ett, data);
+}
+
+void*
+_ecs_add_or_set(ecs_Registry* reg,
+                ecs_entity_t  ett,
+                ecs_size_t    typeId,
+                const void*   data)
+{
+  ASSERT_VALID_TYPE_ID(reg, typeId);
+  ASSERT_VALID_ENTITY(reg, ett);
+  return ecs_pool_add_or_set(reg->pools[typeId], ett, data);
+}
+
 void
 ecs_rmv(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId)
 {

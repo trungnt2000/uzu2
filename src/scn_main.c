@@ -53,7 +53,7 @@ void
 scene_main_create(void)
 {
   load_level("gl_test");
-  view_reset(0, 0, WIN_WIDTH, WIN_HEIGHT);
+  view_reset(WIN_WIDTH / 2, WIN_HEIGHT / 2, WIN_WIDTH, WIN_HEIGHT);
 
   if (texture_load(&texture, "res/test.png") != 0)
   {
@@ -82,65 +82,72 @@ scene_main_create(void)
 
   entity1 = ecs_create(sRegistry);
 
-  ecs_set(sRegistry,
-          entity1,
-          Transform,
-          {
-              .scale    = { 1.f, 1.f },
-              .position = { 100.f, -30.f },
-              .rotation = 50.f,
-          });
+  ecs_add_ex(sRegistry,
+             entity1,
+             Transform,
+             {
+                 .scale    = { 1.f, 1.f },
+                 .position = { 100.f, -30.f },
+                 .rotation = 50.f,
+             });
 
-  _Sprite* s = ecs_set(sRegistry,
-                       entity1,
-                       Sprite,
-                       {
-                           .textureRegion = { 0 },
-                           .color         = { 1.f, 1.f, 1.f, 1.f },
-                           .size          = { 32.f, 48.f },
-                           .origin        = { 16.f, 48.f },
-                       });
+  _Sprite* s = ecs_add_ex(sRegistry,
+                          entity1,
+                          Sprite,
+                          {
+                              .textureRegion = { 0 },
+                              .color         = { 1.f, 1.f, 1.f, 1.f },
+                              .size          = { 32.f, 48.f },
+                              .origin        = { 16.f, 48.f },
+                          });
   texture_region_set_texture(&s->textureRegion, &texture, NULL);
 
-  ecs_set(sRegistry, entity1, TransformMatrix, { GLM_MAT3_IDENTITY_INIT });
+  ecs_add_ex(sRegistry, entity1, TransformMatrix, { GLM_MAT3_IDENTITY_INIT });
   ecs_add(sRegistry, entity1, TransformChanged);
 
-  ecs_set(sRegistry,
-          entity1,
-          AnimationPool,
-          {
-              .anims   = &lizzardAnim,
-              .animCnt = 1,
-          });
+  ecs_add_ex(sRegistry,
+             entity1,
+             AnimationPool,
+             {
+                 .anims   = &lizzardAnim,
+                 .animCnt = 1,
+             });
 
-#if 1
-  entity2 = ecs_create(sRegistry);
+  for (int i = 0; i < 100; ++i)
+  {
+    ecs_entity_t ett = ecs_create(sRegistry);
 
-  ecs_set(sRegistry,
-          entity2,
-          Transform,
-          {
-              .scale    = { 1.5f, 1.5f },
-              .position = { 0.f, 0.f },
-              .rotation = 0.f,
-          });
+    ecs_add_ex(sRegistry,
+               ett,
+               Transform,
+               {
+                   .scale    = { 1.f, 1.f },
+                   .position = { 100.f, 100.f },
+                   .rotation = 50.f,
+               });
 
-  ecs_set(sRegistry, entity2, TransformMatrix, { GLM_MAT3_IDENTITY_INIT });
-  ecs_add(sRegistry, entity2, TransformChanged);
+    s = ecs_add_ex(sRegistry,
+                   ett,
+                   Sprite,
+                   {
+                       .textureRegion = { 0 },
+                       .color         = { 1.f, 1.f, 1.f, 1.f },
+                       .size          = { 32.f, 48.f },
+                       .origin        = { 16.f, 48.f },
+                   });
+    texture_region_set_texture(&s->textureRegion, &texture, NULL);
 
-  s = ecs_set(sRegistry,
-              entity2,
-              Sprite,
-              {
-                  .textureRegion = { 0 },
-                  .color         = { 1.f, 0.5f, 0.5f, 1.f },
-                  .size          = { 70.f, 70.f },
-                  .origin        = { 35.f, 35.f },
-              });
-  texture_region_set_texture(&s->textureRegion,
-                             &texture,
-                             &(IntRect){ .w = 288, .h = 300 });
-#endif
+    ecs_add_ex(sRegistry, ett, TransformMatrix, { GLM_MAT3_IDENTITY_INIT });
+    ecs_add(sRegistry, ett, TransformChanged);
+
+    ecs_add_ex(sRegistry,
+               ett,
+               AnimationPool,
+               {
+                   .anims   = &lizzardAnim,
+                   .animCnt = 1,
+               });
+  }
 }
 
 void
@@ -158,8 +165,6 @@ scene_main_destroy(void)
 void
 scene_main_tick(float deltaTime)
 {
-  static int c = 0;
-  printf("loop %d\n", c++);
   map_tick();
   map_render();
   system_rendering_transform_update(sRegistry);
@@ -171,12 +176,12 @@ scene_main_tick(float deltaTime)
 
   int x, y;
   SDL_GetMouseState(&x, &y);
-  tx->position[0] =
-      lerpf(tx->position[0], (x / (float) SCL_X) - (WIN_WIDTH / 2.f), deltaTime * 5.f);
-  tx->position[1] =
-      lerpf(tx->position[1], (y / (float) SCL_Y) - (WIN_HEIGHT / 2.f), deltaTime * 5.f);
+
+  float mx        = ((float)x / (float)SCL_X) + view_left();
+  float my        = ((float)y / (float)SCL_Y) + view_top();
+  tx->position[0] = lerpf(tx->position[0], mx, deltaTime * 5.f);
+  tx->position[1] = lerpf(tx->position[1], my, deltaTime * 5.f);
   tx->rotation += 1.f;
-  engine_stop();
 }
 
 void
