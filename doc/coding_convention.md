@@ -17,9 +17,9 @@
   - Struct name should be a noun describe what it represents for.
   - If struct have namespace use '_'. Ex: ecs_Pool
   - Function to create dynamic allocated struct name with __create__. Ex: Foo* foo_create(...params)
-  - Function to free dynamic allocated struct name with __free__. Ex: void foo_destroy(Foo* foo)
+  - Function to free dynamic allocated struct name with __free__. Ex: void foo_free(Foo* foo)
   - Funtion to create stack allocated struct name same to struct name in snake_case. Ex: SomeStruct some_struct(...params)
-  - Function to initialize struct name with __init__. Ex: SomeStruct* some_struct(SomeStruct* ss, ...prams)
+  - Function to initialize struct name with __init__. Ex: SomeStruct* some_struct_init(SomeStruct* ss, ...prams)
   - Function to finalize struct but not free struct memory it self name with __destory__. Ex: some_struct_destroy(SomeStruct* some_struct)
 
 **Modules**
