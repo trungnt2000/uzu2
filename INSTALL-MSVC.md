@@ -14,7 +14,7 @@ then continue
 
 `mkdir sdl2-build`   
 `cd sdl2-build`   
-`cmake -G "Ninja" ../SDL -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC =OFF -DCMAKE_INSTALL_PREFIX="<SDL2 installation path>"`  
+`cmake -G "Ninja" ../SDL -DCMAKE_BUILD_TYPE=Release -DSDL_STATIC=OFF -DCMAKE_INSTALL_PREFIX="<SDL2 installation path>"`  
 `cmake --build .`  
 `cmake --install .`  
 
@@ -37,7 +37,7 @@ https://www.libsdl.org/projects/SDL_image/ direct (https://www.libsdl.org/projec
 extract content to a install folder than we can use later `<SDL_image installation path>`  
 ## SDL_mixer 2.0.4
 https://www.libsdl.org/projects/SDL_mixer/ direct (https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-devel-2.0.4-VC.zip)  
-extract content to a install folder than we can use later `<SDL_image installation path>`  
+extract content to a install folder than we can use later `<SDL_mixer installation path>`  
 ## Lua 5.2
 https://sourceforge.net/projects/luabinaries/files/5.2.4/Windows%20Libraries/Dynamic/ file name (lua-5.2.4_Win64_dll16_lib.zip)  
 extract content to a install folder than we can use later `<lua installation path>`  
