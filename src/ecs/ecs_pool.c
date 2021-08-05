@@ -229,7 +229,7 @@ ecs_pool_rmv(ecs_Pool* p, ecs_entity_t ett)
 
   // invoke hook function
   if (p->rmvHook != NULL)
-    j1 = p->rmvHook(p->hookCtx, p, j1);
+    j1 = p->rmvHook(p->hookCtx, p, ett, j1);
 
   p->entities[j1] = p->entities[j2];
   datacpy(p->data, p->traits.size, j1, j2);

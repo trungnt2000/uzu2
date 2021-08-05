@@ -1,7 +1,7 @@
 #include "ecs.h"
 #include "ecs_priv.h"
 
-#define ECS_DEFAULT_SIZE 16
+#define INITIAL_SIZE 16
 
 #define ASSERT_VALID_ENTITY(registry, entity)                                  \
   ASSERT(ecs_is_valid(registry, entity) && "invalid entity")
@@ -25,17 +25,17 @@ ecs_registry_create(const ecs_TypeTraits* typeTraitsArr, ecs_size_t cnt)
   reg->groups       = NULL;
   for (int i = 0; i < cnt; ++i)
   {
-    reg->pools[i] = ecs_pool_create(typeTraitsArr[i], ECS_DEFAULT_SIZE);
+    reg->pools[i] = ecs_pool_create(typeTraitsArr[i], INITIAL_SIZE);
   }
   reg->count      = 0;
-  reg->size       = ECS_DEFAULT_SIZE;
+  reg->size       = INITIAL_SIZE;
   reg->destroyIdx = 0;
-  reg->entities   = SDL_malloc(ECS_DEFAULT_SIZE * sizeof(ecs_entity_t));
+  reg->entities   = SDL_malloc(INITIAL_SIZE * sizeof(ecs_entity_t));
 
-  for (int i = 0; i < ECS_DEFAULT_SIZE - 1; ++i)
+  for (u32 i = 0; i < INITIAL_SIZE - 1; ++i)
     reg->entities[i] = ECS_ENT(i + 1, 0);
 
-  reg->entities[ECS_DEFAULT_SIZE - 1] = ECS_ENT(ECS_NULL_IDX, 0);
+  reg->entities[INITIAL_SIZE - 1] = ECS_ENT(ECS_NULL_IDX, 0);
   return reg;
 }
 
@@ -64,7 +64,7 @@ ecs_create(ecs_Registry* reg)
     reg->size *= 2;
     reg->entities =
         SDL_realloc(reg->entities, reg->size * sizeof(ecs_entity_t));
-    for (int i = reg->count; i < reg->size - 1; ++i)
+    for (u32 i = reg->count; i < reg->size - 1; ++i)
     {
       reg->entities[i] = ECS_ENT(i + 1, 0);
     }
@@ -145,8 +145,8 @@ ecs_each(ecs_Registry* reg, ecs_Callback callback, void* userData)
   ecs_size_t    size;
   ecs_entity_t* entities;
 
-  size     = reg->size;
-  //ASSERT(size > 0);
+  size = reg->size;
+  // ASSERT(size > 0);
 
   entities = reg->entities;
   if (reg->destroyIdx == ECS_NULL_IDX)
@@ -154,7 +154,7 @@ ecs_each(ecs_Registry* reg, ecs_Callback callback, void* userData)
       callback(userData, entities[i], NULL);
   else
     for (int i = size - 1; i >= 0; --i)
-      if (ECS_ENT_IDX(entities[i]) == (ecs_size_t) i)
+      if (ECS_ENT_IDX(entities[i]) == (ecs_size_t)i)
         callback(userData, entities[i], NULL);
 }
 

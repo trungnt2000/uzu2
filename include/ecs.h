@@ -6,6 +6,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef ECS_ENTITY_TYPE
+#define ECS_ENTITY_TYPE uint32_t
+#endif
+
+#ifndef ECS_SIZE_TYPE
+#define ECS_SIZE_TYPE uint16_t
+#endif
+
+/* use enum to easier debug */
+#ifndef ECS_COMPONENT_IDENTIFIER_TYPE
+#define ECS_COMPONENT_IDENTIFIER_TYPE ecs_size_t
+#endif
+
 enum
 {
   ECS_SIG_ADD, /* signal is emitted after component assigned */
@@ -14,10 +27,11 @@ enum
   ECS_SIG_CNT
 };
 
-typedef uint32_t            ecs_entity_t;
-typedef uint16_t            ecs_size_t;
-typedef struct ecs_Pool     ecs_Pool;
-typedef struct ecs_Registry ecs_Registry;
+typedef ECS_ENTITY_TYPE               ecs_entity_t;
+typedef ECS_SIZE_TYPE                 ecs_size_t;
+typedef ECS_COMPONENT_IDENTIFIER_TYPE ecs_comp_id_t;
+typedef struct ecs_Pool               ecs_Pool;
+typedef struct ecs_Registry           ecs_Registry;
 
 typedef void (*ecs_InitFunc)(void*);
 typedef void (*ecs_FiniFunc)(void*);
@@ -47,7 +61,10 @@ typedef ecs_size_t (*ecs_AddHook)(void*        ctx,
  * \param pool the pool which invoke this hook function
  * \param new component location
  */
-typedef ecs_size_t (*ecs_RmvHook)(void* ctx, ecs_Pool* pool, ecs_size_t idx);
+typedef ecs_size_t (*ecs_RmvHook)(void*        ctx,
+                                  ecs_Pool*    pool,
+                                  ecs_entity_t ett,
+                                  ecs_size_t   idx);
 
 typedef struct ecs_TypeTraits
 {
@@ -78,11 +95,11 @@ typedef struct ecs_TypeTraits
 #define ECS_NULL_ENT ECS_ENT_MAX
 #define ECS_NULL_IDX ECS_SIZE_MAX
 
-#define ECS_ENT_MASK 0xffff
+#define ECS_IDX_MASK 0xffff
 #define ECS_VER_MASK 0xffff
 
-#define ECS_ENT_IDX(e) (((e) >> ECS_ENT_IDX_SHIFT) & ECS_SIZE_MAX)
-#define ECS_ENT_VER(e) (((e) >> ECS_ENT_VER_SHIFT) & ECS_SIZE_MAX)
+#define ECS_ENT_IDX(e) (((e) >> ECS_ENT_IDX_SHIFT) & ECS_IDX_MASK)
+#define ECS_ENT_VER(e) (((e) >> ECS_ENT_VER_SHIFT) & ECS_VER_MASK)
 #define ECS_ENT(idx, ver)                                                      \
   (((idx) << ECS_ENT_IDX_SHIFT) | ((ver) << ECS_ENT_VER_SHIFT))
 
@@ -110,7 +127,8 @@ typedef struct ecs_TypeTraits
 
 #define IS_POWER_OF_TWO(x) ((x) && (((x) & ((x)-1)) == 0))
 
-STATIC_ASSERT(IS_POWER_OF_TWO(ECS_SPARSE_SET_PAGE_SIZ), ECS_SPARSE_SET_PAGE_SIZ_IS_POWER_OF_TWO);
+STATIC_ASSERT(IS_POWER_OF_TWO(ECS_SPARSE_SET_PAGE_SIZ),
+              ECS_SPARSE_SET_PAGE_SIZ_IS_POWER_OF_TWO);
 /**
  * \brief Struct keep track all entities we created
  */
@@ -168,7 +186,7 @@ void* _ecs_add(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
  * Macro wrap around _ecs_add function to cast return value to
  * to given type T
  */
-#define ecs_add(reg, ett, T) ((_##T*)_ecs_add(reg, ett, T))
+#define ecs_add(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_add(reg, ett, T))
 
 /**
  * \brief Remove comonent from an entity. Component destructor will be invoke
@@ -196,13 +214,13 @@ void* _ecs_set(ecs_Registry* reg,
                const void*   data);
 
 #define ecs_set(reg, ett, T, ...)                                              \
-  ((_##T*)_ecs_set(reg, ett, T, &(_##T)__VA_ARGS__))
+  ((ECS_COMP_NM(T)*)_ecs_set(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
 
 void ecs_rmv_all(ecs_Registry* reg, ecs_entity_t ett);
 
 void* _ecs_get(ecs_Registry* reg, ecs_entity_t ett, ecs_size_t typeId);
 
-#define ecs_get(reg, ett, T) ((_##T*)_ecs_get(reg, ett, T))
+#define ecs_get(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_get(reg, ett, T))
 
 void ecs_each(ecs_Registry* reg, ecs_Callback callback, void* ctx);
 
@@ -324,8 +342,7 @@ void _ecs_group_init(ecs_Group*    group,
     _ecs_group_init(group, registry, __Ts, __Tc);                              \
   } while (0)
 
-void
-ecs_group_destroy(ecs_Group* group);
+void ecs_group_destroy(ecs_Group* group);
 
 void* ecs_group_data_begin(ecs_Group* group, ecs_size_t index);
 
