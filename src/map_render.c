@@ -247,6 +247,11 @@ flush()
   glDrawElements(GL_TRIANGLES, indiceCnt, GL_UNSIGNED_SHORT, (void*)0);
   glDisable(GL_DEPTH_TEST);
 
+
+  glBindVertexArray(0);
+  texture_unbind(&sTilesetTex);
+  glUseProgram(0);
+
   sCnt = 0;
   sDrawCallCnt++;
   sVertCnt += indiceCnt;

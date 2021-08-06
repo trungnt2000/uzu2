@@ -1,9 +1,9 @@
 // ngotrung Wed 16 Jun 2021 08:16:56 PM +07
 #ifndef GRAPHICS
 #define GRAPHICS
-#include "toolbox.h"
-#include "graphics/gl.h"
 #include "cglm/cglm.h"
+#include "graphics/gl.h"
+#include "toolbox.h"
 
 // clang-format off
 #define COLOR_WHITE_INIT { 1.f, 1.f, 1.f, 1.f }
@@ -33,6 +33,8 @@ int texture_load(Texture* texture, const char* file);
 
 /* bind given texture to current opengl context */
 void texture_bind(const Texture* texture);
+
+void texture_unbind(const Texture* texture);
 
 /* free texture data */
 void texture_free(Texture* texture);
@@ -125,6 +127,8 @@ void sprite_shader_destroy(SpriteShader* shader);
 
 /* bind given shader to current gl context */
 void sprite_shader_bind(SpriteShader* shader);
+
+void sprite_shader_unbind(SpriteShader* shader);
 
 /* set projection matrix uniform */
 void sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
