@@ -5,6 +5,7 @@
 #include "config.h"
 #include "constances.h"
 #include "graphics/gl.h"
+#include "SDL_opengl.h"
 #include "input.h"
 #include "toolbox.h"
 
