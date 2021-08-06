@@ -65,6 +65,16 @@
           "name": "Lua_DIR",
           "value": "E:/common/lua5.2.4",
           "type": "PATH"
+        },
+        {
+          "name": "Freetype_DIR",
+          "value": "E:/common/freetype-2.8.1",
+          "type": "PATH"
+        },
+        {
+          "name": "FREETYPE_LIBRARY",
+          "value": "E:/common/freetype-2.8.1/win64/freetype.lib",
+          "type": "FILEPATH"
         }
       ]
     },
@@ -74,7 +84,7 @@
       "configurationType": "RelWithDebInfo",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DCMAKE_BUILD_TYPE=Debug",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],

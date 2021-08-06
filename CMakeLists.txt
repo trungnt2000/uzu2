@@ -36,6 +36,9 @@ find_package(SDL2_image 2.0 REQUIRED)
 find_package(SDL2_mixer 2.0 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Lua 5.2 REQUIRED)
+# major security bug introduced in FreeType version 2.6
+# https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15999
+find_package(Freetype REQUIRED)
 add_subdirectory(external/cglm EXCLUDE_FROM_ALL)
 
 set(APP_NAME "uzu_app")
@@ -63,6 +66,7 @@ target_link_libraries(${APP_NAME} PRIVATE
   ${SDL2_MIXER_LIBRARIES}
   ${OPENGL_LIBRARIES}
   ${JSON_C_LIBRARIES}
+  Freetype::Freetype
   $<TARGET_NAME_IF_EXISTS:json-c::json-c>
   $<TARGET_NAME_IF_EXISTS:SDL2::SDL2>
   $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>

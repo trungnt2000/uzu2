@@ -9,6 +9,8 @@
 #include "map.h"
 #include "map_render.h"
 #include "system_render.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 void scene_main_load_level(const char* level, const char* dstPortal);
 
@@ -16,9 +18,43 @@ static ecs_Registry* sRegistry;
 
 static Texture      texture;
 static Texture      lizzardTexture;
+static Texture      atlas;
 static ecs_entity_t entity1;
 static ecs_entity_t entity2;
 static Animation    lizzardAnim;
+
+static ecs_entity_t entity3;
+static FT_Library   ft;
+static FT_Face      face;
+static struct character_info
+{
+  float ax; // advance.x
+  float ay; // advance.y
+
+  float bw; // bitmap.width;
+  float bh; // bitmap.rows;
+
+  float bl; // bitmap_left;
+  float bt; // bitmap_top;
+
+  float tx; // x offset of glyph in texture coordinates
+} char_info[128];
+/*
+static BOOL sHasPendingLevel;
+static char sPendingLevel[LADDER_ATTRS_MAX_LEVEL_NAME_LEN + 1];
+static char sTargetPortal[LADDER_ATTRS_MAX_DEST_LEN + 1];
+static BOOL sIsPaused;
+static BOOL sIsPlayerDied;
+
+#if DEBUG
+static BOOL sIsTileColliderDebugEnabled;
+static BOOL sIsHitboxDebugEnabled;
+static BOOL sIsPosDebugEnabled;
+static BOOL sIsRtreeDebugEnabled;
+static BOOL sIsGirdDebugEnabled;
+static BOOL sIsPathDebugEnabled;
+#endif
+*/
 
 static void preupdate(float deltaTime);
 static void update(float deltaTime);
@@ -52,6 +88,7 @@ process_input(void* SDL_UNUSED arg, u32 currState, SDL_UNUSED u32 prevState)
 void
 scene_main_create(void)
 {
+
   load_level("gl_test");
   view_reset(WIN_WIDTH / 2, WIN_HEIGHT / 2, WIN_WIDTH, WIN_HEIGHT);
 
@@ -148,6 +185,123 @@ scene_main_create(void)
                    .animCnt = 1,
                });
   }
+
+#if 1
+  if (FT_Init_FreeType(&ft))
+  {
+    return;
+  }
+
+  if (FT_New_Face(ft, "res/font/PaletteMosaic-Regular.ttf", 0, &face))
+  {
+    return;
+  }
+
+  if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
+  {
+    return;
+  }
+
+  FT_Set_Pixel_Sizes(face, 0, 48);
+
+  FT_GlyphSlot slot = face->glyph;
+
+  int w = 0;
+  int h = 0;
+
+  for (int i = 32; i < 128; i++)
+  {
+    if (FT_Load_Char(face, i, FT_LOAD_RENDER))
+    {
+      fprintf(stderr, "Loading character %c failed!\n", i);
+      continue;
+    }
+
+    w += slot->bitmap.width;
+    h = max(h, slot->bitmap.rows);
+  }
+
+  GLuint tex;
+  // glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &tex);
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  glTexImage2D(GL_TEXTURE_2D,
+               0,
+               GL_RED,
+               w,
+               h,
+               0,
+               GL_RED,
+               GL_UNSIGNED_BYTE,
+               NULL);
+
+  atlas.handle = tex;
+  atlas.width  = w;
+  atlas.height = h;
+
+  int x = 0;
+
+  for (int i = 32; i < 128; i++)
+  {
+    if (FT_Load_Char(face, i, FT_LOAD_RENDER))
+      continue;
+
+    char_info[i].ax = slot->advance.x >> 6;
+    char_info[i].ay = slot->advance.y >> 6;
+
+    char_info[i].bw = slot->bitmap.width;
+    char_info[i].bh = slot->bitmap.rows;
+
+    char_info[i].bl = slot->bitmap_left;
+    char_info[i].bt = slot->bitmap_top;
+
+    char_info[i].tx = (float)x / w;
+
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    x,
+                    0,
+                    slot->bitmap.width,
+                    slot->bitmap.rows,
+                    GL_RED,
+                    GL_UNSIGNED_BYTE,
+                    slot->bitmap.buffer);
+
+    x += slot->bitmap.width;
+  }
+
+  entity3 = ecs_create(sRegistry);
+
+  ecs_set(sRegistry,
+          entity3,
+          Transform,
+          {
+              .scale    = { 5.f, 5.f },
+              .position = { 0.f, 0.f },
+              .rotation = 50.f,
+          });
+  ecs_set(sRegistry, entity3, TransformMatrix, { GLM_MAT3_IDENTITY_INIT });
+  ecs_add(sRegistry, entity3, TransformChanged);
+
+  s = ecs_set(sRegistry,
+              entity3,
+              Sprite,
+              {
+                  .textureRegion = { 0 },
+                  .color         = { 1.f, 1.f, 1.f, 1.f },
+                  .size          = { 32.f, 48.f },
+                  .origin        = { 16.f, 48.f },
+              });
+  texture_region_set_texture(&s->textureRegion,
+                             &atlas,
+                             &(IntRect){ .w = 16, .h = 28 });
+#endif
 }
 
 void

@@ -7,6 +7,7 @@
 
 enum
 {
+  Text,
   Transform,
   Sprite,
   TransformChanged,
@@ -17,6 +18,12 @@ enum
 };
 
 extern const ecs_TypeTraits gCompTraits[];
+
+typedef struct _Text
+{
+  vec3 position;
+  vec4 color;
+} _Text;
 
 typedef struct _Transform
 {

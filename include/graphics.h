@@ -129,6 +129,32 @@ void sprite_shader_bind(SpriteShader* shader);
 /* set projection matrix uniform */
 void sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
 
+/* shader use to drawing text */
+typedef struct
+{
+  /* program handle */
+  GLuint handle;
+
+  /* where projection matrix uniform is loacated */
+  int uProjMatLocation;
+
+} TextShader;
+
+/**
+* \brief create new shader for rendering quad
+* \return 0 if load succeed
+*/
+int text_shader_load(SpriteShader* shader);
+
+/* destroy given shader */
+void text_shader_destroy(SpriteShader* shader);
+
+/* bind given shader to current gl context */
+void text_shader_bind(SpriteShader* shader);
+
+/* set projection matrix uniform */
+void text_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
+
 typedef struct Animation
 {
   TextureRegion* frames;
