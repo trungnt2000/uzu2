@@ -28,7 +28,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     message(FATAL_ERROR "Glad2 is required")
   endif()
   set(SOURCE_FILES ${SOURCE_FILES} ${Glad_SOURCE})
-  find_package(json_c REQUIRED)
+  find_package(json-c REQUIRED)
 endif()
 
 find_package(SDL2 REQUIRED)

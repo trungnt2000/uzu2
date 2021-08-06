@@ -1,4 +1,4 @@
-﻿{
+{
   "configurations": [
     {
       "name": "x64-Debug",
@@ -18,6 +18,11 @@
         },
         {
           "name": "WARNINGS_AS_ERRORS",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "ENABLE_TESTING",
           "value": "False",
           "type": "BOOL"
         },
@@ -86,6 +91,11 @@
         },
         {
           "name": "WARNINGS_AS_ERRORS",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "ENABLE_TESTING",
           "value": "False",
           "type": "BOOL"
         },

@@ -1,6 +1,11 @@
 You need Visual Studio 2019 and CMake
 
 You need to use "x64 Native Tools Command Prompt for VS 2019" (aka vcvars64) for building libraries.
+
+# Init uzu2 submodule
+Run this command while inside uzu2 project directory  
+`git submodule update --init --recursive` 
+
 # You need to build these libraries manualy:
 ## SD2 version 2.0.8
 
@@ -60,9 +65,9 @@ Example:
 | SDL2_IMAGE_LIBRARY     | \<SDL_image installation path\>/x64/SDL2_image.lib |
 | SDL2_MIXER_INCLUDE_DIR | \<SDL_mixer installation path\>/include            |
 | SDL2_MIXER_LIBRARY     | \<SDL_mixer installation path\>/x64/SDL2_mixer.lib |
-| json_c_DIR             | \<json-c installation path\>                       |
+| json-c_DIR             | \<json-c installation path\>/lib/cmake             |
 | Glad_DIR               | \<uzu project path\>/external/glad                 |
-| LUA_DIR                | \<lua installation path\>                          |
+| Lua_DIR                | \<lua installation path\>                          |
   
 Do this for both `Debug` and `Release` configurations   
   

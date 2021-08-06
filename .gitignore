@@ -9,3 +9,4 @@ dist/
 
 .vscode/c_cpp_properties.json
 CMakeLists.txt.user
+CMakeSettings.json
