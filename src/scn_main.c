@@ -18,43 +18,9 @@ static ecs_Registry* sRegistry;
 
 static Texture      texture;
 static Texture      lizzardTexture;
-static Texture      atlas;
 static ecs_entity_t entity1;
 static ecs_entity_t entity2;
 static Animation    lizzardAnim;
-
-static ecs_entity_t entity3;
-static FT_Library   ft;
-static FT_Face      face;
-static struct character_info
-{
-  float ax; // advance.x
-  float ay; // advance.y
-
-  float bw; // bitmap.width;
-  float bh; // bitmap.rows;
-
-  float bl; // bitmap_left;
-  float bt; // bitmap_top;
-
-  float tx; // x offset of glyph in texture coordinates
-} char_info[128];
-/*
-static BOOL sHasPendingLevel;
-static char sPendingLevel[LADDER_ATTRS_MAX_LEVEL_NAME_LEN + 1];
-static char sTargetPortal[LADDER_ATTRS_MAX_DEST_LEN + 1];
-static BOOL sIsPaused;
-static BOOL sIsPlayerDied;
-
-#if DEBUG
-static BOOL sIsTileColliderDebugEnabled;
-static BOOL sIsHitboxDebugEnabled;
-static BOOL sIsPosDebugEnabled;
-static BOOL sIsRtreeDebugEnabled;
-static BOOL sIsGirdDebugEnabled;
-static BOOL sIsPathDebugEnabled;
-#endif
-*/
 
 static void preupdate(float deltaTime);
 static void update(float deltaTime);
@@ -186,7 +152,7 @@ scene_main_create(void)
                });
   }
 
-#if 1
+#if 0
   if (FT_Init_FreeType(&ft))
   {
     return;

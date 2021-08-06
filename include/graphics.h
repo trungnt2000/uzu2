@@ -1,9 +1,9 @@
 // ngotrung Wed 16 Jun 2021 08:16:56 PM +07
 #ifndef GRAPHICS
 #define GRAPHICS
-#include "toolbox.h"
-#include "graphics/gl.h"
 #include "cglm/cglm.h"
+#include "graphics/gl.h"
+#include "toolbox.h"
 
 // clang-format off
 #define COLOR_WHITE_INIT { 1.f, 1.f, 1.f, 1.f }
@@ -128,32 +128,6 @@ void sprite_shader_bind(SpriteShader* shader);
 
 /* set projection matrix uniform */
 void sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
-
-/* shader use to drawing text */
-typedef struct
-{
-  /* program handle */
-  GLuint handle;
-
-  /* where projection matrix uniform is loacated */
-  int uProjMatLocation;
-
-} TextShader;
-
-/**
-* \brief create new shader for rendering quad
-* \return 0 if load succeed
-*/
-int text_shader_load(SpriteShader* shader);
-
-/* destroy given shader */
-void text_shader_destroy(SpriteShader* shader);
-
-/* bind given shader to current gl context */
-void text_shader_bind(SpriteShader* shader);
-
-/* set projection matrix uniform */
-void text_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
 
 typedef struct Animation
 {

@@ -5,8 +5,8 @@
 #define TILE_SIZE 16
 #define WIN_WIDTH 320
 #define WIN_HEIGHT 240
-#define SCL_X 4.0
-#define SCL_Y 4.0
+#define SCL_X 2.0
+#define SCL_Y 2.0
 #define WIN_TITLE "My Game ^^ ư"
 
 

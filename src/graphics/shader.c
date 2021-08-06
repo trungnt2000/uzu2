@@ -131,33 +131,8 @@ sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat)
   glUniformMatrix4fv(shader->uProjMatLocation, 1, GL_FALSE, (float*)projMat);
 }
 
-/***************************************************************/
-
-int
-text_shader_load(TextShader* shader)
-{
-  if (create_shader("res/shader/text.vert",
-    "res/shader/text.frag",
-    &shader->handle) != 0)
-  {
-    UZU_ERROR("Failed to create program\n");
-    return -1;
-  }
-  shader->uProjMatLocation =
-    glGetUniformLocation(shader->handle, "u_viewProjectionMatrix");
-  return 0;
-}
-
 void
-text_shader_destroy(TextShader* shader)
+sprite_shader_bind(SpriteShader* shader)
 {
-  glDeleteProgram(shader->handle);
-  shader->handle           = 0;
-  shader->uProjMatLocation = -1;
-}
-
-void
-text_shader_uniform_projmat(TextShader* shader, mat4 projMat)
-{
-  glUniformMatrix4fv(shader->uProjMatLocation, 1, GL_FALSE, (float*)projMat);
+  glUseProgram(shader->handle);
 }
