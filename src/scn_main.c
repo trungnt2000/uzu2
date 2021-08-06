@@ -113,7 +113,9 @@ scene_main_create(void)
                  .animCnt = 1,
              });
 
-  for (int i = 0; i < 100; ++i)
+  int w = 50 * 16;
+  int h = 50 * 16;
+  for (int i = 0; i < 300; ++i)
   {
     ecs_entity_t ett = ecs_create(sRegistry);
 
@@ -122,8 +124,8 @@ scene_main_create(void)
                Transform,
                {
                    .scale    = { 1.f, 1.f },
-                   .position = { 100.f, 100.f },
-                   .rotation = 50.f,
+                   .position = { rand() % w, rand() % h },
+                   .rotation = rand() % 360 ,
                });
 
     s = ecs_add_ex(sRegistry,

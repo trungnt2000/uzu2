@@ -9,7 +9,7 @@
 
 #define GL_GLEXT_PROTOTYPES
 #include "GL/gl.h"
-
+#include "SDL_opengl.h"
 #endif
 
 #endif //! GL_H

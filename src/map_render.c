@@ -48,16 +48,16 @@ static GLuint sEbo;
 static float sVertBuf[MAX_TILES * NUM_VERT_COMPS * 4];
 
 /* how many tiles are store in current bacth */
-static int sCnt;
+static u32 sCnt;
 
 static Tile sTileset[512];
-static int  sTilesetSiz;
+static u32  sTilesetSiz;
 
 /* texture use for tileset */
 static Texture sTilesetTex;
 
-static int sDrawCallCnt;
-static int sVertCnt;
+static u32 sDrawCallCnt;
+static u32 sVertCnt;
 
 /****************************************************/
 /*  hepler functions */
@@ -127,10 +127,10 @@ map_render(void)
         idx = 0;
       }
 
-      x1    = (float) x;
-      x2    = (float) (x + TILE_SIZE);
-      y1    = (float) y;
-      y2    = (float) (y + TILE_SIZE);
+      x1    = (float)x;
+      x2    = (float)(x + TILE_SIZE);
+      y1    = (float)y;
+      y2    = (float)(y + TILE_SIZE);
       wallz = getwallz(x, y);
       tile  = sTileset[tileId - 1];
 
@@ -182,10 +182,10 @@ map_render(void)
         idx = 0;
       }
 
-      x1    = (float) x;
-      x2    = (float) (x + TILE_SIZE);
-      y1    = (float) y;
-      y2    = (float) (y + TILE_SIZE);
+      x1   = (float)x;
+      x2   = (float)(x + TILE_SIZE);
+      y1   = (float)y;
+      y2   = (float)(y + TILE_SIZE);
       tile = sTileset[tileId - 1];
 
       /* top-left */
@@ -227,7 +227,7 @@ flush()
   // update our vertex buffer
   mat4 viewProjectMatrix;
   u32  updtSiz   = sCnt * TILE_VERT_SIZ * 4;
-  int  indiceCnt = sCnt * 6;
+  u32  indiceCnt = sCnt * 6;
   glBindBuffer(GL_ARRAY_BUFFER, sVbo);
   glBufferSubData(GL_ARRAY_BUFFER, 0, updtSiz, sVertBuf);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -244,9 +244,8 @@ flush()
 
   // draw all tiles
   glBindVertexArray(sVao);
-  glDrawElements(GL_TRIANGLES, indiceCnt, GL_UNSIGNED_SHORT, (void*)0);
+  glDrawElements(GL_TRIANGLES, (int)indiceCnt, GL_UNSIGNED_SHORT, (void*)0);
   glDisable(GL_DEPTH_TEST);
-
 
   glBindVertexArray(0);
   texture_unbind(&sTilesetTex);
@@ -343,20 +342,20 @@ prepare(void)
 static int
 init_tileset(void)
 {
-  int   colCnt    = sTilesetTex.width / TILE_SIZE;
-  int   rowCnt    = sTilesetTex.height / TILE_SIZE;
-  int   idx       = 0;
-  float texWidth  = (float) sTilesetTex.width;
-  float texHeight = (float) sTilesetTex.height;
+  u32   colCnt    = sTilesetTex.width / TILE_SIZE;
+  u32   rowCnt    = sTilesetTex.height / TILE_SIZE;
+  u32   idx       = 0;
+  float texWidth  = (float)sTilesetTex.width;
+  float texHeight = (float)sTilesetTex.height;
 
-  for (int i = 0; i < rowCnt; ++i)
+  for (u32 i = 0; i < rowCnt; ++i)
   {
-    for (int j = 0; j < colCnt; ++j)
+    for (u32 j = 0; j < colCnt; ++j)
     {
-      sTileset[idx].u1 = (j * TILE_SIZE) / texWidth;
-      sTileset[idx].u2 = ((j + 1) * TILE_SIZE) / texWidth;
-      sTileset[idx].v1 = (i * TILE_SIZE) / texHeight;
-      sTileset[idx].v2 = ((i + 1) * TILE_SIZE) / texHeight;
+      sTileset[idx].u1 = (float)(j * TILE_SIZE) / texWidth;
+      sTileset[idx].u2 = (float)((j + 1) * TILE_SIZE) / texWidth;
+      sTileset[idx].v1 = (float)(i * TILE_SIZE) / texHeight;
+      sTileset[idx].v2 = (float)((i + 1) * TILE_SIZE) / texHeight;
       ++idx;
     }
   }
