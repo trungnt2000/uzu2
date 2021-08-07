@@ -75,12 +75,17 @@ assure_size(ecs_Pool* p, ecs_size_t minSize)
 {
   if (p->size < minSize)
   {
-    p->size     = p->size * 2;
-    p->entities = SDL_realloc(p->entities, p->size * sizeof(ecs_entity_t));
-    const size_t dataSize = p->size * p->traits.size;
-    p->dataBuffer =
-        SDL_realloc(p->dataBuffer, dataSize + ALIGNMENT_EXTRA_SPACE);
-    p->data = assure_alignment(p->dataBuffer, p->traits.align, dataSize);
+    const ecs_size_t newSize       = p->size * 2u;
+    const size_t     newDataSize   = newSize * p->traits.size;
+    const size_t     newBufferSize = newDataSize + ALIGNMENT_EXTRA_SPACE;
+    void*            newBuffer     = SDL_malloc(newBufferSize);
+    void* newData = assure_alignment(newBuffer, p->traits.align, newDataSize);
+    SDL_memcpy(newData, p->data, p->size * p->traits.size);
+    SDL_free(p->dataBuffer);
+    p->data       = newData;
+    p->dataBuffer = newBuffer;
+    p->size       = newSize;
+    p->entities   = SDL_realloc(p->entities, newSize * sizeof(ecs_entity_t));
   }
 }
 
