@@ -7,13 +7,13 @@
 
 enum
 {
-  Text,
   Transform,
   Sprite,
   TransformChanged,
   TransformMatrix,
   AnimationPool,
   DrawOrder,
+  Text,
   COMPONENT_CNT
 };
 
@@ -23,6 +23,7 @@ typedef struct _Text
 {
   vec3 position;
   vec4 color;
+  unsigned int pixelSizeHeight;
 } _Text;
 
 typedef struct _Transform

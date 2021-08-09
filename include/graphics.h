@@ -114,6 +114,13 @@ typedef struct
 
 } SpriteShader;
 
+typedef struct
+{
+  GLuint handle;
+  int uProjMatLocation;
+
+} TextShader;
+
 /**
  * \brief create new shader for rendering quad
  * \return 0 if load succeed

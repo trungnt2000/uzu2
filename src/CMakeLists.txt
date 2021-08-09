@@ -6,6 +6,7 @@ set(SOURCE_FILES
   src/constances.c
   src/json_helper.c
   src/level_loader.c
+  src/font_loader.c
   src/map.c 
   src/map_render.c
   src/read_all.c
