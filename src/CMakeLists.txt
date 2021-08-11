@@ -24,6 +24,7 @@ set(SOURCE_FILES
   src/graphics/texture.c
   src/graphics/view.c
   src/graphics/anim.c
+  src/graphics/text.c
   #${BEHAVIOR_NODE_SOURCE_FILES}
   #${GAME_EVENT_SOURCE_FILES}
   ${SYSTEM_SOURCE_FILES}

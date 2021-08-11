@@ -2,121 +2,182 @@
 #include "graphics/gl.h"
 #include "toolbox/common.h"
 #include "toolbox/log.h"
+#include <ft2build.h>
+#include <inttypes.h>
+#include FT_FREETYPE_H
+#include FT_BITMAP_H
 
-#define FONT_ASSET_DIR "res/font"
-#define FONT_ATLAS_SIZE 52
 static const int start_char = 32;
-static const int end_char   = 127;
-
-const char* fontDirs[FONT_CNT] = {
-  [FontDefault]       = FONT_ASSET_DIR "/font.TTF",
-  [FontPaletteMosaic] = FONT_ASSET_DIR "/PaletteMosaic-Regular.ttf",
-  [FontRoboto]        = FONT_ASSET_DIR "/Roboto-Bold.ttf"
-};
-
-static FT_Library fontLibrary;
-static FT_Face    faceList[FONT_CNT];
-static FontAtlas  fontAtlas[FONT_CNT][FONT_ATLAS_SIZE];
+static const int end_char   = 126;
 
 int
-font_loader_init()
+font_loader_init(FontLibrary* library)
 {
-  FT_Error error = 0;
+  FT_Library fontLibrary;
+  FT_Error   error = 0;
   if ((error = FT_Init_FreeType(&fontLibrary)) != 0)
     return error;
-
-  memset(fontAtlas, 0, sizeof(FontAtlas) * FONT_CNT * FONT_ATLAS_SIZE);
-  memset(faceList, 0, sizeof(FT_Face) * FONT_CNT);
+  *library = fontLibrary;
   return 0;
 }
 
-void
-font_loader_destroy()
-{
-  for (int font_idx = 0; font_idx < FONT_CNT; ++font_idx)
-  {
-    for (int atlas_idx = 0; atlas_idx < FONT_ATLAS_SIZE; ++atlas_idx)
-    {
-      SDL_free(fontAtlas[font_idx][atlas_idx].texture);
-    }
-  }
-}
-
-static int generate_atlas(FT_Face    fontFace,
-                          FontAtlas* atlas,
-                          int        glyphMaxWidth,
-                          int        glyphMaxHeight,
-                          int        glyphCount);
-
 int
-font_loader_load(FontFace face, unsigned atlasSizeStart, unsigned atlasSizeEnd)
+font_loader_face_create(FontLibrary library,
+                        const char* faceDir,
+                        FontFace*   face)
 {
-  FT_Error error    = 0;
-  FT_Face  fontFace = faceList[face];
-  if ((error = FT_New_Face(fontLibrary, fontDirs[face], 0, &fontFace)) != 0)
+  FT_Error error = 0;
+  FT_Face  fontFace;
+  if ((error = FT_New_Face(library, faceDir, 0, &fontFace)) != 0)
   {
     UZU_ERROR("Unable to load new face");
     return error;
   }
+  *face = (void*)fontFace;
+  return 0;
+}
 
-  for (unsigned pixelHeight = atlasSizeStart; pixelHeight <= atlasSizeEnd;
-       ++pixelHeight)
+static int  generate_atlas(FT_Face fontFace, FontAtlas* atlas);
+static void export_atlas(const FontAtlas* atlas);
+
+int
+font_loader_atlas_create(FontLibrary library,
+                         FontFace    face,
+                         FontAtlas*  atlas,
+                         unsigned    fontSize)
+{
+  FT_Error error    = 0;
+  FT_Face  fontFace = (FT_Face)face;
+
+  const float    pt2pxRatio      = (float)4 / 3;
+  const unsigned pixelHeight     = (unsigned)(fontSize * pt2pxRatio);
+  atlas->charInfoLength          = end_char + start_char + 1;
+  const size_t charInfoArraySize = sizeof(CharInfo) * atlas->charInfoLength;
+  atlas->charInfo                = SDL_malloc(charInfoArraySize);
+  SDL_memset(atlas->charInfo, 0, charInfoArraySize);
+
+  if ((error = FT_Set_Pixel_Sizes(fontFace, 0, pixelHeight)) != 0)
+    return error;
+  atlas->pixelHeight = pixelHeight;
+
+  FT_GlyphSlot glyph = fontFace->glyph;
+  for (int c = start_char; c <= end_char; ++c)
   {
-    // FT_Size_RequestRec size = { .type = FT_SIZE_REQUEST_TYPE_NOMINAL,
-    //                            0,
-    //                            75,
-    //                            800*26,
-    //                            600*26 };
-    // if ((error = FT_Request_Size(fontFace, &size)) != 0)
-    //  return error;
-    if ((error = FT_Set_Pixel_Sizes(fontFace, 0, pixelHeight)) != 0)
-      return error;
-    int glyphMaxWidth  = 0;
-    int glyphMaxHeight = 0;
-
-    FT_GlyphSlot glyph = fontFace->glyph;
-    for (int i = start_char; i <= end_char; ++i)
+    if ((error = FT_Load_Char(fontFace, c, FT_LOAD_RENDER)) != 0)
     {
-      if ((error = FT_Load_Char(fontFace, i, FT_LOAD_RENDER)) != 0)
-      {
-        UZU_ERROR("Unable to load character \'%c\' in font face #%s",
-                  (char)i,
-                  fontDirs[face]);
-        continue;
-      }
+      UZU_ERROR("Unable to load character \'%c\' in face \"%s\", style \"%s\"",
+                (char)c,
+                fontFace->family_name,
+                fontFace->style_name);
+      continue;
+    }
 
-      glyphMaxWidth  = max(glyphMaxWidth, glyph->bitmap.width);
-      glyphMaxHeight = max(glyphMaxHeight, glyph->bitmap.rows);
-    }
-    FontAtlas* atlas   = &(fontAtlas[face][pixelHeight - atlasSizeStart]);
-    atlas->pixelHeight = pixelHeight;
-    error              = generate_atlas(fontFace,
-                           atlas,
-                           glyphMaxWidth,
-                           glyphMaxHeight,
-                           (end_char - start_char) + 1);
-    if (error != 0)
-    {
-      return error;
-    }
+    atlas->charInfo[c].advance[0]    = glyph->metrics.horiAdvance >> 6;
+    atlas->charInfo[c].advance[1]    = glyph->metrics.vertAdvance >> 6;
+    atlas->charInfo[c].bitmapSize[0] = glyph->metrics.width >> 6;
+    atlas->charInfo[c].bitmapSize[1] = glyph->metrics.height >> 6;
+    printf("%c: %dx%d, %dx%d\n",
+           (char)c,
+           glyph->bitmap.width,
+           glyph->bitmap.rows,
+           atlas->charInfo[c].bitmapSize[0],
+           atlas->charInfo[c].bitmapSize[1]);
+    atlas->charInfo[c].bitmapBearing[0] = glyph->metrics.horiBearingX >> 6;
+    atlas->charInfo[c].bitmapBearing[1] = glyph->metrics.horiBearingY >> 6;
   }
+  error = generate_atlas(fontFace, atlas);
+
+  if (error != 0)
+  {
+    return error;
+  }
+  export_atlas(atlas);
 
   return 0;
 }
 
-const FontAtlas*
-font_loader_get_atlas(FontFace face, unsigned atlasIndex)
+void
+font_loader_face_free(FontFace face)
 {
-  return &(fontAtlas[face][atlasIndex]);
+  FT_Done_Face((FT_Face)face);
+}
+
+void
+font_loader_atlas_free(FontAtlas* atlas)
+{
+  SDL_free(atlas->charInfo);
+  SDL_free(atlas->texture);
+}
+
+void
+font_loader_shutdown(FontLibrary library)
+{
+  FT_Done_FreeType(library);
+  // for (int font_idx = 0; font_idx < FONT_CNT; ++font_idx)
+  //{
+  //  for (int atlas_idx = 0; atlas_idx < FONT_ATLAS_SIZE; ++atlas_idx)
+  //  {
+  //    SDL_free(fontAtlas[font_idx][atlas_idx].texture);
+  //  }
+  //}
+}
+
+static void
+export_atlas(const FontAtlas* atlas)
+{
+  FILE* f = fopen("test.atlas.raw", "wb");
+  fwrite(&atlas->width, sizeof(atlas->width), 1, f);
+  fwrite(&atlas->height, sizeof(atlas->height), 1, f);
+  fwrite(atlas->texture,
+         sizeof(unsigned char),
+         (size_t)atlas->width * atlas->height,
+         f);
+  fwrite(&start_char, sizeof(start_char), 1, f);
+  fwrite(&end_char, sizeof(end_char), 1, f);
+  for (int i = start_char; i <= end_char; ++i)
+  {
+    const CharInfo* charInfo = &atlas->charInfo[i];
+    fwrite(&charInfo->advance[0], sizeof(charInfo->advance[0]), 1, f);
+    fwrite(&charInfo->advance[1], sizeof(charInfo->advance[1]), 1, f);
+    fwrite(&charInfo->bitmapBearing[0],
+           sizeof(charInfo->bitmapBearing[0]),
+           1,
+           f);
+    fwrite(&charInfo->bitmapBearing[1],
+           sizeof(charInfo->bitmapBearing[1]),
+           1,
+           f);
+    fwrite(&charInfo->bitmapSize[0], sizeof(charInfo->bitmapSize[0]), 1, f);
+    fwrite(&charInfo->bitmapSize[1], sizeof(charInfo->bitmapSize[1]), 1, f);
+    fwrite(&charInfo->texBottomRight[0],
+           sizeof(charInfo->texBottomRight[0]),
+           1,
+           f);
+    fwrite(&charInfo->texBottomRight[1],
+           sizeof(charInfo->texBottomRight[1]),
+           1,
+           f);
+    fwrite(&charInfo->texTopLeft[0], sizeof(charInfo->texTopLeft[0]), 1, f);
+    fwrite(&charInfo->texTopLeft[1], sizeof(charInfo->texTopLeft[1]), 1, f);
+  }
+  fclose(f);
 }
 
 static int
-generate_atlas(FT_Face    fontFace,
-               FontAtlas* atlas,
-               int        glyphMaxWidth,
-               int        glyphMaxHeight,
-               int        glyphCount)
+generate_atlas(FT_Face fontFace, FontAtlas* atlas)
 {
+  int glyphMaxWidth  = 0;
+  int glyphMaxHeight = 0;
+  int glyphCount     = 0;
+  for (int i = start_char; i <= end_char; ++i)
+  {
+    glyphMaxWidth  = max(glyphMaxWidth, atlas->charInfo[i].bitmapSize[0]);
+    glyphMaxHeight = max(glyphMaxHeight, atlas->charInfo[i].bitmapSize[1]);
+    ++glyphCount;
+  }
+  atlas->glyphMaxWidth  = glyphMaxWidth;
+  atlas->glyphMaxHeight = glyphMaxHeight;
+
   const unsigned required_area =
       (unsigned)(glyphMaxWidth * glyphMaxHeight * glyphCount);
   unsigned int texture_size = 1;
@@ -147,9 +208,9 @@ generate_atlas(FT_Face    fontFace,
   const int    atlasWidth = atlas->width;
   FT_GlyphSlot glyph      = fontFace->glyph;
 
-  for (int i = start_char; i < end_char; i++)
+  for (int c = start_char; c <= end_char; c++)
   {
-    if (FT_Load_Char(fontFace, i, FT_LOAD_RENDER))
+    if (FT_Load_Char(fontFace, c, FT_LOAD_RENDER))
       continue;
     if ((offsetX + (int)glyph->bitmap.width) >= atlasWidth)
     {
@@ -167,19 +228,11 @@ generate_atlas(FT_Face    fontFace,
                     GL_UNSIGNED_BYTE,
                     glyph->bitmap.buffer);
 
-    atlas->charInfo[i].advance[0] =
-        (float)((unsigned int)glyph->advance.x >> 6);
-    atlas->charInfo[i].advance[1] =
-        (float)((unsigned int)glyph->advance.y >> 6);
-    atlas->charInfo[i].bitmapSize[0]    = (float)glyph->bitmap.width;
-    atlas->charInfo[i].bitmapSize[1]    = (float)glyph->bitmap.rows;
-    atlas->charInfo[i].bitmapBearing[0] = (float)glyph->bitmap_left;
-    atlas->charInfo[i].bitmapBearing[1] = (float)glyph->bitmap_top;
-    atlas->charInfo[i].texTopLeft[0]    = (float)offsetX / (float)atlas->width;
-    atlas->charInfo[i].texTopLeft[1]    = (float)offsetY / (float)atlas->height;
-    atlas->charInfo[i].texBottomRight[0] =
+    atlas->charInfo[c].texTopLeft[0] = (float)offsetX / (float)atlas->width;
+    atlas->charInfo[c].texTopLeft[1] = (float)offsetY / (float)atlas->height;
+    atlas->charInfo[c].texBottomRight[0] =
         (offsetX + (float)glyph->bitmap.width) / (float)atlas->width;
-    atlas->charInfo[i].texBottomRight[1] =
+    atlas->charInfo[c].texBottomRight[1] =
         (offsetY + (float)glyph->bitmap.rows) / (float)atlas->height;
 
     offsetX += glyph->bitmap.width + 1;

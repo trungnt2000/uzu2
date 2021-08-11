@@ -7,6 +7,7 @@
 #include "font_loader.h"
 #include "graphics.h"
 #include "graphics/gl.h"
+#include "graphics/text.h"
 #include "graphics/view.h"
 #include "input.h"
 #include "system_render.h"
@@ -67,8 +68,8 @@ init()
   sWindow = SDL_CreateWindow(WIN_TITLE,
                              SDL_WINDOWPOS_CENTERED,
                              SDL_WINDOWPOS_CENTERED,
-                             512,
-                             512,
+                             800,
+                             600,
                              SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
                                  SDL_WINDOW_RESIZABLE);
 
@@ -120,10 +121,11 @@ engine_run()
 {
   SDL_Event event;
   Uint32    lastTime, currentTime;
-
+  int       windowClientWidth, windowClientHeigth;
+  SDL_GetWindowSize(sWindow, &windowClientWidth, &windowClientHeigth);
   lastTime   = SDL_GetTicks();
   sIsRunning = SDL_TRUE;
-  Texture texture;
+  Texture    texture;
   TextShader shader;
   if (create_shader("res/shader/text.vert",
                     "res/shader/text.frag",
@@ -132,122 +134,67 @@ engine_run()
     UZU_ERROR("Failed to create program\n");
     return -1;
   }
-
-  FontFace face = FontRoboto;
-  if (font_loader_init())
+  FontLibrary library;
+  if (font_loader_init(&library))
   {
     UZU_ERROR("Could not init font loader\n");
     return -1;
   }
-  if (font_loader_load(face, 75, 75))
+  FontFace    face;
+  const char* fontDir = "res/font/font.ttf";
+  if (font_loader_face_create(library, fontDir, &face))
   {
-    UZU_ERROR("Could not load font FontPaletteMosaic\n");
+    UZU_ERROR("Could not create font face \"%s\"\n", fontDir);
     return -1;
   }
 
-  //GLfloat vertices[] = {
+  FontAtlas atlas;
+  if (font_loader_atlas_create(library, face, &atlas, 12))
+  {
+    UZU_ERROR("Could not generate atlas for \"%s\"\n", fontDir);
+    return -1;
+  }
+
+  // GLfloat vertices[] = {
   //  -0.99f, -0.99f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, // Lower left corner
   //  -0.99f, 0.99f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // Upper left corner
   //  0.99f,  0.99f,  0.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, // Upper right corner
   //  0.99f,  -0.99f, 0.0f, 1.0f, 1.0f, 1.0f, 0.5f, 0.5f, // Lower right corner
   //};
-  //GLuint           indices[] = { 0, 2, 1, 0, 2, 3 };
-  const FontAtlas* atlas     = font_loader_get_atlas(face, 75 - 75);
+  // GLuint           indices[] = { 0, 2, 1, 0, 2, 3 };
 
-  const char* string             = "Who's gamers";
-  const int   length             = (int)strlen(string);
-  const int   indicesPerRec      = 6;
-  const int   elemsPerVert       = 3 + 3 + 2;
-  const int   vertPerRec         = 4;
-  const int   indicesCount       = indicesPerRec * length;
-  const int   verticesFloatCount = (size_t)length * vertPerRec * elemsPerVert;
-  GLfloat*    vertices2 = SDL_malloc(sizeof(GLfloat) * verticesFloatCount);
+  char      string1[31]   = "The quick brown fox jumps over";
+  int       length        = (int)strlen(string1);
+  const int indicesPerRec = 6;
+  const int vertPerRec    = 4;
+
+  int indicesCount  = length * indicesPerRec;
+  int verticesCount = length * vertPerRec;
+
+  TextVertex* vertices2 = SDL_malloc(sizeof(TextVertex) * verticesCount);
   GLuint*     indices2  = SDL_malloc(sizeof(GLuint) * indicesCount);
 
-  const char* iter  = string;
-  vec2        pos   = { -1.f, 0.f };
-  float         scale = 0.004f;
-  for (int i = 0; i < length; ++i)
-  {
-    int             elemsOffset = i * elemsPerVert * vertPerRec;
-    const CharInfo* charInfo    = &atlas->charInfo[*(iter + i)];
-    GLfloat*        vert1       = vertices2 + elemsOffset;
-    GLfloat*        vert2       = vert1 + ((size_t)elemsPerVert * 1);
-    GLfloat*        vert3       = vert1 + ((size_t)elemsPerVert * 2);
-    GLfloat*        vert4       = vert1 + ((size_t)elemsPerVert * 3);
+  vec2  pos   = { -1.f, 0.f };
+  float scale = 1.0f;
 
-    float xW = pos[0] + charInfo->bitmapBearing[0] * scale;
-    float yW =
-        pos[1] - (charInfo->bitmapSize[1] - charInfo->bitmapBearing[1]) * scale;
-    float w  = charInfo->bitmapSize[0] * scale;
-    float h  = charInfo->bitmapSize[1] * scale;
-    vert1[0] = xW;
-    vert1[1] = yW;
-    vert1[2] = 0.f;
-    vert1[3] = 1.f; //
-    vert1[4] = 1.f;
-    vert1[5] = 1.f;
-    vert1[6] = charInfo->texTopLeft[0];
-    vert1[7] = charInfo->texBottomRight[1];
-
-    vert2[0] = xW;
-    vert2[1] = h + yW;
-    vert2[2] = 0.f;
-    vert2[3] = 1.f;
-    vert2[4] = 1.f;
-    vert2[5] = 1.f;
-    vert2[6] = charInfo->texTopLeft[0];
-    vert2[7] = charInfo->texTopLeft[1];
-
-    vert3[0] = xW + w;
-    vert3[1] = h + yW;
-    vert3[2] = 0.f;
-    vert3[3] = 1.f;
-    vert3[4] = 1.f;
-    vert3[5] = 1.f;
-    vert3[6] = charInfo->texBottomRight[0];
-    vert3[7] = charInfo->texTopLeft[1];
-
-    vert4[0] = xW + w;
-    vert4[1] = yW;
-    vert4[2] = 0.f;
-    vert4[3] = 1.f; //
-    vert4[4] = 1.f;
-    vert4[5] = 1.f;
-    vert4[6] = charInfo->texBottomRight[0];
-    vert4[7] = charInfo->texBottomRight[1];
-    pos[0] += charInfo->advance[0] * scale;
-
-    int     recOffset  = i * indicesPerRec;
-    int     vertOffset = i * vertPerRec;
-    GLuint* idxRec     = indices2 + recOffset;
-    idxRec[0]          = 0 + vertOffset;
-    idxRec[1]          = 2 + vertOffset;
-    idxRec[2]          = 1 + vertOffset;
-    idxRec[3]          = 0 + vertOffset;
-    idxRec[4]          = 2 + vertOffset;
-    idxRec[5]          = 3 + vertOffset;
-  }
-
-  // FILE*            f     = fopen("test.raw", "w");
-  // fwrite(atlas->texture, 1, (size_t)atlas->width * (size_t)atlas->height, f);
-  // fclose(f);
   glGenTextures(1, &texture.handle);
   glBindTexture(GL_TEXTURE_2D, texture.handle);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexImage2D(GL_TEXTURE_2D,
                0,
                GL_RED,
-               atlas->width,
-               atlas->height,
+               atlas.width,
+               atlas.height,
                0,
                GL_RED,
                GL_UNSIGNED_BYTE,
-               atlas->texture);
+               atlas.texture);
 
-  texture.width  = atlas->width;
-  texture.height = atlas->height;
+  texture.width  = atlas.width;
+  texture.height = atlas.height;
   glBindTexture(GL_TEXTURE_2D, 0);
 
   GLuint VAO, VBO, EBO;
@@ -257,27 +204,32 @@ engine_run()
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   glBufferData(GL_ARRAY_BUFFER,
-               sizeof(GLfloat) * verticesFloatCount,
-               vertices2,
+               sizeof(TextVertex) * verticesCount,
+               NULL,
                GL_DYNAMIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                sizeof(GLuint) * indicesCount,
-               indices2,
+               NULL,
                GL_DYNAMIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-  glVertexAttribPointer(1,
+  glVertexAttribPointer(0,
                         3,
                         GL_FLOAT,
                         GL_FALSE,
-                        8 * sizeof(float),
-                        (void*)(3 * sizeof(float)));
+                        sizeof(TextVertex),
+                        (void*)offsetof(TextVertex, position));
+  glVertexAttribPointer(1,
+                        4,
+                        GL_FLOAT,
+                        GL_FALSE,
+                        sizeof(TextVertex),
+                        (void*)offsetof(TextVertex, color));
   glVertexAttribPointer(2,
                         2,
                         GL_FLOAT,
                         GL_FALSE,
-                        8 * sizeof(float),
-                        (void*)(6 * sizeof(float)));
+                        sizeof(TextVertex),
+                        (void*)offsetof(TextVertex, uv));
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
   glEnableVertexAttribArray(2);
@@ -285,23 +237,11 @@ engine_run()
   glBindVertexArray(0);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-  // GLuint tex;
-  // glGenTextures(1, &tex);
-  // glBindTexture(GL_TEXTURE_2D, tex);
-  // glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-  // glTexImage2D(GL_TEXTURE_2D,
-  //             0,
-  //             GL_RGBA,
-  //             atlas->width,
-  //             atlas->glyphMaxHeight,
-  //             0,
-  //             GL_RGBA,
-  //             GL_UNSIGNED_BYTE,
-  //             atlas->texture);
-  glBindTexture(GL_TEXTURE_2D, texture.handle);
   GLuint tex0Uni = glGetUniformLocation(shader.handle, "tex0");
   glUseProgram(shader.handle);
+  glBindTexture(GL_TEXTURE_2D, texture.handle);
   glUniform1i(tex0Uni, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   while (sIsRunning)
   {
@@ -313,20 +253,44 @@ engine_run()
       receive_event(&event);
     }
     input_update();
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+
+    text_indices_update(length, indices2);
+
+    text_line_update(string1,
+                     length,
+                     &atlas,
+                     vertices2,
+                     vertPerRec,
+                     scale,
+                     windowClientWidth,
+                     windowClientHeigth,
+                     pos);
+
+    glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    tick(sDeltaTime);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    0,
+                    sizeof(TextVertex) * verticesCount,
+                    vertices2);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
+                    0,
+                    sizeof(GLuint) * indicesCount,
+                    indices2);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
     glUseProgram(shader.handle);
     glBindTexture(GL_TEXTURE_2D, texture.handle);
     glBindVertexArray(VAO);
-
     glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindVertexArray(0);
 
-    // glUniform3f(glGetUniformLocation(shader.handle, "textColor"),
-    //            1.f,
-    //            1.f,
-    //            0.5f);
-    // render_text(atlas, VBO, "1AV45", 0.5, 0.5, 1.f, 1.f);
-    // tick(sDeltaTime);
     SDL_GL_SwapWindow(sWindow);
   }
   glDeleteVertexArrays(1, &VAO);
@@ -334,8 +298,9 @@ engine_run()
   glDeleteBuffers(1, &EBO);
   glDeleteTextures(1, &texture.handle);
   glDeleteProgram(shader.handle);
-  font_loader_destroy();
-
+  font_loader_atlas_free(&atlas);
+  font_loader_face_free(face);
+  font_loader_shutdown(library);
   return 0;
 }
 

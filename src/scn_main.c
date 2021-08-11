@@ -114,7 +114,30 @@ scene_main_create(void)
                  .anims   = &lizzardAnim,
                  .animCnt = 1,
              });
+  //for (int i = 0; i < 100; ++i)
+  //{
+  //  ecs_entity_t ett = ecs_create(sRegistry);
+  //  ecs_add_ex(sRegistry,
+  //             ett,
+  //             Transform,
+  //             {
+  //                 .scale    = { 1.f, 1.f },
+  //                 .position = { 100.f, 100.f },
+  //                 .rotation = 50.f,
+  //             });
 
+  //  ecs_add_ex(sRegistry,
+  //             ett,
+  //             Text,
+  //             {
+  //                 .data       = { 0 },
+  //                 .dataLength = { 1.f, 1.f, 1.f, 1.f },
+  //                 .dataSize   = { 32.f, 48.f },
+  //                 .origin     = { 16.f, 48.f },
+  //                 .size       = { 16.f, 48.f },
+  //                 .atlas      = { 16.f, 48.f },
+  //             });
+  //}
   for (int i = 0; i < 100; ++i)
   {
     ecs_entity_t ett = ecs_create(sRegistry);

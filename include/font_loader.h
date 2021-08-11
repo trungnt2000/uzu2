@@ -1,40 +1,43 @@
 #ifndef FONT_LOADER_H
 #define FONT_LOADER_H
 #include "cglm/types.h"
-#include "cglm/vec3.h"
-#include <ft2build.h>
-#include FT_FREETYPE_H
 
-typedef enum FontFace
-{
-  FontDefault,
-  FontPaletteMosaic,
-  FontRoboto,
-  FONT_CNT
-} FontFace;
+typedef void* FontLibrary;
+typedef void* FontFace;
+typedef int   ivec2[2];
 
 typedef struct CharInfo
 {
-  vec2 advance;
-  vec2 bitmapSize;
-  vec2 bitmapBearing;
-  vec2 texTopLeft;
-  vec2 texBottomRight;
+  ivec2 advance;
+  ivec2 bitmapSize;
+  ivec2 bitmapBearing;
+  vec2  texTopLeft;
+  vec2  texBottomRight;
 } CharInfo;
 
 typedef struct FontAtlas
 {
+  FontFace       fontFace;
   unsigned char* texture;
-  unsigned       height;
-  unsigned       width;
-  unsigned       pixelHeight;
-  CharInfo       charInfo[128];
+  int            height;
+  int            width;
+  int            pixelHeight;
+  int            glyphMaxWidth;
+  int            glyphMaxHeight;
+  unsigned       charInfoLength;
+  CharInfo*      charInfo;
 } FontAtlas;
 
-int font_loader_init();
+int font_loader_init(FontLibrary* library);
+int font_loader_face_create(FontLibrary library,
+                            const char* faceDir,
+                            FontFace*   face);
+int font_loader_atlas_create(FontLibrary library,
+                             FontFace    face,
+                             FontAtlas*  atlas,
+                             unsigned    fontSize);
 
-int
-font_loader_load(FontFace face, unsigned atlasSizeStart, unsigned atlasSizeEnd);
-const FontAtlas* font_loader_get_atlas(FontFace face, unsigned atlasIndex);
-void             font_loader_destroy();
+void font_loader_atlas_free(FontAtlas* atlas);
+void font_loader_face_free(FontFace face);
+void font_loader_shutdown(FontLibrary library);
 #endif // !FONT_LOADER_H

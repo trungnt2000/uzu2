@@ -3,6 +3,7 @@
 #define COMPONENTS_H
 #include "cglm/cglm.h"
 #include "ecs.h"
+#include "font_loader.h"
 #include "graphics.h"
 
 enum
@@ -21,9 +22,12 @@ extern const ecs_TypeTraits gCompTraits[];
 
 typedef struct _Text
 {
-  vec3 position;
-  vec4 color;
-  unsigned int pixelSizeHeight;
+  unsigned char*   data;
+  unsigned int     dataLength;
+  unsigned int     dataSize;
+  vec3             origin;
+  vec2             size;
+  const FontAtlas* atlas;
 } _Text;
 
 typedef struct _Transform
