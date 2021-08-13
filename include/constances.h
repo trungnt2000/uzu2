@@ -1,6 +1,8 @@
 #ifndef CONSTANCES_H
 #define CONSTANCES_H
 
+#define PT2PX_RATIO 1.333333333333333259
+#define PX2PT_RATIO 0.75
 
 #define TILE_SIZE 16
 #define WIN_WIDTH 320
@@ -16,6 +18,5 @@ extern const char gCmdBuy[];
 extern const char gCmdExamine[];
 extern const char gCmdOpen[];
 extern const char gCmdClose[];
-
 
 #endif // CONSTANCES_H

@@ -11,6 +11,7 @@
 #include "graphics/view.h"
 #include "input.h"
 #include "system_render.h"
+#include "text_format.h"
 #include "toolbox.h"
 
 static BOOL          sIsRunning = UZU_FALSE;
@@ -142,8 +143,8 @@ engine_run()
   }
 
   const char* fontDir = "res/font/font.ttf";
-  FontAtlas atlas;
-  if (font_atlas_load(&atlas, fontDir, 12))
+  FontAtlas   atlas;
+  if (font_atlas_load(&atlas, fontDir, FONT_PT(12)))
   {
     UZU_ERROR("Could not generate atlas for \"%s\"\n", fontDir);
     return -1;
@@ -157,18 +158,25 @@ engine_run()
   //};
   // GLuint           indices[] = { 0, 2, 1, 0, 2, 3 };
 
-  char      string1[31]   = "The quick brown fox jumps over";
-  int       length        = (int)strlen(string1);
-  const int indicesPerRec = 6;
-  const int vertPerRec    = 4;
+  char format[] = "The \\cFF0000FF\\quick \\c00FF00FF\\brown \\c0000FFFF\\ \\s "
+                  "\\cFFFFFFFF\\jumps over \\cFF0000FF\\\\i\\cFFFFFFFF\\ "
+                  "fences with average heigth of "
+                  "\\f meter(s).\\n";
+  int formatLength = (int)strlen(format);
 
-  int indicesCount  = length * indicesPerRec;
-  int verticesCount = length * vertPerRec;
+  TextFormatContext ctx;
+  vec4              defaultTextColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+  text_format_context_init(&ctx, defaultTextColor);
+
+  const int indicesPerRec = TEXT_IDX_PER_RECT;
+  const int vertPerRec    = TEXT_VERT_PER_RECT;
+  int       indicesCount  = formatLength * indicesPerRec;
+  int       verticesCount = formatLength * vertPerRec;
 
   TextVertex* vertices2 = SDL_malloc(sizeof(TextVertex) * verticesCount);
   GLuint*     indices2  = SDL_malloc(sizeof(GLuint) * indicesCount);
 
-  vec2  pos   = { -1.f, 0.f };
+  vec2  pos   = { -1.f, 0.75f };
   float scale = 1.0f;
 
   glGenTextures(1, &texture.handle);
@@ -248,22 +256,21 @@ engine_run()
     }
     input_update();
 
-    text_indices_update(length, indices2);
-
-    text_line_update(string1,
-                     length,
-                     &atlas,
-                     vertices2,
-                     vertPerRec,
-                     scale,
-                     windowClientWidth,
-                     windowClientHeigth,
-                     pos);
+    text_format(format, formatLength, &ctx);
+    text_indices_update(ctx.codePointsSize, indices2);
+    text_update(&ctx,
+                &atlas,
+                vertices2,
+                scale,
+                windowClientWidth,
+                windowClientHeigth,
+                pos);
+    text_format_context_reset(&ctx);
 
     glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    tick(sDeltaTime);
+    // tick(sDeltaTime);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferSubData(GL_ARRAY_BUFFER,

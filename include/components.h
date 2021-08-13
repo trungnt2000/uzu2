@@ -5,6 +5,8 @@
 #include "ecs.h"
 #include "font_loader.h"
 #include "graphics.h"
+#include "text_format.h"
+#include "toolbox/common.h"
 
 enum
 {
@@ -22,13 +24,18 @@ extern const ecs_TypeTraits gCompTraits[];
 
 typedef struct _Text
 {
-  unsigned char*   data;
-  unsigned int     dataLength;
-  unsigned int     dataSize;
+  u32*             codePoints;
+  unsigned int     codePointsLength;
   vec3             origin;
   vec2             size;
   const FontAtlas* atlas;
 } _Text;
+
+typedef struct _Paragraph
+{
+  IntRect         region;
+  ParagraphFormat format;
+} _Paragraph;
 
 typedef struct _Transform
 {

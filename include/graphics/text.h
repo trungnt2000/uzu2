@@ -1,7 +1,13 @@
 #ifndef TEXT_H
 #define TEXT_H
+
 #include "cglm/types.h"
 #include "font_loader.h"
+#include "text_format.h"
+
+
+#define TEXT_VERT_PER_RECT 4
+#define TEXT_IDX_PER_RECT 6
 
 typedef struct TextVertex
 {
@@ -12,13 +18,11 @@ typedef struct TextVertex
 
 void text_indices_update(int length, unsigned* indices);
 
-void text_line_update(const char*      string,
-                      int              length,
-                      const FontAtlas* atlas,
-                      TextVertex*      vertices,
-                      int              vertPerRec,
-                      float            scale,
-                      int              screenWidth,
-                      int              screenHeigth,
-                      const vec2       position);
+void text_update(TextFormatContext* ctx,
+                 const FontAtlas*   atlas,
+                 TextVertex*        vertices,
+                 float              scale,
+                 int                screenWidth,
+                 int                screenHeigth,
+                 const vec2         position);
 #endif // !TEXT_H

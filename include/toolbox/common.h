@@ -24,6 +24,9 @@ typedef Uint32 u32;
 typedef Sint64 s64;
 typedef Uint64 u64;
 
+typedef s32 pt;
+typedef s32 px;
+
 typedef void (*Func)();
 typedef void* pointer_t;
 

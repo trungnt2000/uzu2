@@ -1,7 +1,8 @@
 #include "font_loader.h"
 #include "graphics/gl.h"
-#include "toolbox/common.h"
+#include "text_format.h"
 #include "toolbox/log.h"
+
 #include <ft2build.h>
 #include <inttypes.h>
 #include FT_FREETYPE_H
@@ -51,7 +52,7 @@ static int  generate_atlas(FT_Face fontFace, FontAtlas* atlas);
 static void export_atlas(const FontAtlas* atlas);
 
 int
-font_atlas_load(FontAtlas* atlas, const char* fontPath, unsigned fontSize)
+font_atlas_load(FontAtlas* atlas, const char* fontPath, px fontSize)
 {
   FT_Face face;
   int     error = 0;
@@ -69,13 +70,12 @@ font_atlas_load(FontAtlas* atlas, const char* fontPath, unsigned fontSize)
 }
 
 int
-font_atlas_load_ex(FontAtlas* atlas, FontFace face, unsigned fontSize)
+font_atlas_load_ex(FontAtlas* atlas, FontFace face, px fontSize)
 {
   FT_Error error    = 0;
   FT_Face  fontFace = (FT_Face)face;
 
-  const float    pt2pxRatio      = (float)4 / 3;
-  const unsigned pixelHeight     = (unsigned)(fontSize * pt2pxRatio);
+  const unsigned pixelHeight     = fontSize;
   atlas->charInfosLength         = endChar + startChar + 1;
   const size_t charInfoArraySize = sizeof(CharInfo) * atlas->charInfosLength;
   atlas->charInfos               = SDL_malloc(charInfoArraySize);
