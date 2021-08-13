@@ -4,6 +4,7 @@
 #include "cglm/cglm.h"
 #include "graphics/gl.h"
 #include "toolbox.h"
+#include "graphics/text.h"
 
 // clang-format off
 #define COLOR_WHITE_INIT { 1.f, 1.f, 1.f, 1.f }
@@ -158,5 +159,8 @@ typedef struct AnimationTemplate
 void anim_init_tmpl(Animation* anim, const AnimationTemplate* tmpl);
 void anim_destroy(Animation* anim);
 const TextureRegion* anim_get_frame(const Animation* anim, float elapsedTime);
+
+
+
 
 #endif // GRAPHICS

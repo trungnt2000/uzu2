@@ -126,16 +126,6 @@ engine_run()
   SDL_GetWindowSize(sWindow, &windowClientWidth, &windowClientHeigth);
   lastTime   = SDL_GetTicks();
   sIsRunning = SDL_TRUE;
-  Texture    texture;
-  TextShader shader;
-  if (create_shader("res/shader/text.vert",
-                    "res/shader/text.frag",
-                    &shader.handle) != 0)
-  {
-    UZU_ERROR("Failed to create program\n");
-    return -1;
-  }
-
   if (font_loader_init())
   {
     UZU_ERROR("Could not init font loader\n");
@@ -149,27 +139,34 @@ engine_run()
     UZU_ERROR("Could not generate atlas for \"%s\"\n", fontDir);
     return -1;
   }
+#define TEST2 1
+#define TEST 1
+  vec4 defaultTextColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+#ifdef TEST
+  Texture    texture;
+  TextShader shader;
+  if (create_shader("res/shader/text.vert",
+                    "res/shader/text.frag",
+                    &shader.handle) != 0)
+  {
+    UZU_ERROR("Failed to create program\n");
+    return -1;
+  }
 
-  // GLfloat vertices[] = {
-  //  -0.99f, -0.99f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f, // Lower left corner
-  //  -0.99f, 0.99f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // Upper left corner
-  //  0.99f,  0.99f,  0.0f, 0.0f, 0.0f, 1.0f, 0.5f, 0.0f, // Upper right corner
-  //  0.99f,  -0.99f, 0.0f, 1.0f, 1.0f, 1.0f, 0.5f, 0.5f, // Lower right corner
-  //};
-  // GLuint           indices[] = { 0, 2, 1, 0, 2, 3 };
-
-  char format[] = "The \\cFF0000FF\\quick \\c00FF00FF\\brown \\c0000FFFF\\ \\s "
+  char format[] = "The \\cFF0000FF\\quick \\c00FF00FF\\brown"
+                  "\\c0000FFFF\\ \\s "
                   "\\cFFFFFFFF\\jumps over \\cFF0000FF\\\\i\\cFFFFFFFF\\ "
                   "fences with average heigth of "
                   "\\f meter(s).\\n";
   int formatLength = (int)strlen(format);
 
   TextFormatContext ctx;
-  vec4              defaultTextColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+
   text_format_context_init(&ctx, defaultTextColor);
 
-  const int indicesPerRec = TEXT_IDX_PER_RECT;
-  const int vertPerRec    = TEXT_VERT_PER_RECT;
+  const int indicesPerRec = TEXT_IDX_PER_GLYPH;
+  const int vertPerRec    = TEXT_VERT_PER_GLYPH;
   int       indicesCount  = formatLength * indicesPerRec;
   int       verticesCount = formatLength * vertPerRec;
 
@@ -244,61 +241,89 @@ engine_run()
   glBindTexture(GL_TEXTURE_2D, texture.handle);
   glUniform1i(tex0Uni, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
+#endif
+
+#if TEST2
+
+  text_renderer_init(1024u,
+                     &atlas,
+                     defaultTextColor,
+                     windowClientWidth,
+                     windowClientHeigth);
+  vec4 redColor = { 1.0f, 0.0f, 0.0f, 1.0f };
+#endif
 
   while (sIsRunning)
   {
     currentTime = SDL_GetTicks();
-    sDeltaTime  = (float)(currentTime - lastTime) / 1000.f;
-    lastTime    = currentTime;
+    sDeltaTime  = (float)(currentTime - lastTime);
+
     while (SDL_PollEvent(&event))
     {
       receive_event(&event);
     }
     input_update();
 
-    text_format(format, formatLength, &ctx);
-    text_indices_update(ctx.codePointsSize, indices2);
-    text_update(&ctx,
-                &atlas,
-                vertices2,
-                scale,
-                windowClientWidth,
-                windowClientHeigth,
-                pos);
-    text_format_context_reset(&ctx);
+    if (sDeltaTime > (1000 / 60.0f))
+    {
+      lastTime = currentTime;
+#ifdef TEST
+      text_format(format, formatLength, &ctx);
+      text_update(&ctx,
+                  &atlas,
+                  vertices2,
+                  indices2,
+                  scale,
+                  windowClientWidth,
+                  windowClientHeigth,
+                  pos);
+      text_format_context_reset(&ctx);
+#endif
+      glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
 
-    glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+      //tick(sDeltaTime / 1000.0f);
+#ifdef TEST
+      glBindBuffer(GL_ARRAY_BUFFER, VBO);
+      glBufferSubData(GL_ARRAY_BUFFER,
+                      0,
+                      sizeof(TextVertex) * verticesCount,
+                      vertices2);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+      glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
+                      0,
+                      sizeof(GLuint) * indicesCount,
+                      indices2);
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // tick(sDeltaTime);
+      glUseProgram(shader.handle);
+      glBindTexture(GL_TEXTURE_2D, texture.handle);
+      glBindVertexArray(VAO);
+      glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glBindVertexArray(0);
+#endif
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferSubData(GL_ARRAY_BUFFER,
-                    0,
-                    sizeof(TextVertex) * verticesCount,
-                    vertices2);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
-                    0,
-                    sizeof(GLuint) * indicesCount,
-                    indices2);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glUseProgram(shader.handle);
-    glBindTexture(GL_TEXTURE_2D, texture.handle);
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindVertexArray(0);
-
-    SDL_GL_SwapWindow(sWindow);
+#if TEST2
+      text_batch_begin();
+      draw_text("The quick brown fox jumps over fences with average heigth of 1.6 meter(s).", -1.f, 0.70f, redColor, 1.0f);
+      text_batch_end();
+#endif
+      SDL_GL_SwapWindow(sWindow);
+    }
   }
+
+#ifdef TEST
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
   glDeleteBuffers(1, &EBO);
   glDeleteTextures(1, &texture.handle);
   glDeleteProgram(shader.handle);
+#endif
+#if TEST2
+  text_renderer_shutdown();
+#endif
   font_atlas_destroy(&atlas);
   font_loader_shutdown();
   return 0;

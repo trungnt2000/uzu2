@@ -80,6 +80,7 @@ typedef struct TextFormatContext
 void text_format_context_init(TextFormatContext* ctx, const vec4 defaultColor);
 void text_format_context_reset(TextFormatContext* ctx);
 
-int text_format(const char* format, size_t formatSize, TextFormatContext* ctx);
+int
+text_format(const char* format, size_t formatSize, TextFormatContext* ctx);
 
 #endif // !TEXT_FORMAT
