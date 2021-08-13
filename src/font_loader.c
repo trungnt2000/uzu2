@@ -7,28 +7,32 @@
 #include FT_FREETYPE_H
 #include FT_BITMAP_H
 
-static const int start_char = 32;
-static const int end_char   = 126;
+static const int startChar = 32;
+static const int endChar   = 126;
+
+static FT_Library fontLibrary;
 
 int
-font_loader_init(FontLibrary* library)
+font_loader_init()
 {
-  FT_Library fontLibrary;
-  FT_Error   error = 0;
+  FT_Error error = 0;
   if ((error = FT_Init_FreeType(&fontLibrary)) != 0)
     return error;
-  *library = fontLibrary;
   return 0;
 }
 
+void
+font_loader_shutdown()
+{
+  FT_Done_FreeType(fontLibrary);
+}
+
 int
-font_loader_face_create(FontLibrary library,
-                        const char* faceDir,
-                        FontFace*   face)
+font_face_load(FontFace* face, const char* facePath, unsigned faceIndex)
 {
   FT_Error error = 0;
   FT_Face  fontFace;
-  if ((error = FT_New_Face(library, faceDir, 0, &fontFace)) != 0)
+  if ((error = FT_New_Face(fontLibrary, facePath, faceIndex, &fontFace)) != 0)
   {
     UZU_ERROR("Unable to load new face");
     return error;
@@ -37,31 +41,52 @@ font_loader_face_create(FontLibrary library,
   return 0;
 }
 
+void
+font_face_destroy(FontFace face)
+{
+  FT_Done_Face((FT_Face)face);
+}
+
 static int  generate_atlas(FT_Face fontFace, FontAtlas* atlas);
 static void export_atlas(const FontAtlas* atlas);
 
 int
-font_loader_atlas_create(FontLibrary library,
-                         FontFace    face,
-                         FontAtlas*  atlas,
-                         unsigned    fontSize)
+font_atlas_load(FontAtlas* atlas, const char* fontPath, unsigned fontSize)
+{
+  FT_Face face;
+  int     error = 0;
+  if ((error = font_face_load(&face, fontPath, 0)) != 0)
+    return error;
+
+  if ((error = font_atlas_load_ex(atlas, face, fontSize)) != 0)
+  {
+    font_face_destroy(face);
+    return error;
+  }
+
+  font_face_destroy(face);
+  return 0;
+}
+
+int
+font_atlas_load_ex(FontAtlas* atlas, FontFace face, unsigned fontSize)
 {
   FT_Error error    = 0;
   FT_Face  fontFace = (FT_Face)face;
 
   const float    pt2pxRatio      = (float)4 / 3;
   const unsigned pixelHeight     = (unsigned)(fontSize * pt2pxRatio);
-  atlas->charInfoLength          = end_char + start_char + 1;
-  const size_t charInfoArraySize = sizeof(CharInfo) * atlas->charInfoLength;
-  atlas->charInfo                = SDL_malloc(charInfoArraySize);
-  SDL_memset(atlas->charInfo, 0, charInfoArraySize);
+  atlas->charInfosLength         = endChar + startChar + 1;
+  const size_t charInfoArraySize = sizeof(CharInfo) * atlas->charInfosLength;
+  atlas->charInfos               = SDL_malloc(charInfoArraySize);
+  SDL_memset(atlas->charInfos, 0, charInfoArraySize);
 
   if ((error = FT_Set_Pixel_Sizes(fontFace, 0, pixelHeight)) != 0)
     return error;
   atlas->pixelHeight = pixelHeight;
 
   FT_GlyphSlot glyph = fontFace->glyph;
-  for (int c = start_char; c <= end_char; ++c)
+  for (int c = startChar; c <= endChar; ++c)
   {
     if ((error = FT_Load_Char(fontFace, c, FT_LOAD_RENDER)) != 0)
     {
@@ -72,18 +97,18 @@ font_loader_atlas_create(FontLibrary library,
       continue;
     }
 
-    atlas->charInfo[c].advance[0]    = glyph->metrics.horiAdvance >> 6;
-    atlas->charInfo[c].advance[1]    = glyph->metrics.vertAdvance >> 6;
-    atlas->charInfo[c].bitmapSize[0] = glyph->metrics.width >> 6;
-    atlas->charInfo[c].bitmapSize[1] = glyph->metrics.height >> 6;
+    atlas->charInfos[c].advance[0]    = glyph->metrics.horiAdvance >> 6;
+    atlas->charInfos[c].advance[1]    = glyph->metrics.vertAdvance >> 6;
+    atlas->charInfos[c].bitmapSize[0] = glyph->metrics.width >> 6;
+    atlas->charInfos[c].bitmapSize[1] = glyph->metrics.height >> 6;
     printf("%c: %dx%d, %dx%d\n",
            (char)c,
            glyph->bitmap.width,
            glyph->bitmap.rows,
-           atlas->charInfo[c].bitmapSize[0],
-           atlas->charInfo[c].bitmapSize[1]);
-    atlas->charInfo[c].bitmapBearing[0] = glyph->metrics.horiBearingX >> 6;
-    atlas->charInfo[c].bitmapBearing[1] = glyph->metrics.horiBearingY >> 6;
+           atlas->charInfos[c].bitmapSize[0],
+           atlas->charInfos[c].bitmapSize[1]);
+    atlas->charInfos[c].bitmapBearing[0] = glyph->metrics.horiBearingX >> 6;
+    atlas->charInfos[c].bitmapBearing[1] = glyph->metrics.horiBearingY >> 6;
   }
   error = generate_atlas(fontFace, atlas);
 
@@ -97,29 +122,10 @@ font_loader_atlas_create(FontLibrary library,
 }
 
 void
-font_loader_face_free(FontFace face)
+font_atlas_destroy(FontAtlas* atlas)
 {
-  FT_Done_Face((FT_Face)face);
-}
-
-void
-font_loader_atlas_free(FontAtlas* atlas)
-{
-  SDL_free(atlas->charInfo);
+  SDL_free(atlas->charInfos);
   SDL_free(atlas->texture);
-}
-
-void
-font_loader_shutdown(FontLibrary library)
-{
-  FT_Done_FreeType(library);
-  // for (int font_idx = 0; font_idx < FONT_CNT; ++font_idx)
-  //{
-  //  for (int atlas_idx = 0; atlas_idx < FONT_ATLAS_SIZE; ++atlas_idx)
-  //  {
-  //    SDL_free(fontAtlas[font_idx][atlas_idx].texture);
-  //  }
-  //}
 }
 
 static void
@@ -132,11 +138,11 @@ export_atlas(const FontAtlas* atlas)
          sizeof(unsigned char),
          (size_t)atlas->width * atlas->height,
          f);
-  fwrite(&start_char, sizeof(start_char), 1, f);
-  fwrite(&end_char, sizeof(end_char), 1, f);
-  for (int i = start_char; i <= end_char; ++i)
+  fwrite(&startChar, sizeof(startChar), 1, f);
+  fwrite(&endChar, sizeof(endChar), 1, f);
+  for (int i = startChar; i <= endChar; ++i)
   {
-    const CharInfo* charInfo = &atlas->charInfo[i];
+    const CharInfo* charInfo = &atlas->charInfos[i];
     fwrite(&charInfo->advance[0], sizeof(charInfo->advance[0]), 1, f);
     fwrite(&charInfo->advance[1], sizeof(charInfo->advance[1]), 1, f);
     fwrite(&charInfo->bitmapBearing[0],
@@ -169,10 +175,10 @@ generate_atlas(FT_Face fontFace, FontAtlas* atlas)
   int glyphMaxWidth  = 0;
   int glyphMaxHeight = 0;
   int glyphCount     = 0;
-  for (int i = start_char; i <= end_char; ++i)
+  for (int i = startChar; i <= endChar; ++i)
   {
-    glyphMaxWidth  = max(glyphMaxWidth, atlas->charInfo[i].bitmapSize[0]);
-    glyphMaxHeight = max(glyphMaxHeight, atlas->charInfo[i].bitmapSize[1]);
+    glyphMaxWidth  = max(glyphMaxWidth, atlas->charInfos[i].bitmapSize[0]);
+    glyphMaxHeight = max(glyphMaxHeight, atlas->charInfos[i].bitmapSize[1]);
     ++glyphCount;
   }
   atlas->glyphMaxWidth  = glyphMaxWidth;
@@ -208,7 +214,7 @@ generate_atlas(FT_Face fontFace, FontAtlas* atlas)
   const int    atlasWidth = atlas->width;
   FT_GlyphSlot glyph      = fontFace->glyph;
 
-  for (int c = start_char; c <= end_char; c++)
+  for (int c = startChar; c <= endChar; c++)
   {
     if (FT_Load_Char(fontFace, c, FT_LOAD_RENDER))
       continue;
@@ -228,11 +234,11 @@ generate_atlas(FT_Face fontFace, FontAtlas* atlas)
                     GL_UNSIGNED_BYTE,
                     glyph->bitmap.buffer);
 
-    atlas->charInfo[c].texTopLeft[0] = (float)offsetX / (float)atlas->width;
-    atlas->charInfo[c].texTopLeft[1] = (float)offsetY / (float)atlas->height;
-    atlas->charInfo[c].texBottomRight[0] =
+    atlas->charInfos[c].texTopLeft[0] = (float)offsetX / (float)atlas->width;
+    atlas->charInfos[c].texTopLeft[1] = (float)offsetY / (float)atlas->height;
+    atlas->charInfos[c].texBottomRight[0] =
         (offsetX + (float)glyph->bitmap.width) / (float)atlas->width;
-    atlas->charInfo[c].texBottomRight[1] =
+    atlas->charInfos[c].texBottomRight[1] =
         (offsetY + (float)glyph->bitmap.rows) / (float)atlas->height;
 
     offsetX += glyph->bitmap.width + 1;

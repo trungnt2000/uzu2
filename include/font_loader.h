@@ -24,20 +24,18 @@ typedef struct FontAtlas
   int            pixelHeight;
   int            glyphMaxWidth;
   int            glyphMaxHeight;
-  unsigned       charInfoLength;
-  CharInfo*      charInfo;
+  unsigned       charInfosLength;
+  CharInfo*      charInfos;
 } FontAtlas;
 
-int font_loader_init(FontLibrary* library);
-int font_loader_face_create(FontLibrary library,
-                            const char* faceDir,
-                            FontFace*   face);
-int font_loader_atlas_create(FontLibrary library,
-                             FontFace    face,
-                             FontAtlas*  atlas,
-                             unsigned    fontSize);
+int  font_loader_init();
+void font_loader_shutdown();
 
-void font_loader_atlas_free(FontAtlas* atlas);
-void font_loader_face_free(FontFace face);
-void font_loader_shutdown(FontLibrary library);
+int  font_face_load(FontFace* face, const char* fontPath, unsigned faceIndex);
+void font_face_destroy(FontFace face);
+
+int  font_atlas_load(FontAtlas* atlas, const char* fontPath, unsigned fontSize);
+int  font_atlas_load_ex(FontAtlas* atlas, FontFace face, unsigned fontSize);
+void font_atlas_destroy(FontAtlas* atlas);
+
 #endif // !FONT_LOADER_H

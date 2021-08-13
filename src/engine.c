@@ -134,22 +134,16 @@ engine_run()
     UZU_ERROR("Failed to create program\n");
     return -1;
   }
-  FontLibrary library;
-  if (font_loader_init(&library))
+
+  if (font_loader_init())
   {
     UZU_ERROR("Could not init font loader\n");
     return -1;
   }
-  FontFace    face;
-  const char* fontDir = "res/font/font.ttf";
-  if (font_loader_face_create(library, fontDir, &face))
-  {
-    UZU_ERROR("Could not create font face \"%s\"\n", fontDir);
-    return -1;
-  }
 
+  const char* fontDir = "res/font/font.ttf";
   FontAtlas atlas;
-  if (font_loader_atlas_create(library, face, &atlas, 12))
+  if (font_atlas_load(&atlas, fontDir, 12))
   {
     UZU_ERROR("Could not generate atlas for \"%s\"\n", fontDir);
     return -1;
@@ -181,8 +175,8 @@ engine_run()
   glBindTexture(GL_TEXTURE_2D, texture.handle);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexImage2D(GL_TEXTURE_2D,
                0,
                GL_RED,
@@ -298,9 +292,8 @@ engine_run()
   glDeleteBuffers(1, &EBO);
   glDeleteTextures(1, &texture.handle);
   glDeleteProgram(shader.handle);
-  font_loader_atlas_free(&atlas);
-  font_loader_face_free(face);
-  font_loader_shutdown(library);
+  font_atlas_destroy(&atlas);
+  font_loader_shutdown();
   return 0;
 }
 

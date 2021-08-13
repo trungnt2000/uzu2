@@ -34,7 +34,7 @@ text_line_update(const char*      string,
   for (int i = 0; i < length; ++i)
   {
     TextVertex*     vertRec  = vertices + ((long long)i * vertPerRec);
-    const CharInfo* charInfo = &atlas->charInfo[*(string + i)];
+    const CharInfo* charInfo = &atlas->charInfos[*(string + i)];
 
     const float     scaleW   = 2.f / screenWidth;
     const float     scaleH   = 2.f / screenHeigth;
