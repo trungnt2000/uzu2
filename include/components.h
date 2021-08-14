@@ -13,6 +13,7 @@ enum
   TransformMatrix,
   AnimationPool,
   DrawOrder,
+  Velocity,
   COMPONENT_CNT
 };
 
@@ -56,4 +57,11 @@ typedef struct _DrawOrder
 {
   float value;
 } _DrawOrder;
+
+#define VELOCITY_ZERO_INIT {{0}}
+typedef struct _Velocity
+{
+  vec2 value;
+} _Velocity;
+
 #endif // COMPONENTS_H
