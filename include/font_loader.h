@@ -22,7 +22,6 @@ typedef struct CharInfo
 
 typedef struct FontAtlas
 {
-  FontFace       fontFace;
   unsigned char* texture;
   int            height;
   int            width;

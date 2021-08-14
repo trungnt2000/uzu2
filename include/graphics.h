@@ -118,8 +118,6 @@ typedef struct
 typedef struct
 {
   GLuint handle;
-  int uProjMatLocation;
-
 } TextShader;
 
 /**

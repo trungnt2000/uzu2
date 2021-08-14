@@ -140,7 +140,7 @@ engine_run()
     return -1;
   }
 #define TEST2 1
-#define TEST 1
+//#define TEST 1
   vec4 defaultTextColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 #ifdef TEST
   Texture    texture;
@@ -161,7 +161,6 @@ engine_run()
   int formatLength = (int)strlen(format);
 
   TextFormatContext ctx;
-
 
   text_format_context_init(&ctx, defaultTextColor);
 
@@ -248,9 +247,9 @@ engine_run()
   text_renderer_init(1024u,
                      &atlas,
                      defaultTextColor,
-                     windowClientWidth,
-                     windowClientHeigth);
-  vec4 redColor = { 1.0f, 0.0f, 0.0f, 1.0f };
+                     2.f / windowClientWidth,
+                     2.f / windowClientHeigth);
+  vec4 redColor = { 1.0f, 1.0f, 0.0f, 1.0f };
 #endif
 
   while (sIsRunning)
@@ -282,7 +281,7 @@ engine_run()
       glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT);
 
-      //tick(sDeltaTime / 1000.0f);
+      tick(sDeltaTime / 1000.0f);
 #ifdef TEST
       glBindBuffer(GL_ARRAY_BUFFER, VBO);
       glBufferSubData(GL_ARRAY_BUFFER,
@@ -307,7 +306,12 @@ engine_run()
 
 #if TEST2
       text_batch_begin();
-      draw_text("The quick brown fox jumps over fences with average heigth of 1.6 meter(s).", -1.f, 0.70f, redColor, 1.0f);
+      draw_text("The quick brown fox jumps over fences with average heigth of "
+                "1.6 meter(s).",
+                -1.f,
+                0.00f,
+                redColor,
+                1.0f);
       text_batch_end();
 #endif
       SDL_GL_SwapWindow(sWindow);

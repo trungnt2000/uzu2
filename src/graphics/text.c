@@ -7,14 +7,17 @@
 #include <cglm/vec4.h>
 #include <stdio.h>
 
-/* default atlas */
-static const FontAtlas* atlasDefault;
+/* default font atlas */
+static const FontAtlas* sFontAtlasDefault;
 
-/* texture to use */
-static Texture atlasDefaultTexture;
+/* font atlas texture to use */
+static Texture sFontAtlasDefaultTexture;
+
+/* default shader to use */
+static TextShader sShaderDefault;
 
 /* shader to use */
-static TextShader defaultShader;
+static const TextShader* sShader;
 
 /* text format context */
 static TextFormatContext fmtCxt;
@@ -46,8 +49,8 @@ static u32 sMaxGlyphs;
 /* draw call count between begin and end call */
 static u32 sDrawCallCnt;
 
-static unsigned sScreenWidth;
-static unsigned sScreenHeigth;
+static float sScaleWidth;
+static float sScaleHeigth;
 
 static void
 upload_atlas_texture(Texture* tex, const FontAtlas* atlas)
@@ -207,35 +210,50 @@ prepare_graphic_buffers(TextVertex** vertices,
   SDL_free(indices);
 }
 
+static inline void
+prepare_default_shader(const TextShader* shader, const Texture* atlasTexture)
+{
+  const GLuint tex0Uni = glGetUniformLocation(shader->handle, "tex0");
+  glUseProgram(shader->handle);
+  glBindTexture(GL_TEXTURE_2D, atlasTexture->handle);
+  glUniform1i(tex0Uni, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+int text_renderer_shader_use(const TextShader* shader)
+{
+  //@TODO
+  return -1;
+}
 int
 text_renderer_init(u32              maxGlyphs,
                    const FontAtlas* atlas,
                    const vec4       defaultTextColor,
-                   unsigned         screenWidth,
-                   unsigned         screenHeigth)
+                   float            scaleWidth,
+                   float            scaleHeigth)
 {
+  // @TODO, dont hard code this
   if (create_shader("res/shader/text.vert",
                     "res/shader/text.frag",
-                    &defaultShader.handle) != 0)
+                    &sShaderDefault.handle) != 0)
   {
     UZU_ERROR("Failed to create program\n");
     return -1;
   }
+
+  sShader = &sShaderDefault;
+
   sMaxGlyphs    = maxGlyphs;
-  atlasDefault  = atlas;
-  sScreenWidth  = screenWidth;
-  sScreenHeigth = screenHeigth;
+  sFontAtlasDefault = atlas;
+  sScaleWidth   = scaleWidth;
+  sScaleHeigth  = scaleHeigth;
+
   text_format_context_init(&fmtCxt, defaultTextColor);
-  upload_atlas_texture(&atlasDefaultTexture, atlasDefault);
+  upload_atlas_texture(&sFontAtlasDefaultTexture, sFontAtlasDefault);
   prepare_graphic_buffers(&sVertBuf, sMaxGlyphs, &sVao, &sVbo, &sEbo);
+  prepare_default_shader(&sShaderDefault, &sFontAtlasDefaultTexture);
+
   sIsDrawing = UZU_FALSE;
-
-  const GLuint tex0Uni = glGetUniformLocation(defaultShader.handle, "tex0");
-  glUseProgram(defaultShader.handle);
-  glBindTexture(GL_TEXTURE_2D, atlasDefaultTexture.handle);
-  glUniform1i(tex0Uni, 0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-
   return 0;
 }
 
@@ -245,9 +263,8 @@ text_renderer_shutdown()
   glDeleteBuffers(1, &sEbo);
   glDeleteBuffers(1, &sVbo);
   glDeleteVertexArrays(1, &sVao);
-  glDeleteTextures(1, &atlasDefaultTexture.handle);
-  glDeleteProgram(defaultShader.handle);
-
+  glDeleteTextures(1, &sFontAtlasDefaultTexture.handle);
+  glDeleteProgram(sShaderDefault.handle);
   SDL_free(sVertBuf);
 }
 
@@ -274,9 +291,10 @@ text_batch_end()
 void
 draw_text(const char* text, float x, float y, const vec4 color, float scale)
 {
+  // @TODO check when buffer is full and then flush (this will overflow buffer)
   const char* iter   = text;
-  const float scaleW = 2.f / sScreenWidth;
-  const float scaleH = 2.f / sScreenHeigth;
+  const float scaleW = sScaleWidth;
+  const float scaleH = sScaleHeigth;
 
   int         codePointIdx = 0;
   TextVertex* vertGlyph;
@@ -284,7 +302,7 @@ draw_text(const char* text, float x, float y, const vec4 color, float scale)
   while (*iter)
   {
     vertGlyph = sNextVertPtr + ((long long)codePointIdx * TEXT_VERT_PER_GLYPH);
-    text_verticies_update(&atlasDefault->charInfos[(u32)*iter],
+    text_verticies_update(&sFontAtlasDefault->charInfos[(u32)*iter],
                           vertGlyph,
                           color,
                           scale,
@@ -297,9 +315,6 @@ draw_text(const char* text, float x, float y, const vec4 color, float scale)
     ++iter;
   }
   sNextVertPtr = vertGlyph + 4;
-
-  glUseProgram(defaultShader.handle);
-  glBindTexture(GL_TEXTURE_2D, atlasDefaultTexture.handle);
 }
 
 static void
@@ -315,10 +330,14 @@ flush(void)
   glBindBuffer(GL_ARRAY_BUFFER, sVbo);
   glBufferSubData(GL_ARRAY_BUFFER, 0, vboUpdtSiz, sVertBuf);
 
-  glBindTexture(GL_TEXTURE_2D, atlasDefaultTexture.handle);
+  glBindTexture(GL_TEXTURE_2D, sFontAtlasDefaultTexture.handle);
 
   /* draw all sprite in buffer */
   glBindVertexArray(sVao);
+
+  glUseProgram(sShader->handle);
+  glBindTexture(GL_TEXTURE_2D, sFontAtlasDefaultTexture.handle);
+
   glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
 

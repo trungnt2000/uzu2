@@ -18,8 +18,8 @@ typedef struct TextVertex
 int  text_renderer_init(u32              maxGlyphs,
                         const FontAtlas* atlas,
                         const vec4       defaultTextColor,
-                        unsigned         screenWidth,
-                        unsigned         screenHeigth);
+                        float            scaleWidth,
+                        float            scaleHeigth);
 void text_renderer_shutdown();
 void text_batch_begin();
 void text_batch_end();
