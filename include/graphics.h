@@ -15,7 +15,7 @@
 
 typedef struct IntRect
 {
-  u32 x, y, w, h;
+  s32 x, y, w, h;
 } IntRect;
 
 typedef struct Texture
@@ -34,6 +34,7 @@ int texture_load(Texture* texture, const char* file);
 /* bind given texture to current opengl context */
 void texture_bind(const Texture* texture);
 
+/* unbind current texture out of current opengl context */
 void texture_unbind(const Texture* texture);
 
 /* free texture data */

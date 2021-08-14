@@ -24,3 +24,4 @@ target_include_directories(
   ${CHECK_INCLUDE_DIR})
 
 add_subdirectory(example_test)
+add_subdirectory(asset_table)
