@@ -7,11 +7,9 @@
 #include "font_loader.h"
 #include "graphics.h"
 #include "graphics/gl.h"
-#include "graphics/text.h"
 #include "graphics/view.h"
 #include "input.h"
 #include "system_render.h"
-#include "text_format.h"
 #include "toolbox.h"
 
 static BOOL          sIsRunning = UZU_FALSE;
@@ -132,125 +130,6 @@ engine_run()
     return -1;
   }
 
-  const char* fontDir = "res/font/font.ttf";
-  FontAtlas   atlas;
-  if (font_atlas_load(&atlas, fontDir, FONT_PT(12)))
-  {
-    UZU_ERROR("Could not generate atlas for \"%s\"\n", fontDir);
-    return -1;
-  }
-#define TEST2 1
-//#define TEST 1
-  vec4 defaultTextColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-#ifdef TEST
-  Texture    texture;
-  TextShader shader;
-  if (create_shader("res/shader/text.vert",
-                    "res/shader/text.frag",
-                    &shader.handle) != 0)
-  {
-    UZU_ERROR("Failed to create program\n");
-    return -1;
-  }
-
-  char format[] = "The \\cFF0000FF\\quick \\c00FF00FF\\brown"
-                  "\\c0000FFFF\\ \\s "
-                  "\\cFFFFFFFF\\jumps over \\cFF0000FF\\\\i\\cFFFFFFFF\\ "
-                  "fences with average heigth of "
-                  "\\f meter(s).\\n";
-  int formatLength = (int)strlen(format);
-
-  TextFormatContext ctx;
-
-  text_format_context_init(&ctx, defaultTextColor);
-
-  const int indicesPerRec = TEXT_IDX_PER_GLYPH;
-  const int vertPerRec    = TEXT_VERT_PER_GLYPH;
-  int       indicesCount  = formatLength * indicesPerRec;
-  int       verticesCount = formatLength * vertPerRec;
-
-  TextVertex* vertices2 = SDL_malloc(sizeof(TextVertex) * verticesCount);
-  GLuint*     indices2  = SDL_malloc(sizeof(GLuint) * indicesCount);
-
-  vec2  pos   = { -1.f, 0.75f };
-  float scale = 1.0f;
-
-  glGenTextures(1, &texture.handle);
-  glBindTexture(GL_TEXTURE_2D, texture.handle);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexImage2D(GL_TEXTURE_2D,
-               0,
-               GL_RED,
-               atlas.width,
-               atlas.height,
-               0,
-               GL_RED,
-               GL_UNSIGNED_BYTE,
-               atlas.texture);
-
-  texture.width  = atlas.width;
-  texture.height = atlas.height;
-  glBindTexture(GL_TEXTURE_2D, 0);
-
-  GLuint VAO, VBO, EBO;
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER,
-               sizeof(TextVertex) * verticesCount,
-               NULL,
-               GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-               sizeof(GLuint) * indicesCount,
-               NULL,
-               GL_DYNAMIC_DRAW);
-  glVertexAttribPointer(0,
-                        3,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(TextVertex),
-                        (void*)offsetof(TextVertex, position));
-  glVertexAttribPointer(1,
-                        4,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(TextVertex),
-                        (void*)offsetof(TextVertex, color));
-  glVertexAttribPointer(2,
-                        2,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(TextVertex),
-                        (void*)offsetof(TextVertex, uv));
-  glEnableVertexAttribArray(0);
-  glEnableVertexAttribArray(1);
-  glEnableVertexAttribArray(2);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-  GLuint tex0Uni = glGetUniformLocation(shader.handle, "tex0");
-  glUseProgram(shader.handle);
-  glBindTexture(GL_TEXTURE_2D, texture.handle);
-  glUniform1i(tex0Uni, 0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-#endif
-
-#if TEST2
-
-  text_renderer_init(1024u,
-                     &atlas,
-                     defaultTextColor,
-                     2.f / windowClientWidth,
-                     2.f / windowClientHeigth);
-  vec4 redColor = { 1.0f, 1.0f, 0.0f, 1.0f };
-#endif
 
   while (sIsRunning)
   {
@@ -266,70 +145,11 @@ engine_run()
     if (sDeltaTime > (1000 / 60.0f))
     {
       lastTime = currentTime;
-#ifdef TEST
-      text_format(format, formatLength, &ctx);
-      text_update(&ctx,
-                  &atlas,
-                  vertices2,
-                  indices2,
-                  scale,
-                  windowClientWidth,
-                  windowClientHeigth,
-                  pos);
-      text_format_context_reset(&ctx);
-#endif
-      glClearColor(0.2f, 0.5f, 0.2f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
       tick(sDeltaTime / 1000.0f);
-#ifdef TEST
-      glBindBuffer(GL_ARRAY_BUFFER, VBO);
-      glBufferSubData(GL_ARRAY_BUFFER,
-                      0,
-                      sizeof(TextVertex) * verticesCount,
-                      vertices2);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-      glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
-                      0,
-                      sizeof(GLuint) * indicesCount,
-                      indices2);
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-      glUseProgram(shader.handle);
-      glBindTexture(GL_TEXTURE_2D, texture.handle);
-      glBindVertexArray(VAO);
-      glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-      glBindTexture(GL_TEXTURE_2D, 0);
-      glBindVertexArray(0);
-#endif
-
-#if TEST2
-      text_batch_begin();
-      draw_text("The quick brown fox jumps over fences with average heigth of "
-                "1.6 meter(s).",
-                -1.f,
-                0.00f,
-                redColor,
-                1.0f);
-      text_batch_end();
-#endif
       SDL_GL_SwapWindow(sWindow);
     }
   }
 
-#ifdef TEST
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
-  glDeleteBuffers(1, &EBO);
-  glDeleteTextures(1, &texture.handle);
-  glDeleteProgram(shader.handle);
-#endif
-#if TEST2
-  text_renderer_shutdown();
-#endif
-  font_atlas_destroy(&atlas);
-  font_loader_shutdown();
   return 0;
 }
 
@@ -337,6 +157,7 @@ static void
 cleanup(void)
 {
   destroy();
+  font_loader_shutdown();
   SDL_GL_DeleteContext(sGLCtx);
   SDL_DestroyWindow(sWindow);
   IMG_Quit();

@@ -6,7 +6,7 @@
 static const Texture* sTexture;
 
 /* wheather or not drawing */
-static BOOL sIsDrawing;
+static bool sIsDrawing;
 
 /* EBO */
 static GLuint sEbo;
@@ -45,7 +45,7 @@ flush(void)
   glBindBuffer(GL_ARRAY_BUFFER, sVbo);
   glBufferSubData(GL_ARRAY_BUFFER, 0, vboUpdtSiz, sVertBuf);
 
-  glBindTexture(GL_TEXTURE_2D, sTexture->handle);
+  texture_bind(sTexture);
 
   /* draw all sprite in buffer */
   glBindVertexArray(sVao);
@@ -59,14 +59,14 @@ flush(void)
 }
 
 void
-draw_sprite(vec2                 size,
-            vec2                 center,
-            vec4                 color,
-            float                depth,
-            const TextureRegion* textureRegion,
-            mat3                 transMat)
+draw_texture_region_w_tx(const TextureRegion* tex,
+                         vec2                 size,
+                         vec2                 center,
+                         vec4                 color,
+                         float                depth,
+                         mat3                 tx)
 {
-  //ASSERT_MSG(sIsDrawing, "call begin first!");
+  ASSERT_MSG(sIsDrawing, "call begin first!");
 
   float    u1, v1, u2, v2; /* texture coordinates                          */
   Vertex*  vert;           /* vertex mem ptr                               */
@@ -83,28 +83,28 @@ draw_sprite(vec2                 size,
 
   /* if current texture to use diffrent from previous
    * texture flush current draw commands to gpu */
-  if (sTexture != textureRegion->texture)
+  if (sTexture != tex->texture)
   {
     if (sTexture != NULL)
     {
       flush();
     }
-    sTexture = textureRegion->texture;
+    sTexture = tex->texture;
   }
 
   vert = sNextVertPtr;
 
-  u1 = textureRegion->u1;
-  v1 = textureRegion->v1;
-  u2 = textureRegion->u2;
-  v2 = textureRegion->v2;
+  u1 = tex->u1;
+  v1 = tex->v1;
+  u2 = tex->u2;
+  v2 = tex->v2;
 
   /* we need to transform four vertcies and then store them inside vertBuf */
   // top-left corner
   localPos[0] = 0.f - center[0];
   localPos[1] = 0.f - center[1];
   localPos[2] = 1.f;
-  glm_mat3_mulv(transMat, localPos, worldPos);
+  glm_mat3_mulv(tx, localPos, worldPos);
 
   vert->position[0] = worldPos[0];
   vert->position[1] = worldPos[1];
@@ -118,7 +118,7 @@ draw_sprite(vec2                 size,
   localPos[0] = size[0] - center[0];
   localPos[1] = 0.f - center[1];
   localPos[2] = 1.f;
-  glm_mat3_mulv(transMat, localPos, worldPos);
+  glm_mat3_mulv(tx, localPos, worldPos);
 
   vert->position[0] = worldPos[0];
   vert->position[1] = worldPos[1];
@@ -132,7 +132,7 @@ draw_sprite(vec2                 size,
   localPos[0] = size[0] - center[0];
   localPos[1] = size[1] - center[1];
   localPos[2] = 1.f;
-  glm_mat3_mulv(transMat, localPos, worldPos);
+  glm_mat3_mulv(tx, localPos, worldPos);
 
   vert->position[0] = worldPos[0];
   vert->position[1] = worldPos[1];
@@ -146,11 +146,91 @@ draw_sprite(vec2                 size,
   localPos[0] = 0.f - center[0];
   localPos[1] = size[1] - center[1];
   localPos[2] = 1.f;
-  glm_mat3_mulv(transMat, localPos, worldPos);
+  glm_mat3_mulv(tx, localPos, worldPos);
 
   vert->position[0] = worldPos[0];
   vert->position[1] = worldPos[1];
   vert->position[2] = depth;
+  vert->texCoord[0] = u1;
+  vert->texCoord[1] = v2;
+  glm_vec4_copy(color, vert->color);
+  ++vert;
+
+  sNextVertPtr = vert;
+  sSpriteCnt++;
+}
+
+void
+draw_texture_region(const TextureRegion* tex,
+                    vec2                 position,
+                    vec2                 size,
+                    vec2                 color)
+{
+
+  ASSERT_MSG(sIsDrawing, "call begin first!");
+
+  float    u1, v1, u2, v2; /* texture coordinates                          */
+  Vertex*  vert;           /* vertex mem ptr                               */
+  SDL_bool hasEnoughSpace; /* do we have enough space for one more sprite? */
+
+  hasEnoughSpace = sSpriteCnt < sMaxSprites;
+
+  /* if we do not have enough space for new one,
+   * send all current draw commands to gpu */
+  if (!hasEnoughSpace)
+    flush();
+
+  /* if current texture to use diffrent from previous
+   * texture flush current draw commands to gpu */
+  if (sTexture != tex->texture)
+  {
+    if (sTexture != NULL)
+    {
+      flush();
+    }
+    sTexture = tex->texture;
+  }
+
+  vert = sNextVertPtr;
+
+  u1 = tex->u1;
+  v1 = tex->v1;
+  u2 = tex->u2;
+  v2 = tex->v2;
+
+  /* we need to transform four vertcies and then store them inside vertBuf */
+  // top-left corner
+
+  vert->position[0] = position[0];
+  vert->position[1] = position[1];
+  vert->position[2] = 0;
+  vert->texCoord[0] = u1;
+  vert->texCoord[1] = v1;
+  glm_vec4_copy(color, vert->color);
+  ++vert;
+
+  // top-right corner
+  vert->position[0] = position[0] + size[0];
+  vert->position[1] = position[1];
+  vert->position[2] = 0;
+  vert->texCoord[0] = u2;
+  vert->texCoord[1] = v1;
+  glm_vec4_copy(color, vert->color);
+  ++vert;
+
+  // bottom-right corner
+  vert->position[0] = position[0] + size[0];
+  vert->position[1] = position[1] + size[1];
+  vert->position[2] = 0;
+  vert->texCoord[0] = u2;
+  vert->texCoord[1] = v2;
+  glm_vec4_copy(color, vert->color);
+  ++vert;
+
+  // bottom-left corner
+  vert->position[0] = position[0];
+  vert->position[1] = position[1] + size[1];
+  vert->position[2] = 0;
   vert->texCoord[0] = u1;
   vert->texCoord[1] = v2;
   glm_vec4_copy(color, vert->color);
@@ -231,7 +311,7 @@ sprite_renderer_init(u32 maxSprites)
   glBindVertexArray(0);
 
   sTexture   = NULL;
-  sIsDrawing = UZU_FALSE;
+  sIsDrawing = false;
   sVertBuf   = SDL_malloc(vboSize);
 
   SDL_free(indices);
@@ -250,7 +330,7 @@ void
 sprite_batch_begin()
 {
   ASSERT_MSG(!sIsDrawing, "already drawing");
-  sIsDrawing   = UZU_FALSE;
+  sIsDrawing   = false;
   sNextVertPtr = sVertBuf;
   sTexture     = NULL;
   sSpriteCnt   = 0;
@@ -260,7 +340,7 @@ sprite_batch_begin()
 void
 sprite_batch_end()
 {
-  //ASSERT_MSG(sIsDrawing, "call begin first!");
+  ASSERT_MSG(sIsDrawing, "call begin first!");
   flush();
-  sIsDrawing = UZU_FALSE;
+  sIsDrawing = false;
 }

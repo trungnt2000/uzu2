@@ -42,12 +42,12 @@ system_rendering_sprite_update(ecs_Registry* registry)
   sprite_batch_begin();
   for (int i = 0; i < siz; ++i)
   {
-    draw_sprite(sp[i].size,
-                sp[i].origin,
-                sp[i].color,
-                0,
-                &sp[i].textureRegion,
-                tx[i].value);
+    draw_sprite_w_tx(sp[i].size,
+                     sp[i].origin,
+                     sp[i].color,
+                     0,
+                     &sp[i].textureRegion,
+                     tx[i].value);
   }
   sprite_batch_end();
 }

@@ -4,7 +4,6 @@
 #include "cglm/cglm.h"
 #include "graphics/gl.h"
 #include "toolbox.h"
-#include "graphics/text.h"
 
 // clang-format off
 #define COLOR_WHITE_INIT { 1.f, 1.f, 1.f, 1.f }
@@ -14,9 +13,10 @@
 #define COLOR_BLACK (vec4) COLOR_BLACK_INIT
 // clang-format on
 
+
 typedef struct IntRect
 {
-  u32 x, y, w, h;
+  int x, y, w, h;
 } IntRect;
 
 typedef struct Texture
@@ -25,18 +25,6 @@ typedef struct Texture
   u32    width;  /* texture's width          */
   u32    height; /* texture's height         */
 } Texture;
-
-/**
- * \brief load texture data form file
- * \return 0 if succeed
- */
-int texture_load(Texture* texture, const char* file);
-
-/* bind given texture to current opengl context */
-void texture_bind(const Texture* texture);
-
-/* free texture data */
-void texture_free(Texture* texture);
 
 typedef struct TextureRegion
 {
@@ -48,14 +36,20 @@ typedef struct TextureRegion
   float          v2;      /* read only */
 } TextureRegion;
 
-/* \brief set texture rect, null for entrie texture */
-void texture_region_set_rect(TextureRegion* texegion, const IntRect* rect);
+typedef struct Glyph
+{
+  TextureRegion tex;
+  vec2         advance;
+  vec2         size;
+  vec2         bearing;
+} Glyph;
 
-/* \brief set texture and texture rect,
- *  set rect to NULL for entrie region */
-void texture_region_set_texture(TextureRegion* texRegion,
-                                const Texture* texture,
-                                const IntRect* rect);
+typedef struct Font
+{
+  Texture atlas;
+  Glyph*  glyphs;
+  u32     glyphCnt;
+} Font;
 
 typedef struct Vertex
 {
@@ -63,6 +57,41 @@ typedef struct Vertex
   vec2 texCoord;
   vec4 color;
 } Vertex;
+
+typedef enum TextAlignment
+{
+  TEXT_ALIGN_LEFT,
+  TEXT_ALIGN_RIGHT,
+  TEXT_ALIGN_CENTER
+} TextAlignment;
+
+/**
+ * \brief load texture data form file
+ * \return 0 if succeed
+ */
+int texture_load(Texture* texture, const char* file);
+
+int texture_load_from_memory(Texture*  texture,
+                             const u8* data,
+                             u32       width,
+                             u32       height);
+
+/* bind given texture to current opengl context */
+void texture_bind(const Texture* texture);
+
+/* free texture data */
+void texture_destroy(Texture* texture);
+
+/* \brief set texture rect, null for entrie texture */
+void texture_region_set_rect(TextureRegion* region, const IntRect* rect);
+
+/* \brief set texture and texture rect,
+ *  set rect to NULL for entrie region */
+void texture_region_set_texture(TextureRegion* region,
+                                const Texture* texture,
+                                const IntRect* rect);
+
+TextureRegion texture_region(const Texture* texture, const IntRect* rect);
 
 /**
  * helper function to create new shader program
@@ -83,15 +112,45 @@ void sprite_batch_end(void);
  * \param size sprite's size
  * \param color sprite's color
  * \param depth effect draw order of sprite
- * \param textureRegion texture use to draw given sprite
- * \param transformMatrix use to transform given sprite
+ * \param tex texture use to draw given sprite
+ * \param tx use to transform given sprite
  */
-void draw_sprite(vec2                 size,
-                 vec2                 center,
-                 vec4                 color,
-                 float                depth,
-                 const TextureRegion* textureRegion,
-                 mat3                 transformMatrix);
+void draw_texture_region_w_tx(const TextureRegion* tex,
+                              vec2                 size,
+                              vec2                 center,
+                              vec4                 color,
+                              float                depth,
+                              mat3                 tx);
+
+void draw_texture_region(const TextureRegion* tex,
+                         vec2                 position,
+                         vec2                 size,
+                         vec4                 color);
+
+void draw_text(const char* text, float x, float y, vec4 color);
+
+void draw_textv(const char* text, vec2 position, vec4 color);
+
+void draw_text_ex(const char*   text,
+                  const Font*   font,
+                  float         x,
+                  float         y,
+                  float         scale,
+                  TextAlignment alignment,
+                  vec4          color);
+
+void draw_textv_ex(const char*   text,
+                   const Font*   font,
+                   vec2          position,
+                   float         scale,
+                   TextAlignment alignment,
+                   vec4          color);
+
+float draw_codepoint(u32         codepoint,
+                     const Font* font,
+                     vec2        position,
+                     float       scale,
+                     vec4        color);
 /**
  * \brief init sprite renderer
  *
@@ -105,7 +164,7 @@ void sprite_renderer_init(u32 maxSprites);
 void sprite_renderer_shutdown(void);
 
 /* shader use to drawing sprite */
-typedef struct
+typedef struct SpriteShader
 {
   /* program handle */
   GLuint handle;
@@ -114,11 +173,6 @@ typedef struct
   int uProjMatLocation;
 
 } SpriteShader;
-
-typedef struct
-{
-  GLuint handle;
-} TextShader;
 
 /**
  * \brief create new shader for rendering quad
@@ -157,8 +211,5 @@ typedef struct AnimationTemplate
 void anim_init_tmpl(Animation* anim, const AnimationTemplate* tmpl);
 void anim_destroy(Animation* anim);
 const TextureRegion* anim_get_frame(const Animation* anim, float elapsedTime);
-
-
-
 
 #endif // GRAPHICS

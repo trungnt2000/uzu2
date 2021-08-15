@@ -82,7 +82,7 @@ map_renderer_fini(void)
   glDeleteBuffers(1, &sVbo);
   glDeleteBuffers(1, &sEbo);
   glDeleteVertexArrays(1, &sVao);
-  texture_free(&sTilesetTex);
+  texture_destroy(&sTilesetTex);
 }
 
 void

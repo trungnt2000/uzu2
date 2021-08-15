@@ -72,6 +72,10 @@ INLINE int
 min(int a, int b)
 { return a < b ? a : b; }
 
+INLINE u32
+maxu(u32 a, u32 b)
+{ return a > b ? a : b; }
+
 INLINE int
 sign(int x)
 { return (x > 0) - (x < 0); }

@@ -18,8 +18,8 @@ get_gl_pixel_format(SDL_Surface* img)
     else
       return GL_BGR;
   }
-  //ASSERT_MSG(0, "unhandled pixel format");
-  //return 0;
+  // ASSERT_MSG(0, "unhandled pixel format");
+  // return 0;
 }
 
 int
@@ -65,7 +65,7 @@ texture_bind(const Texture* texture)
   glBindTexture(GL_TEXTURE_2D, texture->handle);
 }
 void
-texture_free(Texture* texture)
+texture_destroy(Texture* texture)
 {
   glDeleteTextures(1, &texture->handle);
 }
@@ -91,11 +91,8 @@ texture_region_set_rect(TextureRegion* t, const IntRect* rect)
 }
 
 void
-texture_region_set_texture(TextureRegion* t,
-                           const Texture* texture,
-                           const IntRect* rect)
+texture_region_set_texture(TextureRegion* t, const Texture* texture, const IntRect* rect)
 {
   t->texture = texture;
   texture_region_set_rect(t, rect);
 }
-
