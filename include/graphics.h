@@ -186,6 +186,8 @@ void sprite_shader_destroy(SpriteShader* shader);
 /* bind given shader to current gl context */
 void sprite_shader_bind(SpriteShader* shader);
 
+void sprite_shader_unbind(SpriteShader* shader);
+
 /* set projection matrix uniform */
 void sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
 

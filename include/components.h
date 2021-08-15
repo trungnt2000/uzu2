@@ -16,26 +16,11 @@ enum
   TransformMatrix,
   AnimationPool,
   DrawOrder,
-  Text,
+  Velocity,
   COMPONENT_CNT
 };
 
 extern const ecs_TypeTraits gCompTraits[];
-
-typedef struct _Text
-{
-  u32*             codePoints;
-  unsigned int     codePointsLength;
-  vec3             origin;
-  vec2             size;
-  const FontAtlas* atlas;
-} _Text;
-
-typedef struct _Paragraph
-{
-  IntRect         region;
-  ParagraphFormat format;
-} _Paragraph;
 
 typedef struct _Transform
 {
@@ -75,4 +60,11 @@ typedef struct _DrawOrder
 {
   float value;
 } _DrawOrder;
+
+#define VELOCITY_ZERO_INIT {{0}}
+typedef struct _Velocity
+{
+  vec2 value;
+} _Velocity;
+
 #endif // COMPONENTS_H

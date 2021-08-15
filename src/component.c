@@ -14,6 +14,6 @@ const ecs_TypeTraits gCompTraits[COMPONENT_CNT] = {
   TYPE_TRAITS(TransformChanged, NULL, NULL),
   TYPE_TRAITS(AnimationPool, NULL, NULL),
   TYPE_TRAITS(DrawOrder, NULL, NULL),
-  TYPE_TRAITS(Text, NULL, NULL)
+  TYPE_TRAITS(Velocity, NULL, NULL),
 };
 /* clang-format on */

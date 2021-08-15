@@ -50,6 +50,10 @@ flush(void)
   /* draw all sprite in buffer */
   glBindVertexArray(sVao);
   glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, 0);
+
+  glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 
   /* reset state */
@@ -68,11 +72,11 @@ draw_texture_region_w_tx(const TextureRegion* tex,
 {
   ASSERT_MSG(sIsDrawing, "call begin first!");
 
-  float    u1, v1, u2, v2; /* texture coordinates                          */
-  Vertex*  vert;           /* vertex mem ptr                               */
-  vec3     localPos;       /* vertex position in model space               */
-  vec3     worldPos;       /* transformed position in world space          */
-  SDL_bool hasEnoughSpace; /* do we have enough space for one more sprite? */
+  float   u1, v1, u2, v2; /* texture coordinates                          */
+  Vertex* vert;           /* vertex mem ptr                               */
+  vec3    localPos;       /* vertex position in model space               */
+  vec3    worldPos;       /* transformed position in world space          */
+  bool    hasEnoughSpace; /* do we have enough space for one more sprite? */
 
   hasEnoughSpace = sSpriteCnt < sMaxSprites;
 
@@ -255,7 +259,7 @@ sprite_renderer_init(u32 maxSprites)
   /* six indices per single sprite */
   eboSize = maxSprites * sizeof(u32) * 6;
 
-  u32* indices = SDL_malloc(sizeof(u32) * maxSprites * 6);
+  u32* indices = SDL_malloc(eboSize);
   for (u32 i = 0; i < maxSprites; ++i)
   {
     indices[(i * 6) + 0] = (i * 4) + 0;

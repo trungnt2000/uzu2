@@ -136,3 +136,10 @@ sprite_shader_bind(SpriteShader* shader)
 {
   glUseProgram(shader->handle);
 }
+
+void
+sprite_shader_unbind(SpriteShader* shader)
+{
+  (void)shader;
+  glUseProgram(0);
+}

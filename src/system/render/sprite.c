@@ -50,4 +50,5 @@ system_rendering_sprite_update(ecs_Registry* registry)
                      tx[i].value);
   }
   sprite_batch_end();
+  sprite_shader_unbind(&sDefaultShader);
 }

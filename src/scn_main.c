@@ -9,6 +9,7 @@
 #include "level_loader.h"
 #include "map.h"
 #include "map_render.h"
+#include "system_logic.h"
 #include "system_render.h"
 
 void scene_main_load_level(const char* level, const char* dstPortal);
@@ -114,7 +115,10 @@ scene_main_create(void)
                  .anims   = &lizzardAnim,
                  .animCnt = 1,
              });
-  for (int i = 0; i < 100; ++i)
+
+  int w = 50 * 16;
+  int h = 50 * 16;
+  for (int i = 0; i < 10; ++i)
   {
     ecs_entity_t ett = ecs_create(sRegistry);
 
@@ -123,8 +127,8 @@ scene_main_create(void)
                Transform,
                {
                    .scale    = { 1.f, 1.f },
-                   .position = { 100.f, 100.f },
-                   .rotation = 50.f,
+                   .position = { 0.f, i * 10.f },
+                   .rotation = rand() % 360,
                });
 
     s = ecs_add_ex(sRegistry,
@@ -148,6 +152,11 @@ scene_main_create(void)
                    .anims   = &lizzardAnim,
                    .animCnt = 1,
                });
+
+    if (i % 3 == 0)
+    {
+      ecs_add_ex(sRegistry, ett, Velocity, { .value = { 10.f, 0.f } });
+    }
   }
 }
 
@@ -168,6 +177,9 @@ scene_main_tick(float deltaTime)
 {
   map_tick();
   map_render();
+
+  system_motion_update(sRegistry, deltaTime);
+
   system_rendering_transform_update(sRegistry);
   system_rendering_animation_update(sRegistry, deltaTime);
   system_rendering_sprite_update(sRegistry);

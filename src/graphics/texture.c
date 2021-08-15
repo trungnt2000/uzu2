@@ -64,6 +64,14 @@ texture_bind(const Texture* texture)
 {
   glBindTexture(GL_TEXTURE_2D, texture->handle);
 }
+
+void
+texture_unbind(const Texture* texture)
+{
+  (void)texture;
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void
 texture_destroy(Texture* texture)
 {

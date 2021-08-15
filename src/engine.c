@@ -4,22 +4,19 @@
 #include "SDL_mixer.h"
 #include "config.h"
 #include "constances.h"
-#include "font_loader.h"
-#include "graphics.h"
 #include "graphics/gl.h"
-#include "graphics/view.h"
+#include "SDL_opengl.h"
 #include "input.h"
-#include "system_render.h"
 #include "toolbox.h"
 
-static BOOL          sIsRunning = UZU_FALSE;
+static bool          sIsRunning = false;
 static SDL_GLContext sGLCtx;
 static float         sDeltaTime;
 
 static SDL_Window* sWindow;
 
 extern void tick(float deltaTime);
-extern BOOL create(void);
+extern bool create(void);
 extern void destroy(void);
 extern void receive_event(const SDL_Event* event);
 
@@ -40,18 +37,17 @@ message_callback(SDL_UNUSED GLenum      source,
 }
 #endif
 
-static BOOL
+static bool
 init()
 {
   u32 flags = SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO |
               SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
-              SDL_INIT_GAMECONTROLLER /*| SDL_INIT_SENSOR*/;
+              SDL_INIT_GAMECONTROLLER;
 
   if (SDL_Init(flags) != 0)
   {
-    printf("SDL_Init failed: %s\n", SDL_GetError());
-    SDL_Log("Failed to Init SDL");
-    return UZU_FALSE;
+    UZU_ERROR("SDL_Init failed: %s\n", SDL_GetError());
+    return false;
   }
 
   SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
@@ -67,8 +63,8 @@ init()
   sWindow = SDL_CreateWindow(WIN_TITLE,
                              SDL_WINDOWPOS_CENTERED,
                              SDL_WINDOWPOS_CENTERED,
-                             800,
-                             600,
+                             (int)(WIN_WIDTH * SCL_X),
+                             (int)(WIN_HEIGHT * SCL_Y),
                              SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
                                  SDL_WINDOW_RESIZABLE);
 
@@ -94,34 +90,32 @@ init()
 #endif
 
   if (sWindow == NULL)
-    return UZU_FALSE;
+    return false;
 
   if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG)
   {
     UZU_ERROR("failed to init SDL_image\n");
-    return UZU_FALSE;
+    return false;
   }
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) == -1)
   {
     UZU_ERROR("open audio failed\n");
-    return UZU_FALSE;
+    return false;
   }
   input_init();
 
   if (!create())
   {
-    return UZU_FALSE;
+    return false;
   }
-  return UZU_TRUE;
+  return true;
 }
 
 static int
-engine_run()
+run()
 {
   SDL_Event event;
   Uint32    lastTime, currentTime;
-  int       windowClientWidth, windowClientHeigth;
-  SDL_GetWindowSize(sWindow, &windowClientWidth, &windowClientHeigth);
   lastTime   = SDL_GetTicks();
   sIsRunning = SDL_TRUE;
   if (font_loader_init())
@@ -168,7 +162,7 @@ cleanup(void)
 void
 engine_stop()
 {
-  sIsRunning = UZU_FALSE;
+  sIsRunning = false;
 }
 
 float
@@ -182,7 +176,7 @@ main(int argc, char** argv)
 {
   if (init())
   {
-    engine_run();
+    run();
   }
   cleanup();
   return EXIT_SUCCESS;
