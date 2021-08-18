@@ -90,19 +90,19 @@ texture_region_set_rect(TextureRegion* t, const IntRect* rect)
 {
   if (rect == NULL)
   {
-    t->texRect.x = 0;
-    t->texRect.y = 0;
-    t->texRect.w = (int)t->texture->width;
-    t->texRect.h = (int)t->texture->height;
+    t->rect.x = 0;
+    t->rect.y = 0;
+    t->rect.w = (int)t->texture->width;
+    t->rect.h = (int)t->texture->height;
   }
   else
   {
-    t->texRect = *rect;
+    t->rect = *rect;
   }
-  t->u1 = (float)t->texRect.x / (float)t->texture->width;
-  t->u2 = (float)(t->texRect.x + t->texRect.w) / (float)t->texture->width;
-  t->v1 = (float)t->texRect.y / (float)t->texture->height;
-  t->v2 = (float)(t->texRect.y + t->texRect.h) / (float)t->texture->height;
+  t->u1 = (float)t->rect.x / (float)t->texture->width;
+  t->u2 = (float)(t->rect.x + t->rect.w) / (float)t->texture->width;
+  t->v1 = (float)t->rect.y / (float)t->texture->height;
+  t->v2 = (float)(t->rect.y + t->rect.h) / (float)t->texture->height;
 }
 
 void

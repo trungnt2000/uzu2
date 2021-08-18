@@ -21,9 +21,11 @@ set(SOURCE_FILES
   src/graphics/shader.c
   src/graphics/texture.c
   src/graphics/view.c
-  src/graphics/anim.c
+  src/graphics/animation.c
   src/graphics/font.c
   src/graphics/renderer.c
+  src/graphics/asset_table.c
+  src/graphics/sprite_sheet.c
   #${BEHAVIOR_NODE_SOURCE_FILES}
   #${GAME_EVENT_SOURCE_FILES}
   ${SYSTEM_SOURCE_FILES}

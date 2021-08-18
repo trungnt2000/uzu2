@@ -22,7 +22,7 @@ system_rendering_animation_update(ecs_Registry* registry, float deltaTime)
   while (ecs_view_next(&view, &ett, &deps))
   {
     deps.animPool->elapsedTime += deltaTime;
-    keyframe = anim_get_frame(deps.animPool->anims, deps.animPool->elapsedTime);
+    keyframe = animation_get_frame(deps.animPool->anims, deps.animPool->elapsedTime);
     deps.sprite->textureRegion = *keyframe;
   }
 }

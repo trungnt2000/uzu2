@@ -35,7 +35,7 @@ typedef struct Texture
 typedef struct TextureRegion
 {
   const Texture* texture;
-  IntRect        texRect; /* read only */
+  IntRect        rect; /* read only */
   float          u1;      /* read only */
   float          v1;      /* read only */
   float          u2;      /* read only */
@@ -61,13 +61,6 @@ typedef enum TextWrap
   TEXT_WRAP_NORMAL,
   TEXT_WRAP_WORD
 } TextWrap;
-
-typedef struct Animation
-{
-  TextureRegion* frames;
-  int            frameCnt;
-  float          frameDuration;
-} Animation;
 
 /* shader use to drawing sprite */
 typedef struct SpriteShader
@@ -110,6 +103,8 @@ void texture_region_set_rect(TextureRegion* region, const IntRect* rect);
  *  set rect to NULL for entrie region */
 void texture_region_set_texture(TextureRegion* region, const Texture* texture, const IntRect* rect);
 
+#define texture_region_init texture_region_set_texture
+
 TextureRegion texture_region(const Texture* texture, const IntRect* rect);
 
 /**
@@ -138,19 +133,4 @@ void sprite_shader_unbind(SpriteShader* shader);
  */
 void sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
 
-typedef struct AnimationTemplate
-{
-  const Texture* texture;
-  int            xOffset;
-  int            yOffset;
-  int            spriteWidth;
-  int            spriteHeight;
-  int            columnCount;
-  int            rowCount;
-  float          frameDuration;
-} AnimationTemplate;
-
-void                 anim_init_tmpl(Animation* anim, const AnimationTemplate* tmpl);
-void                 anim_destroy(Animation* anim);
-const TextureRegion* anim_get_frame(const Animation* anim, float elapsedTime);
 #endif // GRAPHICS_TYPES_H

@@ -1,10 +1,12 @@
 // ngotrung Wed 16 Jun 2021 08:16:56 PM +07
 #ifndef GRAPHICS
 #define GRAPHICS
-#include "graphics/font.h"
+#include "graphics/types.h" /* basic types */
 #include "graphics/renderer.h"
-#include "graphics/types.h"
-
+#include "graphics/font.h"
+#include "graphics/view.h"
+#include "graphics/sprite_sheet.h"
+#include "graphics/animation.h"
 /**
  * helper function to create new shader program
  * with given vertex shader and fragment shader file

@@ -13,7 +13,7 @@ target_link_libraries(${TARGET_NAME}
 
 
 target_sources( ${TARGET_NAME} PRIVATE
-  ../../src/asset_manager.c
+  ../../src/graphics/asset_table.c
  asset_table_test.c)
 
 target_include_directories(${TARGET_NAME} PRIVATE

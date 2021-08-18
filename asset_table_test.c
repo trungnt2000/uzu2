@@ -1,10 +1,11 @@
-#include "assert_manager.h"
+#include "graphics/asset_table.h"
 #include <stdio.h>
+
 int main()
 {
   AssetTable tbl;
 
-  asset_table_init(&tbl);
+  asset_table_init(&tbl, NULL);
 
   asset_table_insert(&tbl, "key1", "value1");
   asset_table_insert(&tbl, "key2", "value2");

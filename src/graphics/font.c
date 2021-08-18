@@ -6,6 +6,7 @@
 
 #define FIRST_CODEPOINT 0x00
 #define LAST_CODEPOINT 0xff
+#define PADDING 2
 
 static FT_Library sFTLibrary;
 
@@ -91,7 +92,7 @@ font_load(Font* font, const char* file, u32 size)
     maxGlyphHeight = max((int)glyph->bitmap.rows, maxGlyphHeight);
   }
 
-  atlasWidth  = maxGlyphWidth * numGlyphs;
+  atlasWidth  = (maxGlyphWidth + PADDING) * numGlyphs;
   atlasHeight = maxGlyphHeight;
 
   buff = SDL_malloc((sizeof *buff) * maxGlyphWidth * maxGlyphHeight * 4);
@@ -136,7 +137,7 @@ font_load(Font* font, const char* file, u32 size)
     font->glyphMaxWidth = maxGlyphWidth;
     font->glyphMaxHeight = maxGlyphHeight;
 
-    x += maxGlyphWidth;
+    x += (maxGlyphWidth + PADDING);
   }
 cleanup:
   FT_Done_Face(face);

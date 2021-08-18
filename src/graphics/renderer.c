@@ -1,6 +1,6 @@
+#include "graphics/renderer.h"
 #include "cglm/cglm.h"
 #include "graphics/gl.h"
-#include "graphics/renderer.h"
 #include "toolbox.h"
 
 /* wheather or not drawing */
@@ -237,7 +237,7 @@ draw_texture_region_w_tx(const TextureRegion* region,
 }
 
 void
-draw_texture_region(const TextureRegion* region, vec2 position, vec2 size, vec2 color)
+draw_texture_region(const TextureRegion* region, vec2 position, vec2 size_, vec2 color)
 {
 
   ASSERT_MSG(sIsDrawing, "call begin first!");
@@ -246,7 +246,7 @@ draw_texture_region(const TextureRegion* region, vec2 position, vec2 size, vec2 
   Vertex*        vert;           /* vertex mem ptr                               */
   SDL_bool       hasEnoughSpace; /* do we have enough space for one more sprite? */
   const Texture* texture;
-
+  vec2           size;
   hasEnoughSpace = sSpriteCnt < sMaxSprites;
 
   /* if we do not have enough space for new one,
@@ -261,6 +261,17 @@ draw_texture_region(const TextureRegion* region, vec2 position, vec2 size, vec2 
     v1      = 0.f;
     v2      = 1.f;
     u2      = 1.f;
+
+    if (size_ == NULL)
+    {
+      size[0] = 16.f;
+      size[1] = 16.f;
+    }
+    else
+    {
+      size[0] = size_[0];
+      size[1] = size_[1];
+    }
   }
   else
   {
@@ -269,6 +280,17 @@ draw_texture_region(const TextureRegion* region, vec2 position, vec2 size, vec2 
     v1      = region->v1;
     u2      = region->u2;
     v2      = region->v2;
+
+    if (size_ == NULL)
+    {
+      size[0] = (float)region->rect.w;
+      size[1] = (float)region->rect.h;
+    }
+    else
+    {
+      size[0] = size_[0];
+      size[1] = size_[1];
+    }
   }
   /* if current texture to use diffrent from previous
    * texture flush current draw commands to gpu */
@@ -378,25 +400,6 @@ align_text(const char* text, const Font* font, float x, float scale, TextAlignme
 
 static void draw_glyph(const Glyph* glyph, vec2 position, float scale, vec4 color);
 
-static const char*
-draw_single_line(const char* text, const Font* font, vec2 position, float scale, vec4 color)
-{
-  u32          codepoint;
-  const u8*    iter    = (const u8*)text;
-  vec2         drawPos = { position[0], position[1] + font->glyphMaxHeight * scale };
-  const Glyph* glyph;
-
-  while (*iter && *iter != '\n')
-  {
-    codepoint = (u32)*iter++;
-    glyph     = &font->glyphs[codepoint];
-    draw_glyph(glyph, drawPos, scale, color);
-    drawPos[0] += glyph->advance[0] * scale;
-  }
-
-  return (const char*)(*iter == '\0' ? NULL : iter + 1);
-}
-
 void
 draw_textv_ex(const char*   text,
               const Font*   font,
@@ -406,18 +409,27 @@ draw_textv_ex(const char*   text,
               vec4          color)
 {
   // TODO: decode utf8
-  const char* line = text;
-  vec2        drawPos;
+  vec2         drawPos;
+  const Glyph* glyph;
+  const u8*    iter;
 
   if (font == NULL)
     font = &sDefaultFont;
 
-  drawPos[1] = position[1];
+  drawPos[1] = position[1] + font->glyphMaxHeight * scale;
 
-  while (line != NULL)
+  while (text != NULL)
   {
-    drawPos[0] = align_text(line, font, position[0], scale, alignment);
-    line       = draw_single_line(line, font, drawPos, scale, color);
+    drawPos[0] = align_text(text, font, position[0], scale, alignment);
+    iter       = (const u8*)text;
+
+    while (*iter && *iter != '\n')
+    {
+      glyph = &font->glyphs[(u32)*iter++];
+      draw_glyph(glyph, drawPos, scale, color);
+      drawPos[0] += glyph->advance[0] * scale;
+    }
+    text = (const char*)(*iter == '\0' ? NULL : iter + 1);
     drawPos[1] += font->glyphMaxHeight * scale;
   }
 }
@@ -461,7 +473,7 @@ draw_text_boxed_ex(const char*   text,
                    TextWrap      wrap,
                    vec4          color)
 {
-  u8           buf[512];
+  static u8    buf[512] = { 0 };
   float        lineWidth;
   u8*          iter;
   const Glyph* glyph;

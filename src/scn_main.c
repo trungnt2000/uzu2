@@ -3,7 +3,7 @@
 #include "constances.h"
 #include "ecs.h"
 #include "engine.h"
-#include "graphics/view.h"
+#include "graphics.h"
 #include "input.h"
 #include "level_loader.h"
 #include "map.h"
@@ -23,6 +23,7 @@ static Animation    lizzardAnim;
 static SpriteShader shader;
 static Font         font;
 static float        scl = 1.f;
+static SpriteSheet  spriteSheet;
 
 static void preupdate(float deltaTime);
 static void update(float deltaTime);
@@ -94,10 +95,10 @@ process_input(void* SDL_UNUSED arg, u32 currState, SDL_UNUSED u32 prevState)
     view_rotate(-1.f);
 
   if (key_pressed(SDL_SCANCODE_V))
-    scl+=0.1f;
-  
+    scl += 0.1f;
+
   if (key_pressed(SDL_SCANCODE_B))
-    scl-=0.1f;
+    scl -= 0.1f;
 }
 
 void
@@ -127,16 +128,20 @@ scene_main_create(void)
     UZU_ERROR("Could not load font!\n");
   }
 
+  if (sprite_sheet_load(&spriteSheet, "res/spritesheet.json") != 0)
+  {
+    UZU_ERROR("Could not load sprite sheet!\n");
+  }
+
   AnimationTemplate tmpl = { 0 };
   tmpl.columnCount       = 5;
   tmpl.rowCount          = 1;
   tmpl.spriteWidth       = 16;
   tmpl.spriteHeight      = 28;
-  tmpl.texture           = &lizzardTexture;
   tmpl.frameDuration     = .1f;
   tmpl.xOffset           = 4 * 16;
 
-  anim_init_tmpl(&lizzardAnim, &tmpl);
+  animation_init_w_texture(&lizzardAnim, &lizzardTexture, &tmpl);
 
   // map_renderer_init();
   sRegistry = ecs_registry_create(gCompTraits, COMPONENT_CNT);
@@ -226,9 +231,10 @@ scene_main_destroy(void)
   printf("scene_main destroyed!\n");
   ecs_registry_free(sRegistry);
   system_rendering_sprite_fini();
-  anim_destroy(&lizzardAnim);
+  animation_destroy(&lizzardAnim);
   texture_destroy(&texture);
   texture_destroy(&lizzardTexture);
+  sprite_sheet_destroy(&spriteSheet);
 }
 
 void
@@ -263,7 +269,7 @@ scene_main_tick(float deltaTime)
   tx->rotation += 1.f;
 #endif
 
-  // draw_text(text, 50, 50, (vec4){ 0.f, 0.2f, 0.7f, 1.f });
+  draw_text(text, 50, 50, (vec4){ 0.f, 0.2f, 0.7f, 1.f });
   draw_text_boxed_ex(text2,
                      &font,
                      (vec2){ 0.f, 0.f },
@@ -272,6 +278,10 @@ scene_main_tick(float deltaTime)
                      TEXT_ALIGN_LEFT,
                      TEXT_WRAP_NORMAL,
                      COLOR_RED);
+
+  const TextureRegion* sprite1 = sprite_sheet_get(&spriteSheet, "flask_green.png");
+  draw_texture_region(sprite1, (vec2){ 100, 100 }, NULL, COLOR_WHITE);
+
   sprite_batch_end();
 
   RenderStatistics statistics;
