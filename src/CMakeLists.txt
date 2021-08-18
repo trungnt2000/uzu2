@@ -6,7 +6,6 @@ set(SOURCE_FILES
   src/constances.c
   src/json_helper.c
   src/level_loader.c
-  src/font_loader.c
   src/map.c 
   src/map_render.c
   src/read_all.c
@@ -20,12 +19,11 @@ set(SOURCE_FILES
   src/main.c
 
   src/graphics/shader.c
-  src/graphics/render.c
   src/graphics/texture.c
   src/graphics/view.c
   src/graphics/anim.c
-  src/graphics/text.c
-  src/text_format.c
+  src/graphics/font.c
+  src/graphics/renderer.c
   #${BEHAVIOR_NODE_SOURCE_FILES}
   #${GAME_EVENT_SOURCE_FILES}
   ${SYSTEM_SOURCE_FILES}

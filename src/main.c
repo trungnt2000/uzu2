@@ -60,7 +60,7 @@ static void (*const sScnTickFuncTbl[])(float) = {
   scene_select_character_tick,
 };
 
-BOOL
+bool
 create()
 {
   glEnable(GL_BLEND);
@@ -71,7 +71,7 @@ create()
   scene_select_character_create();
   set_scene(SCENE_MAIN);
   printf("game created\n");
-  return UZU_TRUE;
+  return true;
 }
 
 void

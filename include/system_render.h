@@ -2,7 +2,6 @@
 #ifndef SYSTEM_RENDER_H
 #define SYSTEM_RENDER_H
 #include "ecs.h"
-#include "font_loader.h"
 
 /*
  * NAMING CONVENTION

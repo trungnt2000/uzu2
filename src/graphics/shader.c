@@ -1,4 +1,5 @@
 #include "graphics.h"
+#include "graphics/gl.h"
 
 static char*
 read_entrie_file(const char* file)
@@ -23,11 +24,11 @@ read_entrie_file(const char* file)
 static bool
 compile_file(const char* file, GLenum type, GLuint* out)
 {
+#define INFO_LOG_SIZ 512
   char*  source;
   GLuint shader;
   int    isCompiled;
-  int    infoLogLength;
-  char*  infoLog;
+  char   infoLog[INFO_LOG_SIZ];
 
   source = read_entrie_file(file);
   if (!source)
@@ -46,11 +47,8 @@ compile_file(const char* file, GLenum type, GLuint* out)
   glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
   if (!isCompiled)
   {
-    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-    infoLog = SDL_malloc(infoLogLength);
-    glGetShaderInfoLog(shader, infoLogLength, &infoLogLength, infoLog);
+    glGetShaderInfoLog(shader, INFO_LOG_SIZ, NULL, infoLog);
     UZU_ERROR("Fail to compile_file shader: %s\n", infoLog);
-    SDL_free(infoLog);
     return false;
   }
   *out = shader;
@@ -59,7 +57,7 @@ compile_file(const char* file, GLenum type, GLuint* out)
 }
 
 int
-create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram)
+create_shader_form_file(const char* vsFile, const char* fsFile, unsigned int* outProgram)
 {
   GLuint vertShader = 0, fragShader = 0;
   GLuint program = 0;
@@ -80,7 +78,7 @@ create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram)
 
   if (!compile_file(fsFile, GL_FRAGMENT_SHADER, &fragShader))
   {
-    UZU_ERROR("Fail to compile fragment shader");
+    UZU_ERROR("Fail to compile fragment shader\n");
     glDeleteShader(vertShader);
     return -1;
   }
@@ -105,15 +103,12 @@ create_shader(const char* vsFile, const char* fsFile, GLuint* outProgram)
 int
 sprite_shader_load(SpriteShader* shader)
 {
-  if (create_shader("res/shader/sprite.vert",
-                    "res/shader/sprite.frag",
-                    &shader->handle) != 0)
+  if (create_shader_form_file("res/shader/sprite.vert", "res/shader/sprite.frag", &shader->handle) != 0)
   {
     UZU_ERROR("Failed to create program\n");
     return -1;
   }
-  shader->uProjMatLocation =
-      glGetUniformLocation(shader->handle, "u_viewProjectionMatrix");
+  shader->uProjMatLocation = glGetUniformLocation(shader->handle, "u_viewProjectionMatrix");
   return 0;
 }
 

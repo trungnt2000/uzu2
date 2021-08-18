@@ -3,9 +3,7 @@
 #define COMPONENTS_H
 #include "cglm/cglm.h"
 #include "ecs.h"
-#include "font_loader.h"
 #include "graphics.h"
-#include "text_format.h"
 #include "toolbox/common.h"
 
 enum
@@ -61,7 +59,12 @@ typedef struct _DrawOrder
   float value;
 } _DrawOrder;
 
-#define VELOCITY_ZERO_INIT {{0}}
+#define VELOCITY_ZERO_INIT                                                                                   \
+  {                                                                                                          \
+    {                                                                                                        \
+      0                                                                                                      \
+    }                                                                                                        \
+  }
 typedef struct _Velocity
 {
   vec2 value;

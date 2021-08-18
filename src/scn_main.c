@@ -3,7 +3,6 @@
 #include "constances.h"
 #include "ecs.h"
 #include "engine.h"
-#include "font_loader.h"
 #include "graphics/view.h"
 #include "input.h"
 #include "level_loader.h"
@@ -21,10 +20,54 @@ static Texture      lizzardTexture;
 static ecs_entity_t entity1;
 static ecs_entity_t entity2;
 static Animation    lizzardAnim;
+static SpriteShader shader;
+static Font         font;
+static float        scl = 1.f;
 
 static void preupdate(float deltaTime);
 static void update(float deltaTime);
 static void postupdate(float deltaTime);
+
+static const char text[] = "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n"
+                           "The quick brown fox jumps over the lazy dog.\n";
+
+static const char text2[] =
+    "&buffer is the address of the first character position where the input string will be stored. It’s not "
+    "the base address of the buffer, but of the first character in the buffer. This pointer type (a "
+    "pointer-pointer or the ** thing) causes massive confusion.\n"
+    "&size is the address of the variable that holds the size of the input buffer, another pointer.\n"
+    "stdin is the input file handle. So you could use getline() to read a line of text from a file, but when "
+    "stdin is specified, standard input is read.\n";
 
 static void
 process_input(void* SDL_UNUSED arg, u32 currState, SDL_UNUSED u32 prevState)
@@ -49,6 +92,12 @@ process_input(void* SDL_UNUSED arg, u32 currState, SDL_UNUSED u32 prevState)
     view_rotate(1.f);
   if (key_pressed(SDL_SCANCODE_H))
     view_rotate(-1.f);
+
+  if (key_pressed(SDL_SCANCODE_V))
+    scl+=0.1f;
+  
+  if (key_pressed(SDL_SCANCODE_B))
+    scl-=0.1f;
 }
 
 void
@@ -68,6 +117,16 @@ scene_main_create(void)
     UZU_ERROR("Could not load lizzard texture\n");
   }
 
+  if (sprite_shader_load(&shader) != 0)
+  {
+    UZU_ERROR("Could not load default shader\n");
+  }
+
+  if (font_load(&font, "res/font/font.TTF", 16) != 0)
+  {
+    UZU_ERROR("Could not load font!\n");
+  }
+
   AnimationTemplate tmpl = { 0 };
   tmpl.columnCount       = 5;
   tmpl.rowCount          = 1;
@@ -79,7 +138,7 @@ scene_main_create(void)
 
   anim_init_tmpl(&lizzardAnim, &tmpl);
 
-  map_renderer_init();
+  // map_renderer_init();
   sRegistry = ecs_registry_create(gCompTraits, COMPONENT_CNT);
   system_rendering_sprite_init(sRegistry);
 
@@ -163,7 +222,7 @@ scene_main_create(void)
 void
 scene_main_destroy(void)
 {
-  map_renderer_fini();
+  // map_renderer_fini();
   printf("scene_main destroyed!\n");
   ecs_registry_free(sRegistry);
   system_rendering_sprite_fini();
@@ -175,11 +234,18 @@ scene_main_destroy(void)
 void
 scene_main_tick(float deltaTime)
 {
-  map_tick();
-  map_render();
+#if 1
+  // map_tick();
+  // map_render();
 
+  mat4 projectionViewMatrix;
+  view_combined(projectionViewMatrix);
+  sprite_shader_bind(&shader);
+  sprite_shader_uniform_projmat(&shader, projectionViewMatrix);
+  u32 start = SDL_GetTicks();
   system_motion_update(sRegistry, deltaTime);
 
+  sprite_batch_begin();
   system_rendering_transform_update(sRegistry);
   system_rendering_animation_update(sRegistry, deltaTime);
   system_rendering_sprite_update(sRegistry);
@@ -195,6 +261,34 @@ scene_main_tick(float deltaTime)
   tx->position[0] = lerpf(tx->position[0], mx, deltaTime * 5.f);
   tx->position[1] = lerpf(tx->position[1], my, deltaTime * 5.f);
   tx->rotation += 1.f;
+#endif
+
+  // draw_text(text, 50, 50, (vec4){ 0.f, 0.2f, 0.7f, 1.f });
+  draw_text_boxed_ex(text2,
+                     &font,
+                     (vec2){ 0.f, 0.f },
+                     (vec2){ 200, 200 },
+                     scl,
+                     TEXT_ALIGN_LEFT,
+                     TEXT_WRAP_NORMAL,
+                     COLOR_RED);
+  sprite_batch_end();
+
+  RenderStatistics statistics;
+  char             buf[255];
+  float            time = (float)(SDL_GetTicks() - start) / 1000.f;
+  sprite_renderer_query_statistics(&statistics);
+  sprintf(buf,
+          "time: %.3fs\ndraw call: %u\nvertice count: %u",
+          time,
+          statistics.drawCall,
+          statistics.verticeCount);
+  mat4 projectionMatrix;
+  view_projection_matrix(projectionMatrix);
+  sprite_shader_uniform_projmat(&shader, projectionMatrix);
+  sprite_batch_begin();
+  draw_textv_ex(buf, &font, (vec2){ 0.f, 0.f }, 1.f, TEXT_ALIGN_LEFT, COLOR_GREEN);
+  sprite_batch_end();
 }
 
 void

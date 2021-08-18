@@ -8,6 +8,8 @@
 /* get combined matrix */
 void view_combined(mat4 mat);
 
+void view_projection_matrix(mat4 projMatReturn);
+
 /* translate view by v */
 void view_translate(vec2 v);
 

@@ -43,6 +43,11 @@ view_combined(mat4 outVpMat)
   // glm_mat4_copy(sProjMat, outVpMat);
 }
 
+void view_projection_matrix(mat4 projMatReturn)
+{
+  glm_mat4_copy(sProjMat, projMatReturn);
+}
+
 void
 view_translate(vec2 v)
 {

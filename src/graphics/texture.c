@@ -1,25 +1,24 @@
 #include "SDL_image.h"
 #include "graphics.h"
+#include "graphics/gl.h"
+
+const static GLuint sPixelFormatToGLFormat[] = {
+  [PIXEL_FORMAT_RGBA] = GL_RGBA,
+  [PIXEL_FORMAT_BGRA] = GL_BGRA,
+};
 
 static unsigned int
-get_gl_pixel_format(SDL_Surface* img)
+get_surface_format(SDL_Surface* img)
 {
   if (img->format->BytesPerPixel == 4)
   {
     if (img->format->Rmask == 0x000000ff)
-      return GL_RGBA;
+      return PIXEL_FORMAT_RGBA;
     else
-      return GL_BGRA;
+      return PIXEL_FORMAT_BGRA;
   }
-  else
-  {
-    if (img->format->Rmask == 0x000000ff)
-      return GL_RGB;
-    else
-      return GL_BGR;
-  }
-  // ASSERT_MSG(0, "unhandled pixel format");
-  // return 0;
+  ASSERT_MSG(0, "unhandled pixel format");
+  return 0;
 }
 
 int
@@ -28,34 +27,42 @@ texture_load(Texture* texture, const char* file)
   SDL_Surface* img = IMG_Load(file);
   if (!file || !texture)
   {
-    UZU_ERROR("Invalid Argument");
+    UZU_ERROR("Invalid argument");
     return -1;
   }
+
   if (!img)
   {
     UZU_ERROR("Failed to read image file %s: %s", file, IMG_GetError());
     return -1;
   }
 
+  PixelFormat format = get_surface_format(img);
+  if (texture_load_from_memory(texture, img->pixels, img->w, img->h, format))
+  {
+    SDL_FreeSurface(img);
+    return -1;
+  }
+  SDL_FreeSurface(img);
+  return 0;
+}
+
+int
+texture_load_from_memory(Texture* texture, const u8* data, int width, int height, PixelFormat dataFormat)
+{
   glGenTextures(1, &texture->handle);
   glBindTexture(GL_TEXTURE_2D, texture->handle);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D,
-               0,
-               GL_RGBA,
-               img->w,
-               img->h,
-               0,
-               get_gl_pixel_format(img),
-               GL_UNSIGNED_BYTE,
-               img->pixels);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  texture->width  = img->w;
-  texture->height = img->h;
+  GLuint glFormat = sPixelFormatToGLFormat[dataFormat];
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, glFormat, GL_UNSIGNED_BYTE, data);
+
+  texture->width  = width;
+  texture->height = height;
 
   glBindTexture(GL_TEXTURE_2D, 0);
-  SDL_FreeSurface(img);
   return 0;
 }
 
@@ -85,8 +92,8 @@ texture_region_set_rect(TextureRegion* t, const IntRect* rect)
   {
     t->texRect.x = 0;
     t->texRect.y = 0;
-    t->texRect.w = t->texture->width;
-    t->texRect.h = t->texture->height;
+    t->texRect.w = (int)t->texture->width;
+    t->texRect.h = (int)t->texture->height;
   }
   else
   {
@@ -103,4 +110,12 @@ texture_region_set_texture(TextureRegion* t, const Texture* texture, const IntRe
 {
   t->texture = texture;
   texture_region_set_rect(t, rect);
+}
+
+TextureRegion
+texture_region(const Texture* texture, const IntRect* rect)
+{
+  TextureRegion textureRegion;
+  texture_region_set_texture(&textureRegion, texture, rect);
+  return textureRegion;
 }

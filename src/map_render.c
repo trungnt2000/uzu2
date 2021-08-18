@@ -5,6 +5,7 @@
 #include "input.h"
 #include "map.h"
 #include "toolbox/common.h"
+#include "graphics/gl.h"
 
 /* how many float components in one vertex                   */
 /* each vertex contains two floats for position,             */
@@ -260,8 +261,7 @@ static int
 load_resources(void)
 {
   /* load shaders */
-  if (create_shader("res/shader/tile.vert", "res/shader/tile.frag", &sShader) !=
-      0)
+  if (create_shader_form_file("res/shader/tile.vert", "res/shader/tile.frag", &sShader) != 0)
   {
     UZU_ERROR("fail to load map shader\n");
     return -1;

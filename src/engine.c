@@ -4,10 +4,16 @@
 #include "SDL_mixer.h"
 #include "config.h"
 #include "constances.h"
-#include "graphics/gl.h"
-#include "SDL_opengl.h"
+#include "graphics.h"
 #include "input.h"
 #include "toolbox.h"
+
+#include "graphics/gl.h"
+#include "SDL_opengl.h"
+
+#ifndef MAX_SPRITE_PER_BATCH
+#define MAX_SPRITE_PER_BATCH 2048
+#endif
 
 static bool          sIsRunning = false;
 static SDL_GLContext sGLCtx;
@@ -40,9 +46,8 @@ message_callback(SDL_UNUSED GLenum      source,
 static bool
 init()
 {
-  u32 flags = SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO |
-              SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC |
-              SDL_INIT_GAMECONTROLLER;
+  u32 flags = SDL_INIT_TIMER | SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK |
+              SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER;
 
   if (SDL_Init(flags) != 0)
   {
@@ -65,8 +70,7 @@ init()
                              SDL_WINDOWPOS_CENTERED,
                              (int)(WIN_WIDTH * SCL_X),
                              (int)(WIN_HEIGHT * SCL_Y),
-                             SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
-                                 SDL_WINDOW_RESIZABLE);
+                             SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
   sGLCtx = SDL_GL_CreateContext(sWindow);
 
@@ -92,22 +96,34 @@ init()
   if (sWindow == NULL)
     return false;
 
+  // TODO: replace with stb_image
   if (IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG)
   {
     UZU_ERROR("failed to init SDL_image\n");
     return false;
   }
-  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) == -1)
+
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) != 0)
   {
     UZU_ERROR("open audio failed\n");
     return false;
   }
+
   input_init();
+
+  if (font_loader_init() != 0)
+  {
+    UZU_ERROR("Could not init font loader\n");
+    return false;
+  }
+
+  sprite_renderer_init(MAX_SPRITE_PER_BATCH);
 
   if (!create())
   {
     return false;
   }
+
   return true;
 }
 
@@ -118,30 +134,20 @@ run()
   Uint32    lastTime, currentTime;
   lastTime   = SDL_GetTicks();
   sIsRunning = SDL_TRUE;
-  if (font_loader_init())
-  {
-    UZU_ERROR("Could not init font loader\n");
-    return -1;
-  }
-
 
   while (sIsRunning)
   {
     currentTime = SDL_GetTicks();
-    sDeltaTime  = (float)(currentTime - lastTime);
+    sDeltaTime  = (float)(currentTime - lastTime) / 1000.f;
+    lastTime = currentTime;
 
     while (SDL_PollEvent(&event))
     {
       receive_event(&event);
     }
     input_update();
-
-    if (sDeltaTime > (1000 / 60.0f))
-    {
-      lastTime = currentTime;
-      tick(sDeltaTime / 1000.0f);
-      SDL_GL_SwapWindow(sWindow);
-    }
+    tick(sDeltaTime);
+    SDL_GL_SwapWindow(sWindow);
   }
 
   return 0;
@@ -151,6 +157,7 @@ static void
 cleanup(void)
 {
   destroy();
+  sprite_renderer_shutdown();
   font_loader_shutdown();
   SDL_GL_DeleteContext(sGLCtx);
   SDL_DestroyWindow(sWindow);
