@@ -1,133 +1,117 @@
 #include "graphics/view.h"
 #include "toolbox/common.h"
 
-static vec3  sPos;
-static vec3  sScl;
-static vec2  sSiz;
-static float sRot;
-static mat4  sProjMat;
-static mat4  sViewMat;
-static bool  sDirty;
-static mat4  sInvViewMat;
 void
-view_combined(mat4 viewProjMatReturn)
+view_combined(View* view, mat4 viewProjMatReturn)
 {
 
-  if (sDirty)
+  if (view->dirty)
   {
-    glm_translate_make(
-        sViewMat,
-        (vec3){ -(sPos[0] - sSiz[0] / 2.f), -(sPos[1] - sSiz[1] / 2.f), 0 });
-    glm_scale(sViewMat, sScl);
-    glm_rotate_z(sViewMat, sRot, sViewMat);
-    glm_mat4_inv(sViewMat, sInvViewMat);
-    sDirty = false;
+    glm_translate_make(view->viewMat,
+        (vec3){ -(view->position[0] - view->size[0] / 2.f), -(view->position[1] - view->size[1] / 2.f), 0 });
+    glm_scale(view->viewMat, view->scale);
+    glm_rotate_z(view->viewMat, view->rotation, view->viewMat);
+    glm_mat4_inv(view->viewMat, view->invViewMat);
+    view->dirty = false;
   }
-  glm_mat4_mul(sProjMat, sViewMat, viewProjMatReturn);
+  glm_mat4_mul(view->projMat, view->viewMat, viewProjMatReturn);
   // glm_mat4_copy(sProjMat, outVpMat);
 }
 
-void view_projection_matrix(mat4 projMatReturn)
+void
+view_projection_matrix(View* view, mat4 projMatReturn)
 {
-  glm_mat4_copy(sProjMat, projMatReturn);
+  glm_mat4_copy(view->projMat, projMatReturn);
 }
 
 void
-view_translate(vec2 v)
+view_translate(View* view, vec2 v)
 {
-  sDirty = true;
-  sPos[0] += v[0];
-  sPos[1] += v[1];
+  view->dirty = true;
+  view->position[0] += v[0];
+  view->position[1] += v[1];
 }
 
 void
-view_rotate(float angle)
+view_rotate(View* view, float angle)
 {
-  sDirty = true;
-  sRot += angle;
+  view->dirty = true;
+  view->rotation += angle;
 }
 
 void
-view_zoom(vec2 v)
+view_zoom(View* view, vec2 v)
 {
-  sDirty = true;
-  sScl[0] *= v[0];
-  sScl[1] *= v[1];
+  view->dirty = true;
+  view->scale[0] *= v[0];
+  view->scale[1] *= v[1];
 }
 
 void
-view_set_position(vec2 pos)
+view_set_position(View* view, vec2 pos)
 {
-  sDirty = true;
-  glm_vec3_copy((vec3){ pos[0], pos[1], 0.f }, sPos);
+  view->dirty = true;
+  glm_vec3_copy((vec3){ pos[0], pos[1], 0.f }, view->position);
 }
 
 void
-view_set_rotation(float rot)
+view_set_rotation(View* view, float rot)
 {
-  sDirty = true;
-  sRot = rot;
+  view->dirty = true;
+  view->rotation   = rot;
 }
 void
-view_reset(float x, float y, float w, float h)
+view_reset(View* view, float x, float y, float w, float h)
 {
-  sScl[0] = 1.f;
-  sScl[1] = 1.f;
-  sScl[2] = 1.f;
+  view->scale[0] = 1.f;
+  view->scale[1] = 1.f;
+  view->scale[2] = 1.f;
 
-  sSiz[0] = w;
-  sSiz[1] = h;
+  view->size[0] = w;
+  view->size[1] = h;
 
-  sPos[0] = x;
-  sPos[1] = y;
+  view->position[0] = x;
+  view->position[1] = y;
 
-  sRot   = 0.f;
-  sDirty = true;
+  view->rotation = 0.f;
+  view->dirty = true;
 
-  glm_ortho(0, w, h, 0, 100, -100.f, sProjMat);
+  glm_ortho(0, w, h, 0, 100, -100.f, view->projMat);
 }
 
 float
-view_top(void)
+view_top(View* view)
 {
-  sDirty = true;
-  return sPos[1] - sSiz[1] / 2.f;
+  view->dirty = true;
+  return view->position[1] - view->size[1] / 2.f;
 }
 
 float
-view_bot(void)
+view_bot(View* view)
 {
-  sDirty = true;
-  return sPos[1] + sSiz[1] / 2.f;
+  view->dirty = true;
+  return view->position[1] + view->size[1] / 2.f;
 }
 
 float
-view_left(void)
+view_left(View* view)
 {
-  sDirty = true;
-  return sPos[0] - sSiz[0] / 2.f;
+  view->dirty = true;
+  return view->position[0] - view->size[0] / 2.f;
 }
 
 float
-view_right(void)
+view_right(View* view)
 {
-  sDirty = true;
-  return sPos[0] + sSiz[0] / 2.f;
+  view->dirty = true;
+  return view->position[0] + view->size[0] / 2.f;
 }
 
 void
-view_rect(SDL_Rect* outRect)
-{
-  outRect->x = (int)view_left();
-  outRect->y = (int)view_top();
-  outRect->w = (int)sSiz[0];
-  outRect->h = (int)sSiz[1];
-}
-
-void to_view_coords(vec2 src, vec2 dst)
+to_view_coords(View* view, vec2 src, vec2 dst)
 {
   vec4 tmp;
-  glm_mat4_mulv(sInvViewMat, (vec4){ src[0], src[1], 0.f, 1.f }, tmp);
+  glm_mat4_mulv(view->invViewMat, (vec4){ src[0], src[1], 0.f, 1.f }, tmp);
   dst[0] = tmp[0];
   dst[1] = tmp[1];
 }

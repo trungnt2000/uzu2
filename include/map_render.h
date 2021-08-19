@@ -3,5 +3,5 @@
 #define MAP_RENDER_H
 void map_renderer_init(void);
 void map_renderer_fini(void);
-void map_render(void);
+void map_render(View* view);
 #endif //MAP_RENDER_H

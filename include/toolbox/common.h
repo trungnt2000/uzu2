@@ -5,7 +5,7 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <windef.h>
+//#include <windef.h>
 #include <windows.h>
 #undef min
 #undef max

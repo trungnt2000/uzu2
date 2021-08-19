@@ -24,6 +24,7 @@ static SpriteShader shader;
 static Font         font;
 static float        scl = 1.f;
 static SpriteSheet  spriteSheet;
+static View         view;
 
 static void preupdate(float deltaTime);
 static void update(float deltaTime);
@@ -77,22 +78,22 @@ process_input(void* SDL_UNUSED arg, u32 currState, SDL_UNUSED u32 prevState)
   const float deltaTime = engine_deltatime();
 
   if (currState & BTN_MSK_LEFT)
-    view_translate((vec2){ speed * deltaTime, 0.f });
+    view_translate(&view, (vec2){ speed * deltaTime, 0.f });
   if (currState & BTN_MSK_RIGHT)
-    view_translate((vec2){ -speed * deltaTime, 0.f });
+    view_translate(&view, (vec2){ -speed * deltaTime, 0.f });
   if (currState & BTN_MSK_UP)
-    view_translate((vec2){ 0, -speed * deltaTime });
+    view_translate(&view, (vec2){ 0, -speed * deltaTime });
   if (currState & BTN_MSK_DOWN)
-    view_translate((vec2){ 0, speed * deltaTime });
+    view_translate(&view, (vec2){ 0, speed * deltaTime });
 
   if (key_just_pressed(SDL_SCANCODE_K))
-    view_zoom((vec2){ 1.1f, 1.1f });
+    view_zoom(&view, (vec2){ 1.1f, 1.1f });
   if (key_just_pressed(SDL_SCANCODE_J))
-    view_zoom((vec2){ 0.9f, 0.9f });
+    view_zoom(&view, (vec2){ 0.9f, 0.9f });
   if (key_pressed(SDL_SCANCODE_L))
-    view_rotate(1.f);
+    view_rotate(&view, 1.f*deltaTime);
   if (key_pressed(SDL_SCANCODE_H))
-    view_rotate(-1.f);
+    view_rotate(&view, -1.f*deltaTime);
 
   if (key_pressed(SDL_SCANCODE_V))
     scl += 0.1f;
@@ -106,7 +107,7 @@ scene_main_create(void)
 {
 
   load_level("gl_test");
-  view_reset(WIN_WIDTH / 2, WIN_HEIGHT / 2, WIN_WIDTH, WIN_HEIGHT);
+  view_reset(&view, WIN_WIDTH / 2, WIN_HEIGHT / 2, WIN_WIDTH, WIN_HEIGHT);
 
   if (texture_load(&texture, "res/test.png") != 0)
   {
@@ -143,7 +144,7 @@ scene_main_create(void)
 
   animation_init_w_texture(&lizzardAnim, &lizzardTexture, &tmpl);
 
-  // map_renderer_init();
+  map_renderer_init();
   sRegistry = ecs_registry_create(gCompTraits, COMPONENT_CNT);
   system_rendering_sprite_init(sRegistry);
 
@@ -227,7 +228,7 @@ scene_main_create(void)
 void
 scene_main_destroy(void)
 {
-  // map_renderer_fini();
+  map_renderer_fini();
   printf("scene_main destroyed!\n");
   ecs_registry_free(sRegistry);
   system_rendering_sprite_fini();
@@ -241,11 +242,11 @@ void
 scene_main_tick(float deltaTime)
 {
 #if 1
-  // map_tick();
-  // map_render();
+  map_tick();
+  map_render(&view);
 
   mat4 projectionViewMatrix;
-  view_combined(projectionViewMatrix);
+  view_combined(&view, projectionViewMatrix);
   sprite_shader_bind(&shader);
   sprite_shader_uniform_projmat(&shader, projectionViewMatrix);
   u32 start = SDL_GetTicks();
@@ -260,12 +261,11 @@ scene_main_tick(float deltaTime)
   ecs_add(sRegistry, entity1, TransformChanged);
 
   int x, y;
+  vec2 dst;
   SDL_GetMouseState(&x, &y);
-
-  float mx        = ((float)x / (float)SCL_X) + view_left();
-  float my        = ((float)y / (float)SCL_Y) + view_top();
-  tx->position[0] = lerpf(tx->position[0], mx, deltaTime * 5.f);
-  tx->position[1] = lerpf(tx->position[1], my, deltaTime * 5.f);
+  to_view_coords(&view, (vec2){ x / SCL_X, y / SCL_Y }, dst);
+  tx->position[0] = lerpf(tx->position[0], dst[0], deltaTime * 5.f);
+  tx->position[1] = lerpf(tx->position[1], dst[1], deltaTime * 5.f);
   tx->rotation += 1.f;
 #endif
 
@@ -294,7 +294,7 @@ scene_main_tick(float deltaTime)
           statistics.drawCall,
           statistics.verticeCount);
   mat4 projectionMatrix;
-  view_projection_matrix(projectionMatrix);
+  view_projection_matrix(&view, projectionMatrix);
   sprite_shader_uniform_projmat(&shader, projectionMatrix);
   sprite_batch_begin();
   draw_textv_ex(buf, &font, (vec2){ 0.f, 0.f }, 1.f, TEXT_ALIGN_LEFT, COLOR_GREEN);

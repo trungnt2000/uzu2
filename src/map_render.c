@@ -87,7 +87,7 @@ map_renderer_fini(void)
 }
 
 void
-map_render(void)
+map_render(View* view)
 {
   Tile   tile;
   tile_t tileId;
@@ -99,11 +99,11 @@ map_render(void)
 
   prepare();
 
-  firstCol = (int)view_left() / TILE_SIZE;
-  firstRow = (int)view_top() / TILE_SIZE;
+  firstCol = (int)view_left(view) / TILE_SIZE;
+  firstRow = (int)view_top(view) / TILE_SIZE;
 
-  lastCol = (int)view_right() / TILE_SIZE;
-  lastRow = (int)view_bot() / TILE_SIZE;
+  lastCol = (int)view_right(view) / TILE_SIZE;
+  lastRow = (int)view_bot(view) / TILE_SIZE;
 
   firstCol = max(0, firstCol);
   firstRow = max(0, firstRow);
@@ -124,7 +124,7 @@ map_render(void)
 
       if (sCnt == MAX_TILES)
       {
-        flush();
+        flush(view);
         idx = 0;
       }
 
@@ -179,7 +179,7 @@ map_render(void)
 
       if (sCnt == MAX_TILES)
       {
-        flush();
+        flush(view);
         idx = 0;
       }
 
@@ -219,11 +219,11 @@ map_render(void)
       ++sCnt;
     }
   }
-  flush();
+  flush(view);
 }
 
 static void
-flush()
+flush(View* view)
 {
   // update our vertex buffer
   mat4 viewProjectMatrix;
@@ -233,7 +233,7 @@ flush()
   glBufferSubData(GL_ARRAY_BUFFER, 0, updtSiz, sVertBuf);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  view_combined(viewProjectMatrix);
+  view_combined(view, viewProjectMatrix);
   glUseProgram(sShader);
   glUniformMatrix4fv(sViewProjectMatrixLocation,
                      1,
