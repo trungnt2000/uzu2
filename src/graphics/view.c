@@ -8,38 +8,22 @@ static float sRot;
 static mat4  sProjMat;
 static mat4  sViewMat;
 static bool  sDirty;
-
+static mat4  sInvViewMat;
 void
-view_combined(mat4 outVpMat)
+view_combined(mat4 viewProjMatReturn)
 {
 
   if (sDirty)
   {
-#if 0
-        float angle  = glm_rad(sRot);
-        float cosine = SDL_cosf(angle);
-        float sine   = SDL_sinf(angle);
-        float tx      = -sPos[0] * cosine - sPos[1] * sine + sPos[0];
-        float ty      = sPos[0] * sine - sPos[1] * cosine + sPos[1];
-
-        // Projection components
-        float a =  2.f / sSiz[0];
-        float b = -2.f / sSiz[1];
-        float c = -a * sPos[0];
-        float d = -b * sPos[1];
-
-        // Rebuild the projection matrix
-        ( a * cosine, a * sine,   a * tx + c,
-         -b * sine,   b * cosine, b * ty + d,
-          0.f,        0.f,        1.f        );
-#endif
     glm_translate_make(
         sViewMat,
         (vec3){ -(sPos[0] - sSiz[0] / 2.f), -(sPos[1] - sSiz[1] / 2.f), 0 });
     glm_scale(sViewMat, sScl);
+    glm_rotate_z(sViewMat, sRot, sViewMat);
+    glm_mat4_inv(sViewMat, sInvViewMat);
     sDirty = false;
   }
-  glm_mat4_mul(sProjMat, sViewMat, outVpMat);
+  glm_mat4_mul(sProjMat, sViewMat, viewProjMatReturn);
   // glm_mat4_copy(sProjMat, outVpMat);
 }
 
@@ -72,6 +56,19 @@ view_zoom(vec2 v)
 }
 
 void
+view_set_position(vec2 pos)
+{
+  sDirty = true;
+  glm_vec3_copy((vec3){ pos[0], pos[1], 0.f }, sPos);
+}
+
+void
+view_set_rotation(float rot)
+{
+  sDirty = true;
+  sRot = rot;
+}
+void
 view_reset(float x, float y, float w, float h)
 {
   sScl[0] = 1.f;
@@ -93,32 +90,44 @@ view_reset(float x, float y, float w, float h)
 float
 view_top(void)
 {
+  sDirty = true;
   return sPos[1] - sSiz[1] / 2.f;
 }
 
 float
 view_bot(void)
 {
+  sDirty = true;
   return sPos[1] + sSiz[1] / 2.f;
 }
 
 float
 view_left(void)
 {
+  sDirty = true;
   return sPos[0] - sSiz[0] / 2.f;
 }
 
 float
 view_right(void)
 {
+  sDirty = true;
   return sPos[0] + sSiz[0] / 2.f;
 }
 
 void
-viww_rect(SDL_Rect* outRect)
+view_rect(SDL_Rect* outRect)
 {
   outRect->x = (int)view_left();
   outRect->y = (int)view_top();
   outRect->w = (int)sSiz[0];
   outRect->h = (int)sSiz[1];
+}
+
+void to_view_coords(vec2 src, vec2 dst)
+{
+  vec4 tmp;
+  glm_mat4_mulv(sInvViewMat, (vec4){ src[0], src[1], 0.f, 1.f }, tmp);
+  dst[0] = tmp[0];
+  dst[1] = tmp[1];
 }

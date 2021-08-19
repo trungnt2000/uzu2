@@ -19,11 +19,9 @@ void view_rotate(float angle);
 /* zoom view by v */
 void view_zoom(vec2 v);
 
-void view_scale_set(vec2 scl);
+void view_set_position(vec2 pos);
 
-void view_rotation_set(float angle);
-
-void view_position_set(vec2 pos);
+void view_set_rotation(float rot);
 
 /* reset view */
 void view_reset(float x, float y, float w, float h);
@@ -34,4 +32,5 @@ float view_left(void);
 float view_right(void);
 void  view_rect(OUT SDL_Rect* rect);
 
+void to_view_coords(vec2 src, vec2 dst);
 #endif // VIEW_H
