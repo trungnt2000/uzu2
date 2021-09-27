@@ -2,7 +2,7 @@
 #include "graphics.h"
 #include "graphics/gl.h"
 
-const static GLuint sPixelFormatToGLFormat[] = {
+const static GLuint s_pixel_to_gl_format_tbl[] = {
   [PIXEL_FORMAT_RGBA] = GL_RGBA,
   [PIXEL_FORMAT_BGRA] = GL_BGRA,
 };
@@ -52,18 +52,41 @@ texture_load_from_memory(Texture* texture, const u8* data, int width, int height
 {
   glGenTextures(1, &texture->handle);
   glBindTexture(GL_TEXTURE_2D, texture->handle);
+
+  // TODO: remove hardcode texture filter
+  // TODO: create enum TextureFilterMode
+  // TODO: create function to set texture filter mode
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  GLuint glFormat = sPixelFormatToGLFormat[dataFormat];
+  GLuint gl_format = s_pixel_to_gl_format_tbl[dataFormat];
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, glFormat, GL_UNSIGNED_BYTE, data);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, gl_format, GL_UNSIGNED_BYTE, data);
 
   texture->width  = width;
   texture->height = height;
 
   glBindTexture(GL_TEXTURE_2D, 0);
   return 0;
+}
+
+void
+texture_init_empty(Texture* texture, int width, int height, PixelFormat dataFormat)
+{
+  size_t byte_per_pixel;
+  size_t data_size;
+  void*  data;
+  switch (dataFormat)
+  {
+  case PIXEL_FORMAT_BGRA:
+  case PIXEL_FORMAT_RGBA: /* fall-through */
+    byte_per_pixel = 4;
+  }
+  data_size = (size_t)width * (size_t)height * byte_per_pixel;
+  data      = SDL_malloc(data_size);
+  SDL_memset(data, 0, data_size);
+  texture_load_from_memory(texture, data, width, height, dataFormat);
+  SDL_free(data);
 }
 
 void
@@ -83,10 +106,11 @@ void
 texture_destroy(Texture* texture)
 {
   glDeleteTextures(1, &texture->handle);
+  texture->handle = 0;
 }
 
 void
-texture_region_set_rect(TextureRegion* t, const IntRect* rect)
+sprite_set_rect(Sprite* t, const IntRect* rect)
 {
   if (rect == NULL)
   {
@@ -106,16 +130,16 @@ texture_region_set_rect(TextureRegion* t, const IntRect* rect)
 }
 
 void
-texture_region_set_texture(TextureRegion* t, const Texture* texture, const IntRect* rect)
+sprite_set_texture(Sprite* t, const Texture* texture, const IntRect* rect)
 {
   t->texture = texture;
-  texture_region_set_rect(t, rect);
+  sprite_set_rect(t, rect);
 }
 
-TextureRegion
+Sprite
 texture_region(const Texture* texture, const IntRect* rect)
 {
-  TextureRegion textureRegion;
-  texture_region_set_texture(&textureRegion, texture, rect);
+  Sprite textureRegion;
+  sprite_set_texture(&textureRegion, texture, rect);
   return textureRegion;
 }

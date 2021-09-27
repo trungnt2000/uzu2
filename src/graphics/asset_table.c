@@ -48,42 +48,43 @@ static bool
 asset_table_set_impl(asset_key_t*      keys,
                      u32*              hashes,
                      void**            values,
-                     u32               hashValue,
+                     u32               hash_value,
                      const asset_key_t key,
                      void*             value,
                      u32               size)
 {
-  const u32 mask           = size - 1;
-  u32       index          = hashValue & mask;
-  bool      hasDeletedSlot = false;
-  u32       firstDeletedSlot;
+  const u32 mask             = size - 1;
+  u32       index            = hash_value & mask;
+  bool      has_deleted_slot = false;
+  u32       first_deleted_slot;
   u32       x = 0;
 
   // probing until find empty slot
   // or find slot which has same key
   while (!IS_EMPTY_SLOT(hashes[index]))
   {
-    if (IS_DELETED_SLOT(hashes[index]) && !hasDeletedSlot)
+    // keep going to prevent duplicate key
+    if (IS_DELETED_SLOT(hashes[index]) && !has_deleted_slot)
     {
-      hasDeletedSlot   = true;
-      firstDeletedSlot = index;
+      has_deleted_slot   = true;
+      first_deleted_slot = index;
     }
-    else if (hashes[index] == hashValue && asset_key_equals(keys[index], key))
+    else if (hashes[index] == hash_value && asset_key_equals(keys[index], key))
     {
       asset_key_copy(keys[index], key);
       values[index] = value;
-      hashes[index] = hashValue;
+      hashes[index] = hash_value;
       return false;
     }
     x++;
     index = (index + x) & mask;
   }
-  if (hasDeletedSlot)
-    index = firstDeletedSlot;
+  if (has_deleted_slot)
+    index = first_deleted_slot;
 
   asset_key_copy(keys[index], key);
   values[index] = value;
-  hashes[index] = hashValue;
+  hashes[index] = hash_value;
   return true;
 }
 
@@ -93,7 +94,6 @@ asset_table_rehash(AssetTable* tbl, u32 size)
   u32*         hashes = SDL_calloc(size, sizeof *hashes);
   asset_key_t* keys   = SDL_calloc(size, sizeof *keys);
   void**       values = SDL_calloc(size, sizeof *values);
-
 
   for (u32 i = 0; i < tbl->size; ++i)
   {
@@ -110,59 +110,59 @@ asset_table_rehash(AssetTable* tbl, u32 size)
   tbl->keys   = keys;
   tbl->values = values;
 
-  tbl->tombstoneCntThreshold = size * 3 / 16;
-  tbl->usedCntThreshold      = size * 12 / 16;
-  tbl->size                  = size;
-  tbl->tombstoneCnt          = 0;
+  tbl->tombstone_threshold  = size * 3 / 16;
+  tbl->used_threshold = size * 12 / 16;
+  tbl->size                 = size;
+  tbl->tombstone_count      = 0;
 }
 
 void
 asset_table_init(AssetTable* tbl, FreeFunc freeFunc)
 {
-  tbl->size                  = 16;
-  tbl->keys                  = SDL_calloc(tbl->size, sizeof *tbl->keys);
-  tbl->hashes                = SDL_calloc(tbl->size, sizeof *tbl->hashes);
-  tbl->values                = SDL_calloc(tbl->size, sizeof *tbl->values);
-  tbl->tombstoneCnt          = 0;
-  tbl->tombstoneCntThreshold = tbl->size * 3 / 16;
-  tbl->usedCnt               = 0;
-  tbl->usedCntThreshold      = tbl->size * 12 / 16;
-  tbl->freeFunc              = freeFunc;
+  tbl->size                 = 16;
+  tbl->keys                 = SDL_calloc(tbl->size, sizeof *tbl->keys);
+  tbl->hashes               = SDL_calloc(tbl->size, sizeof *tbl->hashes);
+  tbl->values               = SDL_calloc(tbl->size, sizeof *tbl->values);
+  tbl->tombstone_count      = 0;
+  tbl->tombstone_threshold  = tbl->size * 3 / 16;
+  tbl->count                = 0;
+  tbl->used_threshold = tbl->size * 12 / 16;
+  tbl->free_func            = freeFunc;
 }
 
 void
 asset_table_destroy(AssetTable* tbl)
 {
   if (tbl == NULL)
-      return;
-  if (tbl->freeFunc && tbl->hashes)
+    return;
+  if (tbl->free_func && tbl->hashes)
   {
     for (u32 i = 0; i < tbl->size; ++i)
     {
       if (IS_USED_SLOT(tbl->hashes[i]))
       {
-        tbl->freeFunc(tbl->values[i]);
+        tbl->free_func(tbl->values[i]);
       }
     }
   }
   SDL_free(tbl->keys);
   SDL_free(tbl->values);
   SDL_free(tbl->hashes);
-  tbl->freeFunc = NULL;
-  tbl->hashes = NULL;
-  tbl->keys = NULL;
-  tbl->values = NULL;
+  tbl->free_func = NULL;
+  tbl->hashes    = NULL;
+  tbl->keys      = NULL;
+  tbl->values    = NULL;
 }
 
 void
 asset_table_insert(AssetTable* tbl, const asset_key_t key, void* value)
 {
-  const u32 hashValue = asset_key_hash(key);
-  ASSERT(hashValue != TOMBSTONE && hashValue != EMPTY);
-  if (asset_table_set_impl(tbl->keys, tbl->hashes, tbl->values, hashValue, key, value, tbl->size))
+  const u32 hash_value = asset_key_hash(key);
+  ASSERT(hash_value != TOMBSTONE && hash_value != EMPTY);
+  if (asset_table_set_impl(tbl->keys, tbl->hashes, tbl->values, hash_value, key, value, tbl->size))
   {
-    tbl->usedCnt++;
-    if (tbl->usedCnt > tbl->usedCntThreshold)
+    tbl->count++;
+    if (tbl->count > tbl->used_threshold)
     {
       asset_table_rehash(tbl, tbl->size * 2);
     }
@@ -172,17 +172,17 @@ asset_table_insert(AssetTable* tbl, const asset_key_t key, void* value)
 void*
 asset_table_lookup(const AssetTable* tbl, const asset_key_t key)
 {
-  const u32          mask      = tbl->size - 1;
-  const u32*         hashes    = tbl->hashes;
-  const asset_key_t* keys      = tbl->keys;
-  const u32          hashValue = asset_key_hash(key);
-  u32                idx       = hashValue & mask;
-  u32                x         = 0;
+  const u32          mask       = tbl->size - 1;
+  const u32*         hashes     = tbl->hashes;
+  const asset_key_t* keys       = tbl->keys;
+  const u32          hash_value = asset_key_hash(key);
+  u32                idx        = hash_value & mask;
+  u32                x          = 0;
 
-  ASSERT(hashValue != TOMBSTONE && hashValue != EMPTY);
+  ASSERT(hash_value != TOMBSTONE && hash_value != EMPTY);
   while (!IS_EMPTY_SLOT(hashes[idx]))
   {
-    if (hashes[idx] == hashValue && asset_key_equals(keys[idx], key))
+    if (hashes[idx] == hash_value && asset_key_equals(keys[idx], key))
     {
       return tbl->values[idx];
     }
@@ -196,24 +196,24 @@ asset_table_lookup(const AssetTable* tbl, const asset_key_t key)
 void*
 asset_table_steal(AssetTable* tbl, const asset_key_t key)
 {
-  const u32          hashValue = asset_key_hash(key);
-  const u32          size      = tbl->size;
-  u32                x         = 0;
-  u32*               hashes    = tbl->hashes;
-  const asset_key_t* keys      = tbl->keys;
+  const u32          hash_value = asset_key_hash(key);
+  const u32          size       = tbl->size;
+  u32                x          = 0;
+  u32*               hashes     = tbl->hashes;
+  const asset_key_t* keys       = tbl->keys;
   void*              retVal;
   const u32          mask = size - 1;
-  u32                idx  = hashValue & mask;
+  u32                idx  = hash_value & mask;
 
   while (!IS_EMPTY_SLOT(hashes[idx]))
   {
-    if (IS_USED_SLOT(hashes[idx]) && hashes[idx] == hashValue && asset_key_equals(keys[idx], key))
+    if (IS_USED_SLOT(hashes[idx]) && hashes[idx] == hash_value && asset_key_equals(keys[idx], key))
     {
       hashes[idx] = TOMBSTONE;
-      tbl->tombstoneCnt++;
-      tbl->usedCnt--;
+      tbl->tombstone_count++;
+      tbl->count--;
       retVal = tbl->values[idx];
-      if (tbl->tombstoneCnt > tbl->tombstoneCntThreshold)
+      if (tbl->tombstone_count > tbl->tombstone_threshold)
         asset_table_rehash(tbl, tbl->size);
       return retVal;
     }
@@ -223,11 +223,11 @@ asset_table_steal(AssetTable* tbl, const asset_key_t key)
   return NULL;
 }
 
-
-bool asset_table_erase(AssetTable *table, const asset_key_t key)
+bool
+asset_table_erase(AssetTable* table, const asset_key_t key)
 {
-    void* value = asset_table_steal(table, key);
-    if (value != NULL && table->freeFunc != NULL)
-        table->freeFunc(value);
-    return value != NULL;
+  void* value = asset_table_steal(table, key);
+  if (value != NULL && table->free_func != NULL)
+    table->free_func(value);
+  return value != NULL;
 }

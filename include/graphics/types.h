@@ -18,12 +18,22 @@
 
 #define COLOR_RED_INIT { 1.f, 0.f, 0.f, 1.f }
 #define COLOR_RED (vec4) COLOR_RED_INIT
+
+#define COLOR_INIT(r, g, b, a)\
+  { (float)r / 255.f, (float)g / 255.f, (float)b / 255.f, (float)a / 255.f }
+
+#define COLOR(r, g, b, a) ((vec4)COLOR_INIT(r, g, b, a))
 // clang-format on
 
 typedef struct IntRect
 {
   int x, y, w, h;
 } IntRect;
+
+typedef struct UVs
+{
+  float u1, v1, u2, v2;
+} UVs;
 
 typedef struct Texture
 {
@@ -32,20 +42,20 @@ typedef struct Texture
   int          height; /* texture's height         */
 } Texture;
 
-typedef struct TextureRegion
+typedef struct Sprite
 {
   const Texture* texture;
   IntRect        rect; /* read only */
-  float          u1;      /* read only */
-  float          v1;      /* read only */
-  float          u2;      /* read only */
-  float          v2;      /* read only */
-} TextureRegion;
+  float          u1;   /* read only */
+  float          v1;   /* read only */
+  float          u2;   /* read only */
+  float          v2;   /* read only */
+} Sprite;
 
 typedef struct Vertex
 {
   vec3 position;
-  vec2 texCoord;
+  vec2 tex_coords;
   vec4 color;
 } Vertex;
 
@@ -56,22 +66,25 @@ typedef enum TextAlignment
   TEXT_ALIGN_CENTER
 } TextAlignment;
 
-typedef enum TextWrap
+typedef struct RenderStatistics
 {
-  TEXT_WRAP_NORMAL,
-  TEXT_WRAP_WORD
-} TextWrap;
+  u32 draw_call_count;
+  u32 vertex_count;
+} RenderStatistics;
 
 /* shader use to drawing sprite */
-typedef struct SpriteShader
+typedef struct Shader
 {
   /* program handle */
   unsigned int handle;
 
   /* where projection matrix uniform is loacated */
-  int uProjMatLocation;
+  int view_proj_matrix_loc;
 
-} SpriteShader;
+  /* where time uniform is loacated */
+  int time_loc;
+
+} Shader;
 
 typedef enum PixelFormat
 {
@@ -85,7 +98,9 @@ typedef enum PixelFormat
  */
 int texture_load(Texture* texture, const char* file);
 
-int texture_load_from_memory(Texture* texture, const u8* data, int width, int height, PixelFormat dataFormat);
+int texture_load_from_memory(Texture* texture, const u8* data, int width, int height, PixelFormat data_format);
+
+void texture_init_empty(Texture* texture, int width, int height, PixelFormat data_format);
 
 /* bind given texture to current opengl context */
 void texture_bind(const Texture* texture);
@@ -97,40 +112,54 @@ void texture_unbind(const Texture* texture);
 void texture_destroy(Texture* texture);
 
 /* \brief set texture rect, null for entrie texture */
-void texture_region_set_rect(TextureRegion* region, const IntRect* rect);
+void sprite_set_rect(Sprite* region, const IntRect* rect);
 
 /* \brief set texture and texture rect,
  *  set rect to NULL for entrie region */
-void texture_region_set_texture(TextureRegion* region, const Texture* texture, const IntRect* rect);
+void sprite_set_texture(Sprite* region, const Texture* texture, const IntRect* rect);
 
-#define texture_region_init texture_region_set_texture
+#define sprite_init sprite_set_texture
 
-TextureRegion texture_region(const Texture* texture, const IntRect* rect);
+Sprite texture_region(const Texture* texture, const IntRect* rect);
 
 /**
  * \brief create new shader for rendering quad
  * \return 0 if load succeed
  */
-int sprite_shader_load(SpriteShader* shader);
+int shader_load(Shader* shader, const char* vs_file, const char* fs_file);
+
+int shader_load_from_source(Shader* shader, const char* vs_source, const char* fs_source);
 
 /**
  * \brief destroy given shader
  */
-void sprite_shader_destroy(SpriteShader* shader);
+void shader_destroy(Shader* shader);
 
 /**
  * \brief bind given shader to current gl context
  */
-void sprite_shader_bind(SpriteShader* shader);
+void shader_bind(const Shader* shader);
 
 /**
  * unbind current shader
  */
-void sprite_shader_unbind(SpriteShader* shader);
+void shader_unbind(const Shader* shader);
 
 /* *
  * set projection matrix uniform
  */
-void sprite_shader_uniform_projmat(SpriteShader* shader, mat4 projMat);
+void shader_upload_view_project_matrix(const Shader* shader, mat4 matrix);
+
+void shader_upload_mat4(const Shader* shader, const char* name, mat4 matrix);
+
+void shader_unload_float(const Shader* shader, const char* name, float afloat);
+
+void shader_upload_int(const Shader* shader, const char* name, int aint);
+
+void shader_upload_vec2(const Shader* shader, const char* name, const float v[2]);
+
+void shader_upload_vec3(const Shader* shader, const char* name, const float v[3]);
+
+void shader_upload_vec4(const Shader* shader, const char* name, const float v[4]);
 
 #endif // GRAPHICS_TYPES_H

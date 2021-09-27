@@ -1,14 +1,10 @@
 #ifndef CONSTANCES_H
 #define CONSTANCES_H
 
-#define PT2PX_RATIO 1.333333333333333259
-#define PX2PT_RATIO 0.75
-
+#define SCL 4
 #define TILE_SIZE 16
-#define WIN_WIDTH 320
-#define WIN_HEIGHT 240
-#define SCL_X 2.0
-#define SCL_Y 2.0
+#define WIN_WIDTH (320 * SCL)
+#define WIN_HEIGHT (240 * SCL)
 #define WIN_TITLE "Uzu"
 
 

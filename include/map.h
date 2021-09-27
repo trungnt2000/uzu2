@@ -10,11 +10,11 @@
 
 typedef int tile_t;
 
-extern tile_t gFloor[];
-extern tile_t gWall[];
-extern float  gWallZ[];
-extern s32    gMapHeight;
-extern s32    gMapWidth;
+extern tile_t g_floor[];
+extern tile_t g_wall[];
+extern float  g_wall_draw_order[];
+extern s32    g_map_height;
+extern s32    g_map_width;
 extern vec2   gMapPos;
 extern float  gMapRot;
 extern vec2   gMapScl;
@@ -22,23 +22,23 @@ extern vec2   gMapScl;
 // clang-format off
 static inline void
 setwall(int x, int y, tile_t tile)
-{ gWall[x + y * gMapWidth] = tile; }
+{ g_wall[x + y * g_map_width] = tile; }
 
 static inline void
 setfloor(int x, int y, tile_t tile)
-{ gFloor[x + y * gMapWidth] = tile; }
+{ g_floor[x + y * g_map_width] = tile; }
 
 static inline tile_t
 getwall(int x, int y)
-{ return gWall[x + y * gMapWidth]; }
+{ return g_wall[x + y * g_map_width]; }
 
 static inline tile_t
 getfloor(int x, int y)
-{ return gFloor[x + y * gMapWidth]; }
+{ return g_floor[x + y * g_map_width]; }
 
 static inline float
 getwallz(int x, int y)
-{ return gWallZ[x + y * gMapWidth]; }
+{ return g_wall_draw_order[x + y * g_map_width]; }
 // clang-format on
 
 void map_tick(void);

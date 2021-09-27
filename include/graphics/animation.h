@@ -6,29 +6,32 @@
 
 typedef struct Animation
 {
-  TextureRegion* frames;
-  int            frameCnt;
-  float          frameDuration;
+  Sprite* frames;
+  int     frame_cnt;
+  float   frame_duration;
 } Animation;
 
 typedef struct AnimationTemplate
 {
-  int            xOffset;
-  int            yOffset;
-  int            spriteWidth;
-  int            spriteHeight;
-  int            columnCount;
-  int            rowCount;
-  float          frameDuration;
+  int   offset_x;
+  int   offset_y;
+  int   sprite_width;
+  int   sprite_height;
+  int   column_count;
+  int   row_count;
+  float frame_duration;
 } AnimationTemplate;
 
 void animation_init_w_texture(Animation* animation, const Texture* texture, const AnimationTemplate* tmpl);
 
-void
-animation_init_w_sprite(Animation* animation, const TextureRegion* sprite, const AnimationTemplate* tmpl);
+void animation_init_w_sprite(Animation* animation, const Sprite* sprite, const AnimationTemplate* tmpl);
 
-void                 animation_destroy(Animation* animation);
-const TextureRegion* animation_get_frame(const Animation* animation, float elapsedTime);
+void animation_destroy(Animation* animation);
 
+const Sprite* animation_get_frame(const Animation* animation, float elapsed_time);
+
+int animation_load(Animation* animation, const char* file);
+
+int animation_load_rwops(Animation* animation, SDL_RWops* stream);
 
 #endif // GRAPHICS_ANIMATION_H

@@ -5,12 +5,12 @@
 #include "graphics/types.h"
 typedef struct SpriteSheet
 {
-  AssetTable assetTable;
+  AssetTable asset_table;
   Texture    texture;
 } SpriteSheet;
 
 int  sprite_sheet_load(SpriteSheet* sheet, const char* file);
 void sprite_sheet_destroy(SpriteSheet* sheet);
 
-const TextureRegion* sprite_sheet_get(SpriteSheet* sheet, const char* name);
+const Sprite* sprite_sheet_get(const SpriteSheet* sheet, const char* name);
 #endif // SPRITE_SHEET_H

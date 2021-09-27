@@ -11,11 +11,11 @@
 
 typedef struct AnimatedTile
 {
-  tile_t tiles[4];          /* point to static tile     */
-  int    duration;          /* frame duration           */
-  int    count;             /* tile count               */
-  int    currentFrameIndex; /* current key frame index  */
-  tile_t currentFrame;      /* current key frame        */
+  tile_t tiles[4];            /* point to static tile     */
+  int    duration;            /* frame duration           */
+  int    count;               /* tile count               */
+  int    current_frame_index; /* current key frame index  */
+  tile_t current_frame;       /* current key frame        */
 } AnimatedTile;
 
 typedef struct AnimatedCell
@@ -23,7 +23,7 @@ typedef struct AnimatedCell
   int                 row;
   int                 col;
   int                 layer;
-  const AnimatedTile* animatedTile;
+  const AnimatedTile* animated_tile;
 } AnimatedCell;
 
 enum
@@ -32,18 +32,15 @@ enum
   WALL_LAYER
 };
 
-extern SDL_Rect      gViewport;
-extern SDL_Renderer* gRenderer;
+tile_t g_floor[MAP_MAX_TILES];
+tile_t g_wall[MAP_MAX_TILES];
+float  g_wall_draw_order[MAP_MAX_TILES];
+s32    g_map_height;
+s32    g_map_width;
 
-tile_t gFloor[MAP_MAX_TILES];
-tile_t gWall[MAP_MAX_TILES];
-float  gWallZ[MAP_MAX_TILES];
-s32    gMapHeight;
-s32    gMapWidth;
-
-static s32          sTicks;
-static AnimatedCell sAnimatedCells[ANIM_CELL_CNT_MAX];
-static int          sAnimatedCellCnt;
+static s32          s_ticks;
+static AnimatedCell s_animated_cells[ANIM_CELL_CNT_MAX];
+static int          s_animated_cell_cnt;
 
 enum
 {
@@ -66,13 +63,13 @@ static AnimatedTile sAnimatedTiles[NUM_ANIMATED_TILES] = {
 void
 map_create_animated_cell(int layer, int row, int col, int animTileId)
 {
-  if (sAnimatedCellCnt < ANIM_CELL_CNT_MAX)
+  if (s_animated_cell_cnt < ANIM_CELL_CNT_MAX)
   {
-    AnimatedCell* cell = &sAnimatedCells[sAnimatedCellCnt++];
-    cell->row          = row;
-    cell->col          = col;
-    cell->animatedTile = &sAnimatedTiles[animTileId];
-    cell->layer        = layer;
+    AnimatedCell* cell  = &s_animated_cells[s_animated_cell_cnt++];
+    cell->row           = row;
+    cell->col           = col;
+    cell->animated_tile = &sAnimatedTiles[animTileId];
+    cell->layer         = layer;
   }
 }
 
@@ -80,12 +77,12 @@ static void
 update_animated_tiles()
 {
   AnimatedTile* tile;
-  ++sTicks;
+  ++s_ticks;
   for (int i = 0; i < NUM_ANIMATED_TILES; ++i)
   {
-    tile                    = &sAnimatedTiles[i];
-    tile->currentFrameIndex = (sTicks / tile->duration) % tile->count;
-    tile->currentFrame      = tile->tiles[tile->currentFrameIndex];
+    tile                      = &sAnimatedTiles[i];
+    tile->current_frame_index = (s_ticks / tile->duration) % tile->count;
+    tile->current_frame       = tile->tiles[tile->current_frame_index];
   }
 }
 
@@ -122,26 +119,26 @@ create_animated_cells()
   int col;
   int row;
 
-  tileCnt = gMapHeight * gMapWidth;
+  tileCnt = g_map_height * g_map_width;
 
   for (i = 0; i < tileCnt; ++i)
   {
-    animTileId = to_animated_tile_id(gWall[i]);
+    animTileId = to_animated_tile_id(g_wall[i]);
     if (animTileId != -1)
     {
-      col = i % gMapWidth;
-      row = i / gMapWidth;
+      col = i % g_map_width;
+      row = i / g_map_width;
       map_create_animated_cell(WALL_LAYER, row, col, animTileId);
     }
   }
 
   for (i = 0; i < tileCnt; ++i)
   {
-    animTileId = to_animated_tile_id(gFloor[i]);
+    animTileId = to_animated_tile_id(g_floor[i]);
     if (animTileId != -1)
     {
-      col = i % gMapWidth;
-      row = i / gMapWidth;
+      col = i % g_map_width;
+      row = i / g_map_width;
       map_create_animated_cell(FLOOR_LAYER, row, col, animTileId);
     }
   }
@@ -152,42 +149,41 @@ map_tick()
 {
   update_animated_tiles();
   const AnimatedCell* cell;
-  for (int i = 0; i < sAnimatedCellCnt; ++i)
+  for (int i = 0; i < s_animated_cell_cnt; ++i)
   {
-    cell = &sAnimatedCells[i];
+    cell = &s_animated_cells[i];
     if (cell->layer == WALL_LAYER)
-      setwall(cell->col, cell->row, cell->animatedTile->currentFrame);
+      setwall(cell->col, cell->row, cell->animated_tile->current_frame);
     else
-      setfloor(cell->col, cell->row, cell->animatedTile->currentFrame);
+      setfloor(cell->col, cell->row, cell->animated_tile->current_frame);
   }
 }
 
-BOOL
+bool
 is_roof(tile_t tile)
 {
-#define _(x) [x]      = UZU_TRUE
-  static BOOL lut[65] = { _(19), _(20), _(25), _(26), _(45), _(46),
-                          _(49), _(50), _(58), _(59), _(60), _(61),
-                          _(62), _(63), _(64), _(40), _(18) };
+#define _(x) [x]      = true
+  static bool lut[65] = { _(19), _(20), _(25), _(26), _(45), _(46), _(49), _(50), _(58),
+                          _(59), _(60), _(61), _(62), _(63), _(64), _(40), _(18) };
 #undef _
   return lut[tile - 1];
 }
 
-static void setwallz(int x, int y, float z)
+static void
+setwallz(int x, int y, float z)
 {
-    gWallZ[x + y * gMapWidth] = z;
+  g_wall_draw_order[x + y * g_map_width] = z;
 }
 
 static void
 init_wall_tile_draw_order(void)
 {
   tile_t tile;
-  for (int y = gMapHeight - 1; y >= 0; --y)
-    for (int x = 0; x < gMapWidth; ++x)
+  for (int y = g_map_height - 1; y >= 0; --y)
+    for (int x = 0; x < g_map_width; ++x)
     {
-      tile = x < gMapWidth && y < gMapHeight ?
-                  getwall(x, y) : 0;
-      if (tile != 0 && is_roof(tile) && y < gMapHeight - 1)
+      tile = x < g_map_width && y < g_map_height ? getwall(x, y) : 0;
+      if (tile != 0 && is_roof(tile) && y < g_map_height - 1)
         setwallz(x, y, getwallz(x, y + 1));
       else
         setwallz(x, y, -((y + 1) * TILE_SIZE) / 100.f);
@@ -199,12 +195,12 @@ map_init(const tile_t* floor, const tile_t* wall, int width, int height)
 {
   int count;
 
-  gMapHeight       = height;
-  gMapWidth        = width;
-  sAnimatedCellCnt = 0;
-  count            = width * height;
-  SDL_memcpy(gFloor, floor, count * sizeof(tile_t));
-  SDL_memcpy(gWall, wall, count * sizeof(tile_t));
+  g_map_height        = height;
+  g_map_width         = width;
+  s_animated_cell_cnt = 0;
+  count               = width * height;
+  SDL_memcpy(g_floor, floor, count * sizeof(tile_t));
+  SDL_memcpy(g_wall, wall, count * sizeof(tile_t));
   create_animated_cells();
   init_wall_tile_draw_order();
 }
@@ -212,9 +208,9 @@ map_init(const tile_t* floor, const tile_t* wall, int width, int height)
 void
 map_clear()
 {
-  sAnimatedCellCnt = 0;
-  gMapWidth        = 0;
-  gMapHeight       = 0;
-  SDL_memset(gFloor, 0, sizeof(gFloor));
-  SDL_memset(gWall, 0, sizeof(gWall));
+  s_animated_cell_cnt = 0;
+  g_map_width         = 0;
+  g_map_height        = 0;
+  SDL_memset(g_floor, 0, sizeof(g_floor));
+  SDL_memset(g_wall, 0, sizeof(g_wall));
 }

@@ -1,36 +1,30 @@
 #include "components.h"
 #include "ecs.h"
 
-typedef union Dependencies
-{
-  void* components[2];
-  struct
-  {
-    _Transform*      transform;
-    const _Velocity* velocity;
-  };
-} Dependencies;
-
 void
-system_motion_update(ecs_Registry* registry, float deltaTime)
+system_motion_update(ecs_Registry* registry, float delta_time)
 {
-  ecs_View     view;
-  ecs_entity_t ett;
-  Dependencies deps;
-  float*       pos;
-  const float* vel;
-  // same order in Dependencies struct
-  ecs_view_init(&view, registry, { Transform, Velocity });
+    struct ecs_View       view;
+    ecs_entity_t          ett;
+    float*                pos;
+    const float*          vel;
+    struct VelocityComp*  velocity;
+    struct TransformComp* transform;
+    void*                 components[2];
 
-  while (ecs_view_next(&view, &ett, deps.components))
-  {
-    pos = deps.transform->position;
-    vel = deps.velocity->value;
+    ecs_view_init(&view, registry, { TransformComp, VelocityComp });
 
-    pos[0] += vel[0] * deltaTime;
-    pos[1] += vel[1] * deltaTime;
+    while (ecs_view_next(&view, &ett, components))
+    {
+        transform = components[0];
+        velocity  = components[1];
+        pos       = transform->position;
+        vel       = velocity->value;
 
-    // tag this entity that it have changed position
-    ecs_add_or_set(registry, ett, TransformChanged, { 0 });
-  }
+        pos[0] += vel[0] * delta_time;
+        pos[1] += vel[1] * delta_time;
+
+        // tag this entity that it have changed position
+        ecs_add_or_set(registry, ett, TransformChangedTag, { 0 });
+    }
 }

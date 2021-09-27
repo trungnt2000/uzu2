@@ -14,11 +14,11 @@ typedef struct AssetTable
   u32*         hashes;
   void**       values;
   u32          size;
-  u32          tombstoneCnt;
-  u32          tombstoneCntThreshold;
-  u32          usedCnt;
-  u32          usedCntThreshold;
-  FreeFunc     freeFunc; /* free function fo data */
+  u32          tombstone_count;
+  u32          tombstone_threshold;
+  u32          count;
+  u32          used_threshold;
+  FreeFunc     free_func; /* free function fo data */
 } AssetTable;
 
 void asset_table_init(AssetTable* table, FreeFunc freeFunc);

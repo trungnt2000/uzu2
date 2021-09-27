@@ -1,11 +1,11 @@
 #include "SDL.h"
 #include "constances.h"
 #include "graphics.h"
+#include "graphics/gl.h"
 #include "graphics/view.h"
 #include "input.h"
 #include "map.h"
 #include "toolbox/common.h"
-#include "graphics/gl.h"
 
 /* how many float components in one vertex                   */
 /* each vertex contains two floats for position,             */
@@ -66,7 +66,7 @@ static int  load_resources(void);
 static void init_vao(void);
 static int  init_tileset(void);
 static void prepare(void);
-static void flush(void);
+static void flush(OthoCamera* view);
 
 void
 map_renderer_init(void)
@@ -87,7 +87,7 @@ map_renderer_fini(void)
 }
 
 void
-map_render(View* view)
+map_render(OthoCamera* view)
 {
   Tile   tile;
   tile_t tileId;
@@ -96,27 +96,26 @@ map_render(View* view)
   float  wallz;
   int    x, y, i, j;
   int    firstCol, firstRow, lastCol, lastRow;
+  float* ptr = &sVertBuf[idx];
 
   prepare();
 
-  firstCol = (int)view_left(view) / TILE_SIZE;
-  firstRow = (int)view_top(view) / TILE_SIZE;
+  firstCol = (int)otho_camera_view_left(view) / TILE_SIZE;
+  firstRow = (int)otho_camera_view_top(view) / TILE_SIZE;
 
-  lastCol = (int)view_right(view) / TILE_SIZE;
-  lastRow = (int)view_bot(view) / TILE_SIZE;
+  lastCol = (int)otho_camera_view_right(view) / TILE_SIZE;
+  lastRow = (int)otho_camera_view_bot(view) / TILE_SIZE;
 
   firstCol = max(0, firstCol);
   firstRow = max(0, firstRow);
 
-  lastCol = min(lastCol, gMapWidth - 1);
-  lastRow = min(lastRow, gMapHeight - 1);
+  lastCol = min(lastCol, g_map_width - 1);
+  lastRow = min(lastRow, g_map_height - 1);
 
   /* draw wall */
-  for (i = firstRow, y = firstRow * TILE_SIZE; i <= lastRow;
-       ++i, y += TILE_SIZE)
+  for (i = firstRow, y = firstRow * TILE_SIZE; i <= lastRow; ++i, y += TILE_SIZE)
   {
-    for (j = firstCol, x = firstCol * TILE_SIZE; j <= lastCol;
-         ++j, x += TILE_SIZE)
+    for (j = firstCol, x = firstCol * TILE_SIZE; j <= lastCol; ++j, x += TILE_SIZE)
     {
       tileId = getwall(j, i);
       if (tileId == 0)
@@ -136,42 +135,41 @@ map_render(View* view)
       tile  = sTileset[tileId - 1];
 
       /* top-left */
-      sVertBuf[idx++] = x1;
-      sVertBuf[idx++] = y1;
-      sVertBuf[idx++] = wallz;
-      sVertBuf[idx++] = tile.u1;
-      sVertBuf[idx++] = tile.v1;
+      ptr[0] = x1;
+      ptr[1] = y1;
+      ptr[2] = wallz;
+      ptr[3] = tile.u1;
+      ptr[4] = tile.v1;
 
       /* top-right */
-      sVertBuf[idx++] = x2;
-      sVertBuf[idx++] = y1;
-      sVertBuf[idx++] = wallz;
-      sVertBuf[idx++] = tile.u2;
-      sVertBuf[idx++] = tile.v1;
+      ptr[5] = x2;
+      ptr[6] = y1;
+      ptr[7] = wallz;
+      ptr[8] = tile.u2;
+      ptr[9] = tile.v1;
 
       /* bottom-right */
-      sVertBuf[idx++] = x2;
-      sVertBuf[idx++] = y2;
-      sVertBuf[idx++] = wallz;
-      sVertBuf[idx++] = tile.u2;
-      sVertBuf[idx++] = tile.v2;
+      ptr[10] = x2;
+      ptr[11] = y2;
+      ptr[12] = wallz;
+      ptr[13] = tile.u2;
+      ptr[14] = tile.v2;
 
       /* bottom-left */
-      sVertBuf[idx++] = x1;
-      sVertBuf[idx++] = y2;
-      sVertBuf[idx++] = wallz;
-      sVertBuf[idx++] = tile.u1;
-      sVertBuf[idx++] = tile.v2;
+      ptr[15] = x1;
+      ptr[16] = y2;
+      ptr[17] = wallz;
+      ptr[18] = tile.u1;
+      ptr[19] = tile.v2;
 
-      sCnt++;
+      ptr += 20;
+      ++sCnt;
     }
   }
   /* draw floor */
-  for (i = firstRow, y = firstRow * TILE_SIZE; i <= lastRow;
-       ++i, y += TILE_SIZE)
+  for (i = firstRow, y = firstRow * TILE_SIZE; i <= lastRow; ++i, y += TILE_SIZE)
   {
-    for (j = firstCol, x = firstCol * TILE_SIZE; j <= lastCol;
-         ++j, x += TILE_SIZE)
+    for (j = firstCol, x = firstCol * TILE_SIZE; j <= lastCol; ++j, x += TILE_SIZE)
     {
       tileId = getfloor(j, i);
       if (tileId == 0)
@@ -190,32 +188,34 @@ map_render(View* view)
       tile = sTileset[tileId - 1];
 
       /* top-left */
-      sVertBuf[idx++] = x1;
-      sVertBuf[idx++] = y1;
-      sVertBuf[idx++] = FLOOR_Z;
-      sVertBuf[idx++] = tile.u1;
-      sVertBuf[idx++] = tile.v1;
+      ptr[0] = x1;
+      ptr[1] = y1;
+      ptr[2] = wallz;
+      ptr[3] = tile.u1;
+      ptr[4] = tile.v1;
 
       /* top-right */
-      sVertBuf[idx++] = x2;
-      sVertBuf[idx++] = y1;
-      sVertBuf[idx++] = FLOOR_Z;
-      sVertBuf[idx++] = tile.u2;
-      sVertBuf[idx++] = tile.v1;
+      ptr[5] = x2;
+      ptr[6] = y1;
+      ptr[7] = wallz;
+      ptr[8] = tile.u2;
+      ptr[9] = tile.v1;
 
       /* bottom-right */
-      sVertBuf[idx++] = x2;
-      sVertBuf[idx++] = y2;
-      sVertBuf[idx++] = FLOOR_Z;
-      sVertBuf[idx++] = tile.u2;
-      sVertBuf[idx++] = tile.v2;
+      ptr[10] = x2;
+      ptr[11] = y2;
+      ptr[12] = wallz;
+      ptr[13] = tile.u2;
+      ptr[14] = tile.v2;
 
       /* bottom-left */
-      sVertBuf[idx++] = x1;
-      sVertBuf[idx++] = y2;
-      sVertBuf[idx++] = FLOOR_Z;
-      sVertBuf[idx++] = tile.u1;
-      sVertBuf[idx++] = tile.v2;
+      ptr[15] = x1;
+      ptr[16] = y2;
+      ptr[17] = wallz;
+      ptr[18] = tile.u1;
+      ptr[19] = tile.v2;
+
+      ptr += 20;
       ++sCnt;
     }
   }
@@ -223,7 +223,7 @@ map_render(View* view)
 }
 
 static void
-flush(View* view)
+flush(OthoCamera* view)
 {
   // update our vertex buffer
   mat4 viewProjectMatrix;
@@ -233,12 +233,9 @@ flush(View* view)
   glBufferSubData(GL_ARRAY_BUFFER, 0, updtSiz, sVertBuf);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  view_combined(view, viewProjectMatrix);
+  otho_camera_get_view_projection_matrix(view, viewProjectMatrix);
   glUseProgram(sShader);
-  glUniformMatrix4fv(sViewProjectMatrixLocation,
-                     1,
-                     GL_FALSE,
-                     (float*)viewProjectMatrix);
+  glUniformMatrix4fv(sViewProjectMatrixLocation, 1, GL_FALSE, (float*)viewProjectMatrix);
   glBindVertexArray(sVao);
   texture_bind(&sTilesetTex);
   glEnable(GL_DEPTH_TEST);
@@ -306,21 +303,11 @@ init_vao(void)
 
   // struct {vec3 pos; vec2 uv;}
   attrOffset = 0;
-  glVertexAttribPointer(0,
-                        3,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        TILE_VERT_SIZ,
-                        (void*)attrOffset);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, TILE_VERT_SIZ, (void*)attrOffset);
   glEnableVertexAttribArray(0);
   attrOffset += sizeof(float) * 3;
 
-  glVertexAttribPointer(1,
-                        2,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        TILE_VERT_SIZ,
-                        (void*)attrOffset);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, TILE_VERT_SIZ, (void*)attrOffset);
   glEnableVertexAttribArray(1);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sEbo);

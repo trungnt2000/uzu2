@@ -2,116 +2,140 @@
 #include "toolbox/common.h"
 
 void
-view_combined(View* view, mat4 viewProjMatReturn)
+otho_camera_get_view_projection_matrix(OthoCamera* cam, mat4 view_proj_mat_return)
 {
-
-  if (view->dirty)
-  {
-    glm_translate_make(view->viewMat,
-        (vec3){ -(view->position[0] - view->size[0] / 2.f), -(view->position[1] - view->size[1] / 2.f), 0 });
-    glm_scale(view->viewMat, view->scale);
-    glm_rotate_z(view->viewMat, view->rotation, view->viewMat);
-    glm_mat4_inv(view->viewMat, view->invViewMat);
-    view->dirty = false;
-  }
-  glm_mat4_mul(view->projMat, view->viewMat, viewProjMatReturn);
-  // glm_mat4_copy(sProjMat, outVpMat);
+    if (cam->dirty)
+    {
+        glm_translate_make(
+            cam->view_matrix,
+            (vec3){ -(cam->position[0] - cam->size[0] / 2.f), -(cam->position[1] - cam->size[1] / 2.f), 0 });
+        glm_scale(cam->view_matrix, cam->scale);
+        glm_rotate_z(cam->view_matrix, -cam->rotation, cam->view_matrix);
+        glm_mat4_inv(cam->view_matrix, cam->inv_view_matrix);
+        cam->dirty = false;
+    }
+    glm_mat4_mul(cam->projection_matrix, cam->view_matrix, view_proj_mat_return);
 }
 
 void
-view_projection_matrix(View* view, mat4 projMatReturn)
+otho_camera_get_projection_matrix(OthoCamera* cam, mat4 proj_matrix_return)
 {
-  glm_mat4_copy(view->projMat, projMatReturn);
+    glm_mat4_copy(cam->projection_matrix, proj_matrix_return);
 }
 
 void
-view_translate(View* view, vec2 v)
+otho_camera_get_invert_view_matrix(OthoCamera* cam, mat4 invertViewMatReturn)
 {
-  view->dirty = true;
-  view->position[0] += v[0];
-  view->position[1] += v[1];
+    if (cam->dirty)
+    {
+        glm_translate_make(
+            cam->view_matrix,
+            (vec3){ -(cam->position[0] - cam->size[0] / 2.f), -(cam->position[1] - cam->size[1] / 2.f), 0 });
+        glm_scale(cam->view_matrix, cam->scale);
+        glm_rotate_z(cam->view_matrix, -glm_rad(cam->rotation), cam->view_matrix);
+        glm_mat4_inv(cam->view_matrix, cam->inv_view_matrix);
+        cam->dirty = false;
+    }
+    glm_mat4_copy(cam->inv_view_matrix, invertViewMatReturn);
 }
 
 void
-view_rotate(View* view, float angle)
+otho_camera_translate(OthoCamera* cam, vec2 v)
 {
-  view->dirty = true;
-  view->rotation += angle;
+    cam->dirty = true;
+    cam->position[0] += v[0];
+    cam->position[1] += v[1];
 }
 
 void
-view_zoom(View* view, vec2 v)
+otho_camera_rotate(OthoCamera* cam, float angle)
 {
-  view->dirty = true;
-  view->scale[0] *= v[0];
-  view->scale[1] *= v[1];
+    cam->dirty = true;
+    cam->rotation += angle;
 }
 
 void
-view_set_position(View* view, vec2 pos)
+otho_camera_zoom(OthoCamera* cam, vec2 v)
 {
-  view->dirty = true;
-  glm_vec3_copy((vec3){ pos[0], pos[1], 0.f }, view->position);
+    cam->dirty = true;
+    cam->scale[0] *= v[0];
+    cam->scale[1] *= v[1];
 }
 
 void
-view_set_rotation(View* view, float rot)
+otho_camera_set_position(OthoCamera* cam, vec2 pos)
 {
-  view->dirty = true;
-  view->rotation   = rot;
+    cam->dirty = true;
+    glm_vec3_copy((vec3){ pos[0], pos[1], 0.f }, cam->position);
 }
+
 void
-view_reset(View* view, float x, float y, float w, float h)
+otho_camera_set_rotation(OthoCamera* cam, float rot)
 {
-  view->scale[0] = 1.f;
-  view->scale[1] = 1.f;
-  view->scale[2] = 1.f;
+    cam->dirty    = true;
+    cam->rotation = rot;
+}
 
-  view->size[0] = w;
-  view->size[1] = h;
+void
+otho_camera_set_zoom(OthoCamera* cam, float* z)
+{
+    cam->scale[0] = z[0];
+    cam->scale[1] = z[1];
+    cam->dirty    = true;
+}
 
-  view->position[0] = x;
-  view->position[1] = y;
+void
+otho_camera_reset(OthoCamera* cam, float x, float y, float w, float h)
+{
+    cam->scale[0] = 1.f;
+    cam->scale[1] = 1.f;
+    cam->scale[2] = 1.f;
 
-  view->rotation = 0.f;
-  view->dirty = true;
+    cam->size[0] = w;
+    cam->size[1] = h;
 
-  glm_ortho(0, w, h, 0, 100, -100.f, view->projMat);
+    cam->position[0] = x;
+    cam->position[1] = y;
+
+    cam->rotation = 0.f;
+    cam->dirty    = true;
+
+    glm_ortho(0, w, h, 0, 100, -100.f, cam->projection_matrix);
 }
 
 float
-view_top(View* view)
+otho_camera_view_top(OthoCamera* cam)
 {
-  view->dirty = true;
-  return view->position[1] - view->size[1] / 2.f;
+    cam->dirty = true;
+    return cam->position[1] - cam->size[1] / 2.f;
 }
 
 float
-view_bot(View* view)
+otho_camera_view_bot(OthoCamera* cam)
 {
-  view->dirty = true;
-  return view->position[1] + view->size[1] / 2.f;
+    cam->dirty = true;
+    return cam->position[1] + cam->size[1] / 2.f;
 }
 
 float
-view_left(View* view)
+otho_camera_view_left(OthoCamera* cam)
 {
-  view->dirty = true;
-  return view->position[0] - view->size[0] / 2.f;
+    cam->dirty = true;
+    return cam->position[0] - cam->size[0] / 2.f;
 }
 
 float
-view_right(View* view)
+otho_camera_view_right(OthoCamera* cam)
 {
-  view->dirty = true;
-  return view->position[0] + view->size[0] / 2.f;
+    cam->dirty = true;
+    return cam->position[0] + cam->size[0] / 2.f;
 }
 
 void
-to_view_coords(View* view, vec2 src, vec2 dst)
+otho_camera_to_view_coords(OthoCamera* cam, vec2 src, vec2 dst)
 {
-  vec4 tmp;
-  glm_mat4_mulv(view->invViewMat, (vec4){ src[0], src[1], 0.f, 1.f }, tmp);
-  dst[0] = tmp[0];
-  dst[1] = tmp[1];
+    vec4 tmp;
+    glm_mat4_mulv(cam->inv_view_matrix, (vec4){ src[0], src[1], 0.f, 1.f }, tmp);
+    dst[0] = tmp[0];
+    dst[1] = tmp[1];
 }

@@ -5,43 +5,50 @@
 #include "cglm/cglm.h"
 #include "toolbox.h"
 
-typedef struct View
+typedef struct OthoCamera
 {
-   vec3  position;
-   vec3  scale;
-   vec2  size;
-   float rotation;
-   mat4  projMat;
-   mat4  viewMat;
-   bool  dirty;
-   mat4  invViewMat;
-}View;
+    mat4 inv_view_matrix;
+    mat4 projection_matrix;
+    mat4 view_matrix;
 
-/* get combined matrix */
-void view_combined(View* view, mat4 mat);
+    vec3  position;
+    vec3  scale;
+    vec2  size;
+    float rotation;
+    bool  dirty;
+} OthoCamera;
 
-void view_projection_matrix(View* view, mat4 projMatReturn);
+void otho_camera_get_view_projection_matrix(OthoCamera* cam, mat4 viewProjMatReturn);
 
-/* translate view by v */
-void view_translate(vec2 v);
+void otho_camera_get_projection_matrix(OthoCamera* cam, mat4 projMatReturn);
 
-/* rotate view by angle in deg */
-void view_rotate(View* view, float angle);
+void otho_camera_get_invert_view_matrix(OthoCamera* cam, mat4 invertViewMatReturn);
 
-/* zoom view by v */
-void view_zoom(View* view, vec2 v);
+void otho_camera_get_view_matrix(OthoCamera* cam, mat4 viewMatReturn);
 
-void view_set_position(View* view, vec2 pos);
+void otho_camera_to_view_coords(OthoCamera* cam, vec2 src, vec2 dst);
 
-void view_set_rotation(View* view, float rot);
+/* translate cam by v */
+void otho_camera_translate(OthoCamera* cam, vec2 v);
 
-/* reset view */
-void view_reset(View* view, float x, float y, float w, float h);
+/* rotate cam by angle in deg */
+void otho_camera_rotate(OthoCamera* cam, float angle);
 
-float view_top(View* view);
-float view_bot(View* view);
-float view_left(View* view);
-float view_right(View* view);
+/* zoom cam by v */
+void otho_camera_zoom(OthoCamera* cam, vec2 v);
 
-void to_view_coords(View* view, vec2 src, vec2 dst);
+void otho_camera_set_position(OthoCamera* cam, vec2 pos);
+
+void otho_camera_set_rotation(OthoCamera* cam, float rot);
+
+void otho_camera_set_zoom(OthoCamera* cam, vec2 z);
+
+/* reset cam */
+void otho_camera_reset(OthoCamera* cam, float x, float y, float w, float h);
+
+float otho_camera_view_top(OthoCamera* cam);
+float otho_camera_view_bot(OthoCamera* cam);
+float otho_camera_view_left(OthoCamera* cam);
+float otho_camera_view_right(OthoCamera* cam);
+
 #endif // VIEW_H

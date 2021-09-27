@@ -5,7 +5,7 @@
 
 typedef struct Glyph
 {
-  TextureRegion tex;
+  Sprite sprite;
   vec2          advance;
   vec2          size;
   vec2          bearing;
@@ -15,9 +15,9 @@ typedef struct Font
 {
   Texture atlas;
   Glyph*  glyphs;
-  u32     glyphCnt;
-  float   glyphMaxWidth;
-  float   glyphMaxHeight;
+  u32     glyph_cnt;
+  float   max_glyph_width;
+  float   max_glyph_height;
 } Font;
 
 int font_load(Font* font, const char* file, u32 size);

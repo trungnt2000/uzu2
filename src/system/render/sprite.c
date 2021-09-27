@@ -1,39 +1,37 @@
 #include "components.h"
 #include "graphics.h"
-#include "graphics/view.h"
 #include "system_render.h"
 
-#define MAX_SPRITE_PER_BATCH 512
-
-static ecs_Group    sSpriteGroup;
-static SpriteShader sDefaultShader;
+static ecs_Group* s_sprite_group;
 
 void
-system_rendering_sprite_init(ecs_Registry* registry)
+system_rendering_sprite_init(struct ecs_Registry* registry)
 {
-  ecs_group_init(&sSpriteGroup, registry, { Sprite, TransformMatrix });
-  if (sprite_shader_load(&sDefaultShader) != 0)
-  {
-    UZU_ERROR("Faild to load shader...\n");
-  }
+    ecs_create_group(registry, s_sprite_group, { SpriteComp, WorldTransformMatrixComp, MaterialComp });
 }
 
 void
-system_rendering_sprite_fini(void)
+system_rendering_sprite_shutdown(void)
 {
-  sprite_shader_destroy(&sDefaultShader);
-  ecs_group_destroy(&sSpriteGroup);
+    s_sprite_group = NULL;
 }
 
 void
-system_rendering_sprite_update(ecs_Registry* registry)
+system_rendering_sprite_update(SDL_UNUSED ecs_Registry* registry)
 {
-  _Sprite*          sp  = ecs_group_data_begin(&sSpriteGroup, 0);
-  _TransformMatrix* tx  = ecs_group_data_begin(&sSpriteGroup, 1);
-  int               siz = ecs_group_size(&sSpriteGroup);
+    struct SpriteComp*               sp  = ecs_group_data_begin(s_sprite_group, 0);
+    struct WorldTransformMatrixComp* tx  = ecs_group_data_begin(s_sprite_group, 1);
+    struct MaterialComp*             mt  = ecs_group_data_begin(s_sprite_group, 2);
+    int                              siz = ecs_group_size(s_sprite_group);
 
-  for (int i = 0; i < siz; ++i)
-  {
-    draw_texture_region_w_tx(&sp[i].textureRegion, sp[i].size, sp[i].origin, sp[i].color, 0, tx[i].value);
-  }
+    for (int i = 0; i < siz; ++i)
+    {
+        draw_sprite_ex(&sp[i].sprite,
+                       mt[i].ref,
+                       tx[i].value,
+                       sp[i].origin,
+                       sp[i].color,
+                       sp[i].vert_flip,
+                       sp[i].hori_flip);
+    }
 }

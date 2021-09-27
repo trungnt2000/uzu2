@@ -4,26 +4,25 @@
 #include "components.h"
 #include "ecs.h"
 
-typedef struct Dependencies
-{
-  _Sprite*        sprite;
-  _AnimationPool* animPool;
-} Dependencies;
-
 void
-system_rendering_animation_update(ecs_Registry* registry, float deltaTime)
+system_rendering_animation_update(struct ecs_Registry* registry, float delta_time)
 {
-  ecs_View             view;
-  ecs_entity_t         ett;
-  Dependencies         deps;
-  const TextureRegion* keyframe;
+    struct ecs_View       view;
+    ecs_entity_t          ett;
+    const struct Sprite*  keyframe;
+    void*                 components[2];
+    struct SpriteComp*    sprite;
+    struct AnimationComp* animation;
 
-  ecs_view_init(&view, registry, { Sprite, AnimationPool });
-  while (ecs_view_next(&view, &ett, &deps))
-  {
-    deps.animPool->elapsedTime += deltaTime;
-    keyframe = animation_get_frame(deps.animPool->anims, deps.animPool->elapsedTime);
-    deps.sprite->textureRegion = *keyframe;
-  }
+    ecs_view_init(&view, registry, { SpriteComp, AnimationComp });
+    while (ecs_view_next(&view, &ett, components))
+    {
+        sprite    = components[0];
+        animation = components[1];
+
+        animation->elapsed_time += delta_time;
+        keyframe       = animation_get_frame(animation->ref, animation->elapsed_time);
+        sprite->sprite = *keyframe;
+    }
 }
 #endif // SYSTEM_RENDER_ANIM_H

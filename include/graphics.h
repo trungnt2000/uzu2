@@ -2,11 +2,16 @@
 #ifndef GRAPHICS
 #define GRAPHICS
 #include "graphics/types.h" /* basic types */
-#include "graphics/renderer.h"
+#include "graphics/text_renderer.h"
+#include "graphics/sprite_renderer.h"
 #include "graphics/font.h"
 #include "graphics/view.h"
 #include "graphics/sprite_sheet.h"
 #include "graphics/animation.h"
+#include "graphics/material.h"
+#include "graphics/light.h"
+#include "graphics/vertex_buffer.h"
+
 /**
  * helper function to create new shader program
  * with given vertex shader and fragment shader file

@@ -5,55 +5,55 @@
 int
 sprite_sheet_load(SpriteSheet* sheet, const char* file)
 {
-  json_object*   sheetData;
-  json_object*   metaData;
-  json_object*   framesData;
+  json_object*   sheet_data;
+  json_object*   meta_data;
+  json_object*   frames_data;
   json_object*   tmp;
   json_object*   tmp2;
-  json_object*   frameData;
-  const char*    textureFile;
-  size_t         spriteCount;
-  TextureRegion* sprite;
+  json_object*   frame_data;
+  const char*    texture_file;
+  size_t         sprite_count;
+  Sprite* sprite;
   const char*    spriteName;
   IntRect        rect;
 
-  sheetData = json_from_file(file);
-  if (sheetData == NULL)
+  sheet_data = json_from_file(file);
+  if (sheet_data == NULL)
   {
     UZU_ERROR("Failed to load sprite sheet mete file\n");
     return -1;
   }
 
-  metaData   = json_object_object_get(sheetData, "meta");
-  framesData = json_object_object_get(sheetData, "frames");
+  meta_data   = json_object_object_get(sheet_data, "meta");
+  frames_data = json_object_object_get(sheet_data, "frames");
 
-  if (metaData == NULL || framesData == NULL)
+  if (meta_data == NULL || frames_data == NULL)
   {
     UZU_ERROR("Invalid sprite sheet file\n");
     return -1;
   }
 
-  tmp = json_object_object_get(metaData, "image");
+  tmp = json_object_object_get(meta_data, "image");
   if (tmp == NULL)
   {
     UZU_ERROR("Invalid sprite sheet file\n");
     return -1;
   }
 
-  textureFile = json_object_get_string(tmp);
-  if (texture_load(&sheet->texture, textureFile) == -1)
+  texture_file = json_object_get_string(tmp);
+  if (texture_load(&sheet->texture, texture_file) == -1)
   {
     UZU_ERROR("Failed to load texture file\n");
     return -1;
   }
-  asset_table_init(&sheet->assetTable, SDL_free);
-  spriteCount = json_object_array_length(framesData);
-  for (size_t i = 0; i < spriteCount; ++i)
+  asset_table_init(&sheet->asset_table, SDL_free);
+  sprite_count = json_object_array_length(frames_data);
+  for (size_t i = 0; i < sprite_count; ++i)
   {
-    frameData = json_object_array_get_idx(framesData, i);
+    frame_data = json_object_array_get_idx(frames_data, i);
     sprite    = SDL_malloc(sizeof *sprite);
 
-    tmp    = json_object_object_get(frameData, "frame");
+    tmp    = json_object_object_get(frame_data, "frame");
     tmp2   = json_object_object_get(tmp, "x");
     rect.x = json_object_get_int(tmp2);
 
@@ -66,14 +66,14 @@ sprite_sheet_load(SpriteSheet* sheet, const char* file)
     tmp2   = json_object_object_get(tmp, "h");
     rect.h = json_object_get_int(tmp2);
 
-    tmp        = json_object_object_get(frameData, "filename");
+    tmp        = json_object_object_get(frame_data, "filename");
     spriteName = json_object_get_string(tmp);
 
-    texture_region_init(sprite, &sheet->texture, &rect);
-    asset_table_insert(&sheet->assetTable, spriteName, sprite);
+    sprite_init(sprite, &sheet->texture, &rect);
+    asset_table_insert(&sheet->asset_table, spriteName, sprite);
   }
 
-  json_object_put(sheetData);
+  json_object_put(sheet_data);
 
   return 0;
 }
@@ -81,12 +81,12 @@ sprite_sheet_load(SpriteSheet* sheet, const char* file)
 void
 sprite_sheet_destroy(SpriteSheet* sheet)
 {
-  asset_table_destroy(&sheet->assetTable);
+  asset_table_destroy(&sheet->asset_table);
   texture_destroy(&sheet->texture);
 }
 
-const TextureRegion*
-sprite_sheet_get(SpriteSheet* sheet, const char* name)
+const Sprite*
+sprite_sheet_get(const SpriteSheet* sheet, const char* name)
 {
-  return (const TextureRegion*)asset_table_lookup(&sheet->assetTable, name);
+  return (const Sprite*)asset_table_lookup(&sheet->asset_table, name);
 }

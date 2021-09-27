@@ -24,9 +24,6 @@ typedef Uint32 u32;
 typedef Sint64 s64;
 typedef Uint64 u64;
 
-typedef s32 pt;
-typedef s32 px;
-
 typedef void (*Func)();
 typedef void* pointer_t;
 
@@ -35,19 +32,10 @@ typedef void (*FreeFunc)(void* p);
 typedef bool (*EqualFunc)(const void* lhs, const void* rhs);
 typedef u32 (*HashFunc)(const void* v);
 
-#define IN
-#define OUT
-#define INOUT
-
-#define BOOL SDL_bool
-#define UZU_TRUE SDL_TRUE
-#define UZU_FALSE SDL_FALSE
-
 #define ASSERT(cd) SDL_assert(cd)
 #if defined(_MSC_VER)
-#define ASSERT_MSG(cd, msg)                                                    \
-  __pragma(warning(push)) __pragma(warning(disable : 4127))                    \
-      ASSERT((cd) && (msg)) __pragma(warning(pop))
+#define ASSERT_MSG(cd, msg)                                                                                      \
+  __pragma(warning(push)) __pragma(warning(disable : 4127)) ASSERT((cd) && (msg)) __pragma(warning(pop))
 #else
 #define ASSERT_MSG(cd, msg) ASSERT((cd) && (msg))
 #endif
@@ -55,13 +43,20 @@ typedef u32 (*HashFunc)(const void* v);
 #ifdef __GNUC__
 #define STATIC_ASSERT(con, msg) _Static_assert(con, #msg)
 #else
-#define STATIC_ASSERT(con, msg)                                                \
-  typedef void* static_assert_##msg[(con) ? 1 : -1]
+#define STATIC_ASSERT(con, msg) typedef void* static_assert_##msg[(con) ? 1 : -1]
 #endif
 
 #define INLINE static inline
 
 #define BIT(x) (1 << (x))
+
+#define UNUSED SDL_UNUSED
+
+typedef struct Callback
+{
+  void (*func)(void* ctx, const void*);
+  void* ctx;
+} Callback;
 
 // clang-format off
 INLINE int 
@@ -103,5 +98,9 @@ clampf(float lower, float upper, float x)
 INLINE float 
 lerpf(float a, float b, float t)
 { return a + (b - a) * t; }
+
+INLINE float 
+absf(float a)
+{ return a > 0.f ? a : -a; }
 // clang-format on
 #endif // COMMON_H

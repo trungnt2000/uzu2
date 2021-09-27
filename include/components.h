@@ -8,66 +8,168 @@
 
 enum
 {
-  Transform,
-  Sprite,
-  TransformChanged,
-  TransformMatrix,
-  AnimationPool,
-  DrawOrder,
-  Velocity,
-  COMPONENT_CNT
+    TransformComp,
+    SpriteComp,
+    TransformChangedTag,
+    AnimationPoolComp,
+    DrawOrderComp,
+    VelocityComp,
+    MaterialComp,
+    AnimationComp,
+    InputComp,
+    ControllerComp,
+    CharacterAnimationControllerComp,
+    FacingDirectionComp,
+    HolderComp,
+    HandComp,
+    LocalTransformMatrixComp, // caculated when transform component changed
+    WorldTransformMatrixComp, //
+    RelationshipComp,
+    HitBoxComp,
+    DestroyTag,
+    /* Stats components */
+    SpeedComp,
+    COMPONENT_CNT
 };
 
-extern const ecs_TypeTraits gCompTraits[];
+extern const struct ecs_TypeTraits g_comp_traits[];
 
-typedef struct _Transform
+struct TransformComp
 {
-  vec3  position;
-  vec2  scale;
-  float rotation;
-} _Transform;
+    vec3  position;
+    vec2  scale;
+    float rotation;
+};
 
 /* this tag component use in case some thing have changed
  * our transform component */
-typedef struct _TransformChanged
+struct TransformChangedTag
 {
-  int dummy;
-} _TransformChanged;
+    int dummy;
+};
 
-typedef struct _Sprite
+struct DestroyTag
 {
-  vec2          origin;
-  vec2          size;
-  vec4          color;
-  TextureRegion textureRegion;
-} _Sprite;
+    int dummy;
+};
 
-typedef struct _TransformMatrix
+struct SpriteComp
 {
-  mat3 value;
-} _TransformMatrix;
+    vec4      color;
+    Material* material;
+    vec2      origin;
+    Sprite    sprite;
+    bool      hori_flip;
+    bool      vert_flip;
+};
 
-typedef struct _AnimationPool
+struct LocalTransformMatrixComp
 {
-  Animation* anims;
-  int        animCnt;
-  float      elapsedTime;
-} _AnimationPool;
+    mat3 value;
+};
 
-typedef struct _DrawOrder
+struct WorldTransformMatrixComp
 {
-  float value;
-} _DrawOrder;
+    mat3 value;
+};
 
-#define VELOCITY_ZERO_INIT                                                                                   \
-  {                                                                                                          \
-    {                                                                                                        \
-      0                                                                                                      \
-    }                                                                                                        \
-  }
-typedef struct _Velocity
+struct AnimationComp
 {
-  vec2 value;
-} _Velocity;
+    const Animation* ref;
+    float            elapsed_time;
+};
+
+struct AnimationPoolComp
+{
+    const Animation* animations;
+    int              count;
+};
+
+struct DrawOrderComp
+{
+    float value;
+};
+
+struct VelocityComp
+{
+    vec2 value;
+};
+
+struct MaterialComp
+{
+    const Material* ref;
+    bool            shared;
+};
+
+struct ControllerComp
+{
+    vec2 desired_direction;
+};
+
+struct InputComp
+{
+    int dummy;
+};
+
+struct SpeedComp
+{
+    float value;
+};
+
+typedef enum CharacterAnimationState
+{
+    CHARACTER_ANIMATION_IDLE,
+    CHARACTER_ANIMATION_WALK,
+    CHARACTER_ANIMATION_HURT,
+    CHARACTER_ANIMATION_CNT,
+} CharacterAnimationState;
+
+struct CharacterAnimationControllerComp
+{
+    CharacterAnimationState state;
+};
+
+struct FacingDirectionComp
+{
+    vec2 value;
+    bool frezzed;
+};
+
+struct HandComp
+{
+    ecs_entity_t weapon;
+};
+
+struct HolderComp
+{
+    ecs_entity_t holder;
+};
+
+struct RelationshipComp
+{
+    ecs_entity_t parent;
+    ecs_entity_t next;  /* next sibling */
+    ecs_entity_t prev;  /* previous sibling */
+    ecs_entity_t first; /* first child */
+};
+
+struct DropComp
+{
+    int dummy;
+};
+
+struct HitBoxComp
+{
+    int  proxy_id;
+    vec2 size;
+    vec2 anchor;
+    u32  mask;
+    u32  category;
+};
+
+#define RELATIONSHIP_COMP_INIT_EMPTY                                                                           \
+    {                                                                                                          \
+        .parent = ECS_NULL_ENT, .next = ECS_NULL_ENT, .prev = ECS_NULL_ENT, .first = ECS_NULL_ENT              \
+    }
 
 #endif // COMPONENTS_H

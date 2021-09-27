@@ -15,17 +15,32 @@ set(SOURCE_FILES
   src/component.c
   src/engine.c
   src/input.c
+  src/enitity_factory.c
+  src/equipment.c
+  src/inventory.c
+  src/resources.c
+  src/message.c
+  src/item.c
+  src/entity.c
+
+  src/ui/inventory.c
 
   src/main.c
 
+  #TODO GRAPHICS_SOURCE_FILES
   src/graphics/shader.c
   src/graphics/texture.c
   src/graphics/view.c
   src/graphics/animation.c
   src/graphics/font.c
-  src/graphics/renderer.c
+  src/graphics/text_renderer.c
   src/graphics/asset_table.c
   src/graphics/sprite_sheet.c
+  src/graphics/material.c
+  src/graphics/vertex_buffer.c
+  src/graphics/framebuffer.c
+  src/graphics/light.c
+  src/graphics/sprite_renderer.c
   #${BEHAVIOR_NODE_SOURCE_FILES}
   #${GAME_EVENT_SOURCE_FILES}
   ${SYSTEM_SOURCE_FILES}
