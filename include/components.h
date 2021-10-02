@@ -27,8 +27,13 @@ enum
     RelationshipComp,
     HitBoxComp,
     DestroyTag,
+    NameComp,
+    WorldTransformMatrixChangedTag,
+    EntityTag,
+    RotatorComp,
     /* Stats components */
     SpeedComp,
+    ContactComp,
     COMPONENT_CNT
 };
 
@@ -167,9 +172,79 @@ struct HitBoxComp
     u32  category;
 };
 
+struct NameComp
+{
+    char value[64];
+};
+
+struct WorldTransformMatrixChangedTag
+{
+    int dummy;
+};
+
+struct ContactComp
+{
+    ecs_entity_t next;
+    ecs_entity_t prev;
+};
+
+struct TransformState
+{
+    vec3  position;
+    vec2  scale;
+    float rotation;
+    float duration;
+};
+
+struct TransformClip
+{
+    struct TransformState* root;
+    struct TransformState* hand;
+    struct TransformState* weapon;
+};
+
+struct ERef
+{
+    ecs_entity_t hand;
+    ecs_entity_t weapon;
+};
+
+struct EquipedWeapon
+{
+    u32 weapon_id;
+};
+
+struct EquipedSpell
+{
+    u32 spell_id;
+};
+
+enum
+{
+    ET_ENEMY,
+    ET_PLAYER,
+    ET_CHEST,
+    ET_PICKUPABLE,
+    ET_CNT,
+#define ET_UNKNOWN
+};
+
+#define ENEMY_MASK BIT(ET_ENEMY)
+#define PLAYER_MASK BIT(ET_PLAYER)
+
+struct EntityTag
+{
+    u32 value;
+};
+
 #define RELATIONSHIP_COMP_INIT_EMPTY                                                                           \
     {                                                                                                          \
         .parent = ECS_NULL_ENT, .next = ECS_NULL_ENT, .prev = ECS_NULL_ENT, .first = ECS_NULL_ENT              \
     }
+
+struct RotatorComp
+{
+    float speed;
+};
 
 #endif // COMPONENTS_H

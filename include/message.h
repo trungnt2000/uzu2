@@ -1,6 +1,7 @@
 // ngotrung Mon 06 Sep 2021 06:04:05 PM +07
 #ifndef MESSAGE_H
 #define MESSAGE_H
+#include "ecs.h"
 #include "toolbox.h"
 
 enum MsgId
@@ -10,6 +11,8 @@ enum MsgId
     MsgDialogueClosed,
     MsgDialogueShown,
     MsgEntityDied,
+    MsgCommandSelected,
+    MsgPlayerHitEnemy,
     MSG_CNT
 };
 
@@ -21,6 +24,18 @@ struct MsgLevelLoaded
 struct MsgLevelUnloaded
 {
     const char* level_name;
+};
+
+struct MsgPlayerHitEnemy
+{
+    ecs_entity_t player;
+    ecs_entity_t enemy;
+};
+
+struct MsgCommandSelected
+{
+    ecs_entity_t entity;
+    const char*  command;
 };
 
 void ems_init(void);

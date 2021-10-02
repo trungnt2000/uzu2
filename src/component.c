@@ -9,6 +9,10 @@ static const struct TransformComp s_dft_transform = { .scale = { 1.f, 1.f } };
 
 static const struct SpriteComp s_dft_sprite = { .color = COLOR_WHITE_INIT };
 
+static const struct ContactComp s_dft_contact = { ECS_NULL_ENT, ECS_NULL_ENT };
+
+static const struct EntityTag s_dft_entity_tag = { ET_UNKNOWN };
+
 #define TYPE_TRAITS(T, finiFn, cpyFn, dft)                                                                     \
     [T] = { .size          = sizeof(ECS_COMP_NM(T)),                                                           \
             .fini          = finiFn,                                                                           \
@@ -38,6 +42,11 @@ const struct ecs_TypeTraits g_comp_traits[COMPONENT_CNT] = {
   TYPE_TRAITS(HolderComp, NULL, NULL, NULL),
   TYPE_TRAITS(RelationshipComp, NULL, NULL, &s_dft_releationship),
   TYPE_TRAITS(HitBoxComp, NULL, NULL, NULL),
-  TYPE_TRAITS(DestroyTag, NULL, NULL, NULL)
+  TYPE_TRAITS(DestroyTag, NULL, NULL, NULL),
+  TYPE_TRAITS(NameComp, NULL, NULL, NULL),
+  TYPE_TRAITS(WorldTransformMatrixChangedTag, NULL, NULL, NULL),
+  TYPE_TRAITS(ContactComp, NULL, NULL, &s_dft_contact),
+  TYPE_TRAITS(EntityTag, NULL, NULL, NULL),
+  TYPE_TRAITS(RotatorComp, NULL, NULL, NULL),
 };
 /* clang-format on */

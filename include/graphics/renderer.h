@@ -4,11 +4,22 @@
 #include "graphics/material.h"
 #include "graphics/types.h"
 
-void draw(const Vertex*   vertcies,
-          const Texture*  texture,
-          const Material* material,
-          int             vertex_count,
-          int             sorting_layer,
-          int             z_order);
+enum DrawPrimitive
+{
+    DP_LINE,
+    DP_TRIANGLE,
+};
+
+void begin_draw(void);
+
+void end_draw(void);
+
+void draw(const struct Vertex*   vertcies,
+          enum DrawPrimitive     primitive,
+          const struct Texture*  texture,
+          const struct Material* material,
+          u32                    vertex_count,
+          mat4                   mvp_matrix,
+          int                    priority);
 
 #endif // RENDERER_H

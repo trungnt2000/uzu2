@@ -6,11 +6,11 @@
 #include "graphics/vertex_buffer.h"
 #include "toolbox/common.h"
 
-
 /* sort by drawOrder -> sprite->texture -> material */
 
 void sprite_renderer_init(u32 buffer_size);
 void sprite_renderer_shutdown(void);
+void sprite_renderer_get_statistis(struct RenderStatistics* ret);
 
 /**
  * \brief prepare buffer for rendering
@@ -33,6 +33,8 @@ void draw_sprite_ex(const Sprite*   sprite,
                     vec2            center,
                     vec4            color,
                     bool            vertFlip,
-                    bool            horiFlp);
+                    bool            horiFlp,
+                    int             layer,
+                    int             draw_order);
 
 #endif // GRAPHICS_SPRITE_RENDERER_H

@@ -24,18 +24,25 @@ static struct
     u32                size;
 } s_pair_list;
 
+bool
+should_collide(const struct HitBoxComp* h1, const struct HitBoxComp* h2)
+{
+    return (h1->mask & h2->category) && (h2->mask & h1->category);
+}
+
 static struct Box
 compute_bounding_box(struct HitBoxComp* hitbox, mat3 local_to_world)
 {
-    vec2 position = { 0.f, 0.f };
-    glm_mat3_mulv(local_to_world, (vec2){ 0 }, position);
+    vec3 position = { 0 };
+    glm_mat3_mulv(local_to_world, (vec3){ 0.f, 0.f, 1.f }, position);
 
-    return (struct Box){
-        .left   = position[0] - hitbox->anchor[0],
-        .top    = position[1] - hitbox->anchor[1],
-        .right  = hitbox->size[0],
-        .bottom = hitbox->size[1],
-    };
+    struct Box box;
+    box.left   = position[0] - hitbox->anchor[0];
+    box.top    = position[1] - hitbox->anchor[1];
+    box.right  = box.left + hitbox->size[0];
+    box.bottom = box.top + hitbox->size[1];
+
+    return box;
 }
 
 static void
@@ -73,13 +80,32 @@ push_to_pair_list(ecs_entity_t e1, ecs_entity_t e2)
     if (s_pair_list.count == s_pair_list.size)
     {
         s_pair_list.size  = s_pair_list.size * 2;
-        s_pair_list.items = SDL_realloc(s_pair_list.items, s_pair_list.size);
+        s_pair_list.items = SDL_realloc(s_pair_list.items, (sizeof *s_pair_list.items) * s_pair_list.size);
     }
     s_pair_list.items[s_pair_list.count++] = (struct EntityPair){ maxe(e1, e2), mine(e1, e2) };
 }
 
+static void
+pair_list_asure_size(u32 min_size)
+{
+    if (s_pair_list.size < min_size)
+    {
+        s_pair_list.size  = min_size;
+        s_pair_list.items = SDL_realloc(s_pair_list.items, min_size);
+    }
+}
+
+static void
+pair_list_init(u32 size)
+{
+    s_pair_list.size  = 0;
+    s_pair_list.count = 0;
+    s_pair_list.items = NULL;
+    pair_list_asure_size(size);
+}
+
 bool
-check_entity_pair_equality(struct EntityPair lhs, struct EntityPair rhs)
+is_equal_entity_pair(struct EntityPair lhs, struct EntityPair rhs)
 {
     return lhs.e1 == rhs.e1 && lhs.e2 == rhs.e2;
 }
@@ -102,7 +128,7 @@ remove_duplicate(struct EntityPair* pairs, u32 cnt)
     u32 j = 0;
 
     for (u32 i = 0; i < cnt - 1; i++)
-        if (!check_entity_pair_equality(pairs[i], pairs[i + 1]))
+        if (!is_equal_entity_pair(pairs[i], pairs[i + 1]))
             pairs[j++] = pairs[i];
 
     pairs[j++] = pairs[cnt - 1];
@@ -112,11 +138,9 @@ remove_duplicate(struct EntityPair* pairs, u32 cnt)
 void
 system_box_collision_init(ecs_Registry* registry)
 {
-    s_quad_tree       = quad_tree_create(8, (struct Box){ 0, 0, 512, 512 });
-    s_pair_list.count = 0;
-    s_pair_list.size  = 256;
-    s_pair_list.items = SDL_malloc((sizeof *s_pair_list.items) * s_pair_list.size);
+    s_quad_tree = quad_tree_create(8, (struct Box){ 0, 0, 512, 512 });
 
+    pair_list_init(256);
     ecs_connect(registry, ECS_SIG_ADD, HitBoxComp, on_hitbox_added, NULL);
     ecs_connect(registry, ECS_SIG_RMV, HitBoxComp, on_hitbox_removed, NULL);
 }
@@ -124,6 +148,7 @@ system_box_collision_init(ecs_Registry* registry)
 void
 system_box_collision_shutdown()
 {
+    quad_tree_free_null(s_quad_tree);
 }
 
 void
@@ -135,17 +160,21 @@ system_box_collision_set_callback(void (*callback)(void*, ecs_entity_t, ecs_enti
 
 struct QueryCallbackArg
 {
-    int          proxy_id;
-    ecs_entity_t entity;
+    int           proxy_id;
+    ecs_entity_t  entity;
+    ecs_Registry* registry;
 };
 
 static bool
 query_callback(void* ctx, int element)
 {
-    struct QueryCallbackArg* arg = ctx;
-    if (arg->proxy_id != element)
+    struct QueryCallbackArg* arg   = ctx;
+    ecs_entity_t             other = (ecs_entity_t)quad_tree_get_user_data(s_quad_tree, element);
+    struct HitBoxComp*       h1    = ecs_get(arg->registry, arg->entity, HitBoxComp);
+    struct HitBoxComp*       h2    = ecs_get(arg->registry, other, HitBoxComp);
+    if (arg->proxy_id != element && should_collide(h1, h2))
     {
-        push_to_pair_list(arg->entity, (ecs_entity_t)quad_tree_get_user_data(s_quad_tree, element));
+        push_to_pair_list(arg->entity, other);
     }
     return true;
 }
@@ -161,7 +190,7 @@ update_proxies(ecs_Registry* registry)
     struct Box                       box;
     struct WorldTransformMatrixComp* world_transform_matrix;
 
-    ecs_view_init(&view, registry, { TransformChangedTag, HitBoxComp, WorldTransformMatrixComp });
+    ecs_view_init(&view, registry, { WorldTransformMatrixChangedTag, HitBoxComp, WorldTransformMatrixComp });
     while (ecs_view_next(&view, &ett, components))
     {
         hitbox                 = components[1];
@@ -184,8 +213,9 @@ broad_phase(ecs_Registry* registry)
     struct Box                       box;
     struct WorldTransformMatrixComp* world_transform_matrix;
 
-    ecs_view_init(&view, registry, { TransformChangedTag, HitBoxComp, WorldTransformMatrixComp });
+    ecs_view_init(&view, registry, { WorldTransformMatrixChangedTag, HitBoxComp, WorldTransformMatrixComp });
 
+    s_pair_list.count = 0;
     while (ecs_view_next(&view, &ett, components))
     {
         hitbox                 = components[1];
@@ -193,24 +223,65 @@ broad_phase(ecs_Registry* registry)
 
         box = compute_bounding_box(hitbox, world_transform_matrix->value);
 
-        quad_tree_query(s_quad_tree,
-                        box,
-                        query_callback,
-                        &(struct QueryCallbackArg){ .entity = ett, .proxy_id = hitbox->proxy_id });
+        quad_tree_query(
+            s_quad_tree,
+            box,
+            query_callback,
+            &(struct QueryCallbackArg){ .entity = ett, .proxy_id = hitbox->proxy_id, .registry = registry });
     }
     SDL_qsort(s_pair_list.items, s_pair_list.count, sizeof(struct EntityPair), compare_entity_pair);
     s_pair_list.count = remove_duplicate(s_pair_list.items, s_pair_list.count);
+}
+
+static struct Box
+compute_entity_bounds(ecs_Registry* registry, ecs_entity_t entity)
+{
+    vec3*              local_to_world = ecs_get(registry, entity, WorldTransformMatrixComp)->value;
+    struct HitBoxComp* hitbox         = ecs_get(registry, entity, HitBoxComp);
+
+    return compute_bounding_box(hitbox, local_to_world);
+}
+
+extern bool check_box_overlaps(const struct Box* b1, const struct Box* b2);
+
+static bool
+is_collide(ecs_Registry* registry, ecs_entity_t e1, ecs_entity_t e2)
+{
+
+    struct Box box1 = compute_entity_bounds(registry, e1);
+    struct Box box2 = compute_entity_bounds(registry, e2);
+    return check_box_overlaps(&box1, &box2);
+}
+
+INLINE void
+invoke_callback(ecs_entity_t e1, ecs_entity_t e2)
+{
+    if (s_callback.fn != NULL)
+    {
+        s_callback.fn(s_callback.ctx, e1, e2);
+    }
+}
+
+static void
+narrow_phase(ecs_Registry* registry, struct EntityPair* pairs, u32 count)
+{
+    for (u32 i = 0; i < count; ++i)
+    {
+        struct HitBoxComp* h1 = ecs_get(registry, pairs[i].e1, HitBoxComp);
+        struct HitBoxComp* h2 = ecs_get(registry, pairs[i].e2, HitBoxComp);
+
+        if (should_collide(h1, h2) && is_collide(registry, pairs[i].e1, pairs[i].e2))
+        {
+            invoke_callback(pairs[i].e1, pairs[i].e2);
+        }
+    }
 }
 
 void
 system_box_collision_update(ecs_Registry* registry)
 {
     update_proxies(registry);
-    broad_phase(registry);
 
-    if (s_callback.fn != NULL)
-    {
-        for (u32 i = 0; i < s_pair_list.count; ++i)
-            s_callback.fn(s_callback.ctx, s_pair_list.items[i].e1, s_pair_list.items[i].e2);
-    }
+    broad_phase(registry);
+    narrow_phase(registry, s_pair_list.items, s_pair_list.count);
 }

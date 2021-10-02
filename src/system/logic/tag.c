@@ -15,8 +15,21 @@ remove_trasform_changed_tag(ecs_Registry* registry)
     }
 }
 
+static void
+remove_world_transform_matrix_changed_tag(ecs_Registry* registry)
+{
+    const ecs_entity_t* entities;
+    ecs_size_t          count;
+    ecs_raw(registry, WorldTransformMatrixChangedTag, &entities, NULL, &count);
+    for (ecs_size_t i = count; i--;)
+    {
+        ecs_rmv(registry, entities[i], WorldTransformMatrixChangedTag);
+    }
+}
+
 void
 system_tag_update(ecs_Registry* registry)
 {
     remove_trasform_changed_tag(registry);
+    remove_world_transform_matrix_changed_tag(registry);
 }

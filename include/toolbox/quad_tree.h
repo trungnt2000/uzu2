@@ -19,6 +19,13 @@ QuadTree* quad_tree_create(int depth_limit, struct Box primary_box);
 
 void quad_tree_free(QuadTree* tree);
 
+#define quad_tree_free_null(t)                                                                                 \
+    do                                                                                                         \
+    {                                                                                                          \
+        quad_tree_free(t);                                                                                     \
+        t = NULL;                                                                                              \
+    } while (0)
+
 int quad_tree_create_element(QuadTree* tree, struct Box box, void* user_data);
 
 void quad_tree_destroy_element(QuadTree* tree, int element_id);

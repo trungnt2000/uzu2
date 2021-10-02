@@ -17,7 +17,7 @@ const static CharacterParams s_params_job_wizzard = { .animations = s_animation_
 const static CharacterParams s_params_job_knight  = { .animations = s_animation_job_knight };
 
 int
-EF_init(const Resources* resources)
+entity_factory_init(const Resources* resources)
 {
     const SpriteSheet* spritesheet = &resources->spritesheet; // a small shortcut
 
@@ -81,7 +81,7 @@ EF_init(const Resources* resources)
 }
 
 void
-EF_shutdown(void)
+entity_factory_shutdown(void)
 {
     for (int i = 0; i < CHARACTER_ANIMATION_CNT; ++i)
         animation_destroy(&s_animation_job_lizzard[i]);
@@ -108,6 +108,10 @@ make_character(ecs_Registry* registry, const CharacterParams* params)
     ecs_addv(registry, character, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
     ecs_add(registry, character, TransformChangedTag);
     ecs_add(registry, character, InputComp);
+    ecs_addv(registry,
+             character,
+             HitBoxComp,
+             { .size = { 16.f, 28.f }, .anchor = { 8.f, 28.f }, .mask = ENEMY_MASK, .category = PLAYER_MASK });
     return character;
 }
 
@@ -136,8 +140,6 @@ create_anime_sword(ecs_Registry* registry)
     ecs_add_ex(registry, anime_sword, MaterialComp, { .ref = NULL });
 
     ecs_add(registry, anime_sword, TransformChangedTag);
-
-    ecs_addv(registry, anime_sword, HitBoxComp, { .size = { 16.f, 16.f } });
 
     return anime_sword;
 }

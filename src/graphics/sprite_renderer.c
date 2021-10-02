@@ -5,7 +5,7 @@ typedef struct DrawCmd
     const Material* material;
     const Texture*  texture;
     Vertex          vertices[4];
-    int             z_order;
+    int             draw_order;
     int             sorting_layer;
 } DrawCmd;
 
@@ -66,8 +66,8 @@ compare_draw_command(const void* lhs, const void* rhs)
     if (cmd1->sorting_layer != cmd2->sorting_layer)
         return cmd1->sorting_layer - cmd2->sorting_layer;
 
-    if (cmd1->z_order != cmd2->z_order)
-        return cmd1->z_order - cmd2->z_order;
+    if (cmd1->draw_order != cmd2->draw_order)
+        return cmd1->draw_order - cmd2->draw_order;
 
     if (cmd1->texture != cmd2->texture)
         return compare_pointer(cmd1->texture, cmd2->texture);
@@ -270,7 +270,7 @@ draw_sprite(const Sprite* sprite, const Material* material, vec2 position, vec4 
 
     cmd->material      = material;
     cmd->texture       = texture;
-    cmd->z_order       = 0;
+    cmd->draw_order    = 0;
     cmd->sorting_layer = 0;
 }
 
@@ -281,7 +281,9 @@ draw_sprite_ex(const Sprite*   sprite,
                vec2            center,
                vec4            color,
                bool            vert_flip,
-               bool            hori_flip)
+               bool            hori_flip,
+               int             sorting_layer,
+               int             draw_order)
 {
 
     float          u1, v1, u2, v2; /* texture coordinates                          */
@@ -381,15 +383,15 @@ draw_sprite_ex(const Sprite*   sprite,
     vert->tex_coords[1] = v2;
     glm_vec4_copy(color, vert->color);
 
-    cmd->z_order  = 0;
-    cmd->texture  = texture;
-    cmd->material = material;
+    cmd->draw_order    = draw_order;
+    cmd->sorting_layer = sorting_layer;
+    cmd->texture       = texture;
+    cmd->material      = material;
 }
 
-void draw(const struct Vertex*   vertices,
-          u32                    count,
-          enum Primitive         primitive,
-          const struct Texture*  texture,
-          const struct Material* material,
-          const mat4             model_matrix,
-          s32                    priority);
+void
+sprite_renderer_get_statistis(struct RenderStatistics* ret)
+{
+    if (ret)
+        *ret = s_statistics;
+}

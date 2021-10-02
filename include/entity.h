@@ -15,4 +15,6 @@ ecs_entity_t ett_rs_get_first_child(ecs_Registry* reg, ecs_entity_t ett);
 ecs_entity_t ett_rs_get_next_sibling(ecs_Registry* reg, ecs_entity_t ett);
 ecs_entity_t ett_rs_get_prev_sibling(ecs_Registry* reg, ecs_entity_t ett);
 
+void ett_set_name_fmt(ecs_Registry* reg, ecs_entity_t ett, const char* restrict fmt, ...);
+
 #endif // TRANSFORM_UTILS_H

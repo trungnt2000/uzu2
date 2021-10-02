@@ -2,6 +2,7 @@
 #include "toolbox/common.h"
 
 #define NULL_INDEX QUAD_TREE_NULL_ID
+#define NODE_PER_BLOCK (4)
 
 struct FreeList
 {
@@ -14,20 +15,32 @@ struct FreeList
     int    size;
 };
 
+void
+free_list_resize(struct FreeList* lst, int size)
+{
+    lst->size = size;
+    lst->next = SDL_realloc(lst->next, (sizeof *lst->next) * (size_t)size);
+    lst->data = SDL_realloc(lst->data, lst->element_size * (size_t)size);
+
+    for (int i = lst->count; i < lst->size - 1; ++i)
+    {
+        lst->next[i] = i + 1;
+    }
+    lst->next[lst->size - 1] = NULL_INDEX;
+    lst->first_free_index    = lst->count;
+}
+
 struct FreeList*
 free_list_init(struct FreeList* lst, size_t element_size, size_t element_aligment)
 {
     lst->element_size     = element_size;
     lst->element_aligment = element_aligment;
-    lst->first_free_index = 0;
     lst->count            = 0;
-    lst->size             = 16;
+    lst->data             = NULL;
+    lst->next             = NULL;
 
-    lst->next = SDL_malloc((sizeof *lst->next) * (size_t)lst->size);
-    lst->data = SDL_malloc(element_size * (size_t)lst->size);
-    for (int i = 0; i < lst->size; ++i)
-        lst->next[i] = i + 1;
-    lst->next[lst->size - 1] = NULL_INDEX;
+    free_list_resize(lst, 16);
+
     return (lst);
 }
 
@@ -55,16 +68,10 @@ free_list_alloc_elmement(struct FreeList* lst)
 {
     if (lst->count == lst->size)
     {
-        lst->size = lst->size << 1;
-        lst->next = SDL_realloc(lst->next, sizeof(int) * (size_t)lst->count);
-        lst->data = SDL_realloc(lst->data, lst->element_size * (size_t)lst->size);
-
-        for (int i = lst->count; i < lst->size - 1; ++i)
-        {
-            lst->next[i] = i + 1;
-        }
-        lst->next[lst->size - 1] = NULL_INDEX;
+        ASSERT_MSG(lst->first_free_index == NULL_INDEX, "Some thing wrong");
+        free_list_resize(lst, lst->size * 2);
     }
+
     int new_index         = lst->first_free_index;
     lst->first_free_index = lst->next[new_index];
     lst->count++;
@@ -93,7 +100,6 @@ free_list_range(struct FreeList* lst)
     return lst->size;
 }
 
-
 #define free_list_first(T, lst) ((T*)free_list_firstf(lst))
 
 struct Element
@@ -113,7 +119,7 @@ struct Node
     int parent;
 };
 
-struct TraversalData
+struct NodeData
 {
     int        node_id;
     struct Box bounds;
@@ -121,9 +127,9 @@ struct TraversalData
 
 struct Stack
 {
-    struct TraversalData* elements;
-    int                   sp;
-    int                   max;
+    struct NodeData* elements;
+    int              sp;
+    int              max;
 };
 
 struct QuadTree
@@ -151,7 +157,7 @@ stack_destroy(struct Stack* st)
 }
 
 static void
-stack_push(struct Stack* st, const struct TraversalData element)
+stack_push(struct Stack* st, const struct NodeData element)
 {
     if (st->sp == st->max)
     {
@@ -161,7 +167,7 @@ stack_push(struct Stack* st, const struct TraversalData element)
     st->elements[st->sp++] = element;
 }
 
-static struct TraversalData
+static struct NodeData
 stack_pop(struct Stack* st)
 {
     return st->elements[--st->sp];
@@ -200,15 +206,18 @@ extend_box(struct Box* b, float v)
     b->right += v;
 }
 
+int quad_tree_create_node(struct QuadTree* tree);
+
 struct QuadTree*
 quad_tree_create(int depth_limit, struct Box bounds)
 {
     struct QuadTree* tree = SDL_malloc(sizeof *tree);
 
     free_list_init(&tree->elememts, sizeof(struct Element), _Alignof(struct Element));
-    free_list_init(&tree->nodes, sizeof(struct Node) * 4, _Alignof(struct Node));
+    free_list_init(&tree->nodes, sizeof(struct Node) * NODE_PER_BLOCK, _Alignof(struct Node));
     tree->bounds      = bounds;
     tree->depth_limit = depth_limit;
+    tree->root        = quad_tree_create_node(tree);
 
     return (tree);
 }
@@ -226,27 +235,31 @@ quad_tree_free(QuadTree* tree)
 int
 quad_tree_create_node(struct QuadTree* tree)
 {
-    int          node_index = free_list_alloc_elmement(&tree->nodes);
-    struct Node* node       = free_list_at(&tree->nodes, node_index);
+    int          block_index = free_list_alloc_elmement(&tree->nodes);
+    struct Node* node        = free_list_at(&tree->nodes, block_index);
 
     // allocate four node at once
     node[0].first_child   = NULL_INDEX;
     node[0].first_element = NULL_INDEX;
     node[0].count         = 0;
+    node[0].parent        = NULL_INDEX;
 
     node[1].first_element = NULL_INDEX;
     node[1].first_child   = NULL_INDEX;
     node[1].count         = 0;
+    node[1].parent        = NULL_INDEX;
 
     node[2].first_child   = NULL_INDEX;
     node[2].first_element = NULL_INDEX;
     node[2].count         = 0;
+    node[2].parent        = NULL_INDEX;
 
     node[3].first_child   = NULL_INDEX;
     node[3].first_element = NULL_INDEX;
     node[3].count         = 0;
+    node[3].parent        = NULL_INDEX;
 
-    return node_index * 4;
+    return block_index * NODE_PER_BLOCK;
 }
 
 static void
@@ -258,7 +271,8 @@ quad_tree_free_node(struct QuadTree* tree, int index)
 static struct Node*
 quad_tree_get_node(struct QuadTree* tree, int node_id)
 {
-    ASSERT_MSG(node_id < tree->nodes.size, "Invalid node_id(out of rage)");
+    ASSERT_MSG(node_id >= 0 && node_id < free_list_range(&tree->nodes) * NODE_PER_BLOCK,
+               "Invalid node_id(out of rage)");
     return &((struct Node*)tree->nodes.data)[node_id];
 }
 
@@ -284,7 +298,8 @@ quad_tree_free_element(struct QuadTree* tree, int element_id)
 static struct Element*
 quad_tree_get_element(struct QuadTree* tree, int element_id)
 {
-    ASSERT_MSG(element_id < free_list_range(&tree->elememts), "Invalid element_id(out of range)");
+    ASSERT_MSG(element_id >= 0 && element_id < free_list_range(&tree->elememts),
+               "Invalid element_id(out of range)");
     return &free_list_first(struct Element, &tree->elememts)[element_id];
 }
 
@@ -365,6 +380,12 @@ quad_tree_insert_element(struct QuadTree* tree, int element_id)
     struct Node*    node    = quad_tree_get_node(tree, node_id);
     struct Element* element = quad_tree_get_element(tree, element_id);
 
+    if (node->first_element != NULL_INDEX)
+    {
+        struct Element* first_element = quad_tree_get_element(tree, node->first_element);
+        first_element->prev           = element_id;
+    }
+
     element->next    = node->first_element;
     element->prev    = NULL_INDEX;
     element->node_id = node_id;
@@ -381,10 +402,10 @@ quad_tree_query(struct QuadTree* tree, struct Box box, bool (*callback)(void*, i
     struct Node*    nodes    = tree->nodes.data;
     struct Element* elements = tree->elememts.data;
 
-    struct TraversalData traversal_data;
+    struct NodeData traversal_data;
 
     stack_init(&stack, 128);
-    stack_push(&stack, (struct TraversalData){ tree->root, tree->bounds });
+    stack_push(&stack, (struct NodeData){ tree->root, tree->bounds });
 
     while (!stack_is_empty(&stack))
     {
@@ -396,6 +417,7 @@ quad_tree_query(struct QuadTree* tree, struct Box box, bool (*callback)(void*, i
                 callback(ctx, eid);
 
         int fc = nodes[traversal_data.node_id].first_child;
+
         if (fc != NULL_INDEX)
         {
             struct Box bounds = traversal_data.bounds;
@@ -409,16 +431,16 @@ quad_tree_query(struct QuadTree* tree, struct Box box, bool (*callback)(void*, i
             struct Box BR = { m0, m1, bounds.right, bounds.bottom };
 
             if (check_box_overlaps(&TL, &box))
-                stack_push(&stack, (struct TraversalData){ fc + 0, TL });
+                stack_push(&stack, (struct NodeData){ fc + 0, TL });
 
             if (check_box_overlaps(&TR, &box))
-                stack_push(&stack, (struct TraversalData){ fc + 1, TR });
+                stack_push(&stack, (struct NodeData){ fc + 1, TR });
 
             if (check_box_overlaps(&BL, &box))
-                stack_push(&stack, (struct TraversalData){ fc + 2, BL });
+                stack_push(&stack, (struct NodeData){ fc + 2, BL });
 
             if (check_box_overlaps(&BR, &box))
-                stack_push(&stack, (struct TraversalData){ fc + 3, BR });
+                stack_push(&stack, (struct NodeData){ fc + 3, BR });
         }
     }
     stack_destroy(&stack);
@@ -444,8 +466,10 @@ quad_tree_remove_element(struct QuadTree* tree, int element_id)
     if (prev != NULL_INDEX)
         elements[prev].next = next;
 
-    node->count--;
+    elements[element_id].next    = NULL_INDEX;
+    elements[element_id].prev    = NULL_INDEX;
     elements[element_id].node_id = NULL_INDEX;
+    node->count--;
 }
 
 void

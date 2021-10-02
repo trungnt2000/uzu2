@@ -9,4 +9,6 @@ set(SYSTEM_SOURCE_FILES
   src/system/logic/controller.c
   src/system/logic/tag.c
   src/system/box_collision.c
+  src/system/collision_manager.c
+  src/system/logic/rotation.c
 )

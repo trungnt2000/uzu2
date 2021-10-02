@@ -15,6 +15,10 @@ void system_tag_update(ecs_Registry* registry);
 
 void system_box_collision_init(ecs_Registry* registry);
 void system_box_collision_shutdown(void);
+void system_box_collision_update(ecs_Registry* registry);
 void system_box_collision_set_callback(void(void*, ecs_entity_t, ecs_entity_t), void* ctx);
 
+void system_collision_manager_init(ecs_Registry* registry);
+
+void system_rotation_update(ecs_Registry* registry, float delta_time);
 #endif // SYSTEM_LOGIC_H

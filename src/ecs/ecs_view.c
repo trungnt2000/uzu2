@@ -51,7 +51,7 @@ _ecs_view_next(struct ecs_View* v, ecs_entity_t* ett, void* comps[])
         return false;
 
     bool              match = false;
-    bool              is_excluded;
+    bool              has_excluded_component;
     u8*               data_pos;
     struct ecs_Pool** excluded_pools = v->excluded_pools;
     struct ecs_Pool** required_pools = v->required_pools;
@@ -67,17 +67,18 @@ _ecs_view_next(struct ecs_View* v, ecs_entity_t* ett, void* comps[])
         *ett         = *(v->ett_iter--);
 
         /* check whether or not entity has excluded component */
-        is_excluded = false;
+        // TODO: any_of function
+        has_excluded_component = false;
         for (u32 i = 0; i < v->excl_count; ++i)
         {
             if (ecs_pool_contains(excluded_pools[i], *ett))
             {
-                is_excluded = true;
+                has_excluded_component = true;
                 break;
             }
         }
 
-        if (!is_excluded)
+        if (!has_excluded_component)
         {
             match = true;
             for (u32 i = 0; i < v->reqd_count; ++i)

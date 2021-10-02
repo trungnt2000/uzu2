@@ -274,3 +274,20 @@ ecs_disconnect(struct ecs_Registry* reg, int event, ecs_size_t type_id, ecs_Call
     ASSERT_MSG(type_id < reg->type_count, "Invalid type");
     ecs_pool_disconnect(reg->pools[event], event, callback, ctx);
 }
+
+void
+ecs_raw(struct ecs_Registry* reg,
+        ecs_size_t           type_id,
+        const ecs_entity_t** ett_ptr,
+        void**               data_ptr,
+        ecs_size_t*          count_ptr)
+{
+
+    ASSERT_MSG(type_id < reg->type_count, "Invalid type");
+    if (ett_ptr)
+        *ett_ptr = ecs_pool_ett_begin(reg->pools[type_id]);
+    if (data_ptr)
+        *data_ptr = ecs_pool_data_begin(reg->pools[type_id]);
+    if (count_ptr)
+        *count_ptr = ecs_pool_count(reg->pools[type_id]);
+}

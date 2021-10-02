@@ -96,3 +96,20 @@ ett_rs_get_prev_sibling(ecs_Registry* reg, ecs_entity_t ett)
     struct RelationshipComp* relationship = ecs_get(reg, ett, RelationshipComp);
     return relationship ? relationship->prev : ECS_NULL_ENT;
 }
+
+#include <stdarg.h>
+void
+ett_set_name_fmt(ecs_Registry* reg, ecs_entity_t ett, const char* restrict fmt, ...)
+{
+    va_list va_arg;
+    va_start(va_arg, fmt);
+
+    struct NameComp* name_comp = ecs_get(reg, ett, NameComp);
+
+    if (!name_comp)
+        name_comp = ecs_add(reg, ett, NameComp);
+
+    vsnprintf(name_comp->value, sizeof(name_comp->value), fmt, va_arg);
+
+    va_end(va_arg);
+}

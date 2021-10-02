@@ -5,8 +5,8 @@
 #include "ecs.h"
 #include "resources.h"
 
-int  EF_init(const Resources* resources);
-void EF_shutdown(void);
+int  entity_factory_init(const Resources* resources);
+void entity_factory_shutdown(void);
 
 ecs_entity_t create_lizzard(ecs_Registry* registry);
 ecs_entity_t create_anime_sword(ecs_Registry* registry); 
