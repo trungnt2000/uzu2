@@ -10,15 +10,15 @@ typedef char asset_key_t[ASSET_KEY_SIZE];
 
 typedef struct AssetTable
 {
-  asset_key_t* keys;
-  u32*         hashes;
-  void**       values;
-  u32          size;
-  u32          tombstone_count;
-  u32          tombstone_threshold;
-  u32          count;
-  u32          used_threshold;
-  FreeFunc     free_func; /* free function fo data */
+    asset_key_t* keys;
+    u32*         hashes;
+    void**       values;
+    u32          size;
+    u32          tombstone_count;
+    u32          tombstone_threshold;
+    u32          count;
+    u32          rehash_at;
+    FreeFunc     free_func; /* free function fo data */
 } AssetTable;
 
 void asset_table_init(AssetTable* table, FreeFunc freeFunc);

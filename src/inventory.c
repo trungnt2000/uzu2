@@ -1,74 +1,79 @@
 #include "inventory.h"
 
-static ItemSlot s_item_slots[ITEM_CATEGORY_CNT][ITEM_SLOTS_PER_CATEGORY];
+static struct ItemSlot s_item_slots[ITEM_CATEGORY_CNT][ITEM_SLOTS_PER_CATEGORY];
+
+#define GET_ITEM_SLOT(cat, row, col) (&s_item_slots[cat][row * INVENTORY_COLUMN_CNT + col])
 
 void
-inventory_init()
+inv_init()
 {
-  inventory_clear();
+    inv_clear();
 }
 
 void
-inventory_clear()
+inv_clear()
 {
-  for (int category = 0; category < ITEM_CATEGORY_CNT; ++category)
-  {
-    for (int i = 0; i < ITEM_SLOTS_PER_CATEGORY; ++i)
-      s_item_slots[category][i].quality = 0;
-  }
+    for (int category = 0; category < ITEM_CATEGORY_CNT; ++category)
+    {
+        for (int i = 0; i < ITEM_SLOTS_PER_CATEGORY; ++i)
+            s_item_slots[category][i].quantity = 0;
+    }
 }
 
-ItemSlot
-inventory_get_slot(ItemCategory category, int row, int column)
+struct ItemSlot
+inv_get_slot(enum ItemCategory category, int row, int column)
 {
-  return s_item_slots[category][row * INVENTORY_COLUMN_CNT + column];
+    return *GET_ITEM_SLOT(category, row, column);
 }
 
 int
-inventory_add_item(ItemId id, int quality)
+inv_add_item(enum ItemId id, int quantity)
 {
-  int       added = 0;
-  ItemSlot* slots = s_item_slots[item_category(id)];
+    int              added   = 0;
+    struct ItemSlot* slots   = s_item_slots[item_category(id)];
+    const int        n_slots = ITEM_SLOTS_PER_CATEGORY;
 
-  for (int i = 0; i < ITEM_SLOTS_PER_CATEGORY && quality > 0; ++i)
-  {
-    int space = MAX_ITEMS_PER_SLOT - slots[i].quality;
-    if (slots[i].item_id == id && space >= quality)
+    for (int i = 0; i < n_slots && quantity > 0; ++i)
     {
-      int amount = min(space, quality);
-      slots[i].quality += amount;
-      quality -= amount;
-      added += amount;
+        int space = MAX_ITEMS_PER_SLOT - slots[i].quantity;
+        if (slots[i].item_id == id && space >= quantity)
+        {
+            int amount = min(space, quantity);
+            slots[i].quantity += amount;
+            quantity -= amount;
+            added += amount;
+        }
     }
-  }
-  if (quality > 0)
-  {
-    for (int i = 0; i < ITEM_SLOTS_PER_CATEGORY && quality > 0; ++i)
+
+    // add remaining item to new slot
+    if (quantity > 0)
     {
-      if (slots[i].quality == 0)
-      {
-        int amount = min(MAX_ITEMS_PER_SLOT, quality);
-        added += amount;
-        quality -= amount;
-        slots[i].quality += amount;
-        slots[i].item_id = id;
-      }
+        for (int i = 0; i < n_slots && quantity > 0; ++i)
+        {
+            if (slots[i].quantity == 0)
+            {
+                int amount = min(MAX_ITEMS_PER_SLOT, quantity);
+                added += amount;
+                quantity -= amount;
+                slots[i].quantity += amount;
+                slots[i].item_id = id;
+            }
+        }
     }
-  }
-  return added;
+    return added;
 }
 
 void
-inventory_drop_item(ItemCategory category, int row, int column, int quality)
+inv_drop_item(enum ItemCategory category, int row, int column, int quantity)
 {
-  ItemSlot* slot = &s_item_slots[category][row * INVENTORY_COLUMN_CNT + column];
+    struct ItemSlot* slot = GET_ITEM_SLOT(category, row, column);
 
-  if (quality == DROP_ALL)
-  {
-    slot->quality = 0;
-  }
-  else
-  {
-    slot->quality = max(0, slot->quality - quality);
-  }
+    if (quantity == DROP_ALL)
+    {
+        slot->quantity = 0;
+    }
+    else
+    {
+        slot->quantity = max(0, slot->quantity - quantity);
+    }
 }

@@ -23,7 +23,7 @@ check_slot_equal(struct ecs_Slot lhs, struct ecs_Slot rhs)
 }
 
 static bool
-contains(struct ecs_Slot* slots, u32 n, struct ecs_Slot slot)
+slot_array_contains(struct ecs_Slot* slots, u32 n, struct ecs_Slot slot)
 {
     for (u32 i = 0; i < n; ++i)
         if (check_slot_equal(slots[i], slot))
@@ -32,17 +32,16 @@ contains(struct ecs_Slot* slots, u32 n, struct ecs_Slot slot)
 }
 
 static void
-swap_pop(struct ecs_Signal* s, u32 i)
+ecs_signal_swap_pop(struct ecs_Signal* s, u32 i)
 {
     s->slots[i] = s->slots[s->count - 1];
     s->count--;
 }
 
 static void
-maybe_grow(struct ecs_Signal* s, u32 n)
+ecs_signal_assure_size(struct ecs_Signal* s, u32 n)
 {
-    u32 min_size = s->count + n;
-    if (min_size > s->size)
+    if (n > s->size)
     {
         s->size <<= 1;
         s->slots = SDL_realloc(s->slots, s->size);
@@ -55,9 +54,9 @@ ecs_signal_connect(struct ecs_Signal* signal, ecs_Callback callback, void* ctx)
     if (callback == NULL)
         return;
 
-    maybe_grow(signal, 1);
+    ecs_signal_assure_size(signal, signal->count + 1);
     struct ecs_Slot slot = { callback, ctx };
-    if (!contains(signal->slots, signal->count, slot))
+    if (!slot_array_contains(signal->slots, signal->count, slot))
     {
         signal->slots[signal->count++] = slot;
     }
@@ -74,21 +73,21 @@ ecs_signal_disconnect(struct ecs_Signal* signal, ecs_Callback callback, void* ct
         struct ecs_Slot slot = { callback, ctx };
         for (u32 i = signal->count; --i;)
             if (check_slot_equal(slots[i], slot))
-                swap_pop(signal, i);
+                ecs_signal_swap_pop(signal, i);
     }
     // remove all slot by given callback function
     else if (callback != NULL && ctx == NULL)
     {
         for (u32 i = signal->count; i--;)
             if (callback == slots[i].callback)
-                swap_pop(signal, i);
+                ecs_signal_swap_pop(signal, i);
     }
     // remove all slot by given ctx
     else if (callback == NULL && ctx != NULL)
     {
         for (u32 i = signal->count; i--;)
             if (ctx == slots[i].ctx)
-                swap_pop(signal, i);
+                ecs_signal_swap_pop(signal, i);
     }
 }
 

@@ -402,25 +402,30 @@ quad_tree_query(struct QuadTree* tree, struct Box box, bool (*callback)(void*, i
     struct Node*    nodes    = tree->nodes.data;
     struct Element* elements = tree->elememts.data;
 
-    struct NodeData traversal_data;
+    struct NodeData data;
 
     stack_init(&stack, 128);
     stack_push(&stack, (struct NodeData){ tree->root, tree->bounds });
 
     while (!stack_is_empty(&stack))
     {
-        traversal_data = stack_pop(&stack);
-        int eid        = nodes[traversal_data.node_id].first_element;
+        data    = stack_pop(&stack);
+        int eid = nodes[data.node_id].first_element;
 
         for (; eid != NULL_INDEX; eid = elements[eid].next)
             if (check_box_overlaps(&elements[eid].bounds, &box))
-                callback(ctx, eid);
+            {
+                if (!callback(ctx, eid))
+                {
+                    goto cleanup;
+                }
+            }
 
-        int fc = nodes[traversal_data.node_id].first_child;
+        int fc = nodes[data.node_id].first_child;
 
         if (fc != NULL_INDEX)
         {
-            struct Box bounds = traversal_data.bounds;
+            struct Box bounds = data.bounds;
 
             float m0 = (bounds.left + bounds.right) / 2.f;
             float m1 = (bounds.top + bounds.bottom) / 2.f;
@@ -443,6 +448,8 @@ quad_tree_query(struct QuadTree* tree, struct Box box, bool (*callback)(void*, i
                 stack_push(&stack, (struct NodeData){ fc + 3, BR });
         }
     }
+
+cleanup:
     stack_destroy(&stack);
 }
 

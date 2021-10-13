@@ -10,7 +10,7 @@ system_controller_system(ecs_Registry* registry, UNUSED float delta_time)
     struct VelocityComp*   velocity;
     struct ControllerComp* controller;
     struct SpeedComp*      speed;
-    vec2                   normalized_direction;
+    vec2                   force;
 
     ecs_view_init(&view, registry, { ControllerComp, VelocityComp, SpeedComp });
     while (ecs_view_next(&view, &ett, components))
@@ -19,8 +19,13 @@ system_controller_system(ecs_Registry* registry, UNUSED float delta_time)
         velocity   = components[1];
         speed      = components[2];
 
-        glm_vec2_normalize_to(controller->desired_direction, normalized_direction);
-        glm_vec2_scale(normalized_direction, speed->value, velocity->value);
+        glm_vec2_scale_as(controller->desired_direction, speed->value * delta_time * 25.f, force);
+        glm_vec2_add(velocity->value, force, velocity->value);
+
+        if (glm_vec2_norm2(velocity->value) > (speed->value * speed->value))
+        {
+            glm_vec2_scale_as(velocity->value, speed->value, velocity->value);
+        }
         glm_vec2_zero(controller->desired_direction);
     }
 }

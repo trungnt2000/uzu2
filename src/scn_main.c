@@ -1,3 +1,4 @@
+#include "scn_main.h"
 #include "components.h"
 #include "config.h"
 #include "constances.h"
@@ -17,7 +18,9 @@
 #include "message.h"
 #include "system_logic.h"
 #include "system_render.h"
+#include "ui/equipment.h"
 #include "ui/inventory.h"
+#include "ui/menu.h"
 
 static Shader        s_shader;
 static OthoCamera    s_camera;
@@ -26,46 +29,19 @@ static Resources     s_resources;
 static Texture       s_texture;
 static Sprite        s_sprite;
 
+static struct MainContext s_main_ctx = { 0 };
+
 static void
-process_input(void* UNUSED arg, UNUSED u32 current_state, UNUSED u32 previous_state)
+process_input(UNUSED void* ctx)
 {
-    if (current_state & BTN_MSK_INVENTORY)
+    if (button_just_pressed(BTN_INVENTORY))
         ui_inventory_show();
 }
 
-static ecs_entity_t
-create_sprite_with_hitbox(ecs_Registry* registry, const Sprite* sprite, float x, float y, int i)
-{
-    ecs_entity_t ett = ecs_create(registry);
-
-    ecs_addv(registry, ett, TransformComp, { .position = { x, y }, .scale = { 1.f, 1.f } });
-    ecs_addv(registry,
-             ett,
-             SpriteComp,
-             { .sprite = *sprite, .color = COLOR_WHITE_INIT, .origin = { 8.f, 8.f } });
-    ecs_addv(registry, ett, MaterialComp, { .ref = NULL });
-    ecs_addv(registry, ett, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
-    ecs_addv(registry, ett, TransformChangedTag, { 0 });
-    ecs_addv(registry,
-             ett,
-             HitBoxComp,
-             { .size = { 16.f, 16.f }, .mask = PLAYER_MASK, .category = ENEMY_MASK, .anchor = { 8.f, 8.f } });
-    ecs_addv(registry, ett, EntityTag, { ET_ENEMY });
-
-    if (i % 10 == 0)
-        ecs_addv(registry, ett, RotatorComp, { 180.f });
-
-    ett_set_name_fmt(registry, ett, "test(%d)", i);
-    return ett;
-}
-
 static bool
-on_player_hit_enemy(SDL_UNUSED void* ctx, const void* msg_)
+on_player_hit_enemy(SDL_UNUSED void* ctx, const void* data)
 {
-    const struct MsgPlayerHitEnemy* msg = msg_;
-
-    const char* enemy_name = ecs_get(s_registry, msg->enemy, NameComp)->value;
-    printf("player hit %s\n", enemy_name);
+    const struct MsgPlayerHitEnemy* msg = data;
 
     struct SpriteComp* sprite_comp = ecs_get(s_registry, msg->enemy, SpriteComp);
 
@@ -75,39 +51,39 @@ on_player_hit_enemy(SDL_UNUSED void* ctx, const void* msg_)
 }
 
 static void
+init_inventory_test(void)
+{
+    inv_add_item(ITEM_BIG_BLUE_FLASK, 5);
+    inv_add_item(ITEM_BIG_RED_FLASK, 5);
+    inv_add_item(ITEM_IRON_BOOTS, 1);
+    inv_add_item(ITEM_LEATHER_ARMOR, 1);
+    inv_add_item(ITEM_SAPPHIRE_RING, 1);
+    inv_add_item(ITEM_WOODEN_RING, 1);
+    inv_add_item(ITEM_FIRE_BALL, 1);
+    inv_add_item(ITEM_RUBY_RING, 1);
+}
+
+static void
 initialize_test(ecs_Registry* registry)
 {
 
-    ecs_entity_t lizzard = create_lizzard(registry);
-    ecs_addv(registry, lizzard, EntityTag, { ET_PLAYER });
+    ecs_entity_t lizzard = create_lizzard(registry, 100, 100);
+    ecs_addv(registry, lizzard, EntityTag, { ENTITY_TAG_PLAYER });
     ecs_entity_t sword0 = create_anime_sword(registry);
-    ecs_entity_t sword1 = create_anime_sword(registry);
 
-    // ecs_get(registry, sword1, SpriteComp)->hori_flip = true;
+    s_main_ctx.player = lizzard;
 
-    ett_tx_set_position(registry, lizzard, (vec3){ 50.f, 50.f, 0.f });
-
-    // ett_tx_set_position(registry, sword1, (vec2){ 0.f, -2.f });
-
-    ett_rs_add_child(registry, lizzard, sword0);
-
-    ett_tx_set_position(registry, sword1, (vec3){ 0.f, -32.f });
-    ett_rs_add_child(registry, sword0, sword1);
-    ecs_addv(registry, sword0, RotatorComp, { 90.f });
-    ecs_addv(registry, sword1, RotatorComp, { 90.f });
-
-    inventory_add_item(ITEM_BIG_BLUE_FLASK, 5);
-    inventory_add_item(ITEM_BIG_RED_FLASK, 5);
+    // ett_attach_weapon(registry, lizzard, sword0);
 
     ecs_addv(registry, lizzard, NameComp, { "lizzard" });
     ecs_addv(registry, sword0, NameComp, { "sword0" });
-    ecs_addv(registry, sword1, NameComp, { "sword1" });
-    //
 
-    for (int i = 0; i < 100; ++i)
-    {
-        create_sprite_with_hitbox(registry, &s_sprite, (float)(rand() % 320), (float)(rand() % 240), i);
-    }
+    eqm_equip_armor(registry, lizzard, EQM_LEATHER_ARMOR);
+    eqm_equip_ring1(registry, lizzard, EQM_SAPPHIRE_RING);
+    eqm_equip_boots(registry, lizzard, EQM_IRON_BOOTS);
+    eqm_equip_ring2(registry, lizzard, EQM_WOODEN_RING);
+
+    init_inventory_test();
 
     ems_connect(MsgPlayerHitEnemy, on_player_hit_enemy, NULL, 0);
 }
@@ -155,6 +131,9 @@ scene_main_create(void)
     if (ui_inventory_init(&s_resources) != 0)
         LEAVE_ERROR(-1, "Init inventory module failed\n");
 
+    ui_menu_init(&s_resources.font_8px);
+    ui_equipment_init(&s_resources.font_8px);
+
     texture_load(&s_texture, "res/test.png");
 
     sprite_init(&s_sprite, &s_texture, &(struct IntRect){ 0, 0, 16, 16 });
@@ -164,7 +143,7 @@ scene_main_create(void)
     initialize_systems();
     initialize_test(s_registry);
 
-    load_level("res/level/0.json");
+    load_level("test");
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -190,7 +169,8 @@ update_game_world(float delta_time)
     system_input_update(s_registry, &s_camera);
     system_controller_system(s_registry, delta_time);
     system_motion_update(s_registry, delta_time);
-    system_rotation_update(s_registry, delta_time);
+    system_swing_weapon_update(s_registry);
+    system_affine_animation_update(s_registry, delta_time);
     system_rendering_transform_update(s_registry);
     system_box_collision_update(s_registry);
 }
@@ -202,7 +182,7 @@ draw_delta_time(float delta_time, float used)
     char buf[255];
     otho_camera_get_projection_matrix(&s_camera, proj_matrix);
 
-    sprintf(buf, "%.3f %.3f", delta_time, used);
+    sprintf(buf, "delta_time: %.4f update_time: %.4f", delta_time, used);
     begin_text(NULL, proj_matrix);
     {
         draw_text_ex(buf, NULL, 0, 0, 0.25f, TEXT_ALIGN_LEFT, COLOR(0x00, 0xff, 0x00, 0xff));
@@ -256,9 +236,6 @@ draw_ui(float delta_time)
     mat4 proj_matrix;
     otho_camera_get_projection_matrix(&s_camera, proj_matrix);
 
-    shader_bind(&s_shader);
-    shader_upload_view_project_matrix(&s_shader, proj_matrix);
-
     begin_text(NULL, proj_matrix);
     begin_sprite(proj_matrix);
     {
@@ -266,6 +243,9 @@ draw_ui(float delta_time)
     }
     end_sprite();
     end_text();
+
+    ui_menu_draw(proj_matrix);
+    ui_equipment_draw(s_registry, s_main_ctx.player, proj_matrix);
 }
 
 void

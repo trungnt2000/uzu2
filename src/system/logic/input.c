@@ -1,13 +1,14 @@
 #include "input.h"
 #include "components.h"
 #include "ecs.h"
+#include "entity.h"
 
 static void
 get_mouse_position(OthoCamera* view, vec2 position_return)
 {
     int mx, my;
     SDL_GetMouseState(&mx, &my);
-    otho_camera_to_view_coords(view, (vec2){ (float)(mx), (float)(my) }, position_return);
+    otho_camera_to_view_coords(view, (vec2){ (float)(mx / 4), (float)(my / 4) }, position_return);
 }
 
 void
@@ -28,9 +29,11 @@ update_facing_direction(ecs_Registry* registry, OthoCamera* camera)
     {
         facing_direction = components[0];
         transform        = components[1];
-
-        glm_vec2_sub(mouse_position, transform->position, to_mouse);
-        glm_vec2_normalize_to(to_mouse, facing_direction->value);
+        if (!facing_direction->frezzed)
+        {
+            glm_vec2_sub(mouse_position, transform->position, to_mouse);
+            glm_vec2_normalize_to(to_mouse, facing_direction->value);
+        }
     }
 }
 
@@ -66,6 +69,53 @@ update_desired_direction(ecs_Registry* registry)
         {
             controller->desired_direction[1] += 1.f;
         }
+
+        if (mouse_button_just_pressed(SDL_BUTTON_LEFT) && !controller->in_action)
+        {
+            controller->action = ACTION_ATTACK;
+        }
+    }
+}
+
+static void
+update_hand_direction(ecs_Registry* registry)
+{
+    struct ecs_View view = { 0 };
+
+    struct RefComp*             ref_comp;
+    struct FacingDirectionComp* facing_direction_comp;
+    struct ControllerComp*      controller_comp;
+
+    void*        components[3];
+    ecs_entity_t ett;
+    ecs_view_init(&view, registry, { RefComp, FacingDirectionComp, ControllerComp });
+    while (ecs_view_next(&view, &ett, components))
+    {
+        ref_comp              = components[0];
+        facing_direction_comp = components[1];
+        controller_comp       = components[2];
+
+        bool should_flip = facing_direction_comp->value[0] < 0.f;
+        if (ref_comp->hand != ECS_NULL_ENT && !controller_comp->in_action)
+        {
+            float angle_in_rad = SDL_atan2f(facing_direction_comp->value[1], facing_direction_comp->value[0]);
+
+            struct TransformComp* transform = ecs_get(registry, ref_comp->hand, TransformComp);
+
+            transform->position[0] = 4 * (float)signf(facing_direction_comp->value[0]);
+            transform->rotation    = glm_deg(angle_in_rad);
+
+            if (transform->rotation < 0.f)
+            {
+                transform->rotation = 180.f + (transform->rotation + 180.f);
+            }
+
+            ecs_assure(registry, ref_comp->hand, TransformChangedTag);
+        }
+        if (ref_comp->weapon != ECS_NULL_ENT && !controller_comp->in_action)
+        {
+            ecs_get(registry, ref_comp->weapon, SpriteComp)->hori_flip = should_flip;
+        }
     }
 }
 
@@ -73,5 +123,6 @@ void
 system_input_update(ecs_Registry* registry, OthoCamera* camera)
 {
     update_facing_direction(registry, camera);
+    update_hand_direction(registry);
     update_desired_direction(registry);
 }

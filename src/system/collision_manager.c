@@ -2,7 +2,7 @@
 #include "ecs.h"
 #include "message.h"
 
-#define E(T1, T2, Fn) [ET_##T1][ET_##T2] = Fn
+#define E(T1, T2, Fn) [ENTITY_TAG_##T1][ENTITY_TAG_##T2] = Fn
 
 static void
 player_enemy(ecs_entity_t player, ecs_entity_t enemy)
@@ -16,7 +16,7 @@ enemy_player(ecs_entity_t enemy, ecs_entity_t player)
     ems_broadcast(MsgPlayerHitEnemy, { player, enemy });
 }
 
-static void (*const s_handler_table[ET_CNT][ET_CNT])(ecs_entity_t, ecs_entity_t) = {
+static void (*const s_handler_table[ENTITY_TAG_CNT][ENTITY_TAG_CNT])(ecs_entity_t, ecs_entity_t) = {
     E(PLAYER, ENEMY, player_enemy),
     E(ENEMY, PLAYER, enemy_player),
 };

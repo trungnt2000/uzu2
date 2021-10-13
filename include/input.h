@@ -1,20 +1,20 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
-#include "toolbox.h"
 #include "SDL.h"
+#include "toolbox.h"
 
 enum Button
 {
-  BTN_INTERACT,
-  BTN_CANCEL,
-  BTN_JUMP,
-  BTN_LEFT,
-  BTN_RIGHT,
-  BTN_UP,
-  BTN_DOWN,
-  BTN_MENU,
-  BTN_INVENTORY,
-  BTN_CNT
+    BTN_INTERACT,
+    BTN_CANCEL,
+    BTN_JUMP,
+    BTN_LEFT,
+    BTN_RIGHT,
+    BTN_UP,
+    BTN_DOWN,
+    BTN_MENU,
+    BTN_INVENTORY,
+    BTN_CNT
 };
 
 #define BUTTON_MASK(X) (1 << (X))
@@ -31,21 +31,21 @@ enum Button
 
 typedef struct InputCallback
 {
-  void (*fn)(void* userData, u32 currState, u32 prevState);
-  void* data;
+    void (*fn)(void* ctx);
+    void* data;
 } InputCallback;
 
-#define INPUT_CALLBACK1(__fn)                                                  \
-  (InputCallback)                                                              \
-  {                                                                            \
-    .fn = (__fn), .data = NULL                                                 \
-  }
+#define INPUT_CALLBACK1(f)                                                                                     \
+    (InputCallback)                                                                                            \
+    {                                                                                                          \
+        .fn = (f), .data = NULL                                                                                \
+    }
 
-#define INPUT_CALLBACK2(__fn, __data)                                          \
-  (InputCallback)                                                              \
-  {                                                                            \
-    .fn = (__fn), .data = (__data)                                             \
-  }
+#define INPUT_CALLBACK2(f, c)                                                                                  \
+    (InputCallback)                                                                                            \
+    {                                                                                                          \
+        .fn = (f), .data = (c)                                                                                 \
+    }
 
 void         input_init(void);
 void         input_update(void);

@@ -3,7 +3,7 @@
 static bool
 allof(struct ecs_Pool** pools, ecs_size_t count, ecs_entity_t ett)
 {
-    for (int i = 0; i < count; ++i)
+    for (ecs_size_t i = 0; i < count; ++i)
     {
         if (!ecs_pool_contains(pools[i], ett))
         {
@@ -16,7 +16,7 @@ allof(struct ecs_Pool** pools, ecs_size_t count, ecs_entity_t ett)
 static bool
 noneof(struct ecs_Pool** pools, ecs_size_t count, ecs_entity_t ett)
 {
-    for (int i = 0; i < count; ++i)
+    for (ecs_size_t i = 0; i < count; ++i)
     {
         if (ecs_pool_contains(pools[i], ett))
         {
@@ -78,7 +78,7 @@ rmv_hook_impl(void* ctx, struct ecs_Pool* pool, ecs_entity_t ett, ecs_size_t idx
     {
         if (group->child != NULL)
         {
-            idx = rmv_hook_impl(group, pool, ett, idx);
+            idx = rmv_hook_impl(group->child, pool, ett, idx);
         }
         // move given entity to the end of this group
         // all entities are inside same group will have same index
@@ -102,7 +102,7 @@ rmv_hook_impl(void* ctx, struct ecs_Pool* pool, ecs_entity_t ett, ecs_size_t idx
 static bool
 has_pool(struct ecs_Pool** pools, ecs_size_t cnt, struct ecs_Pool* p)
 {
-    for (int i = 0; i < cnt; ++i)
+    for (ecs_size_t i = 0; i < cnt; ++i)
         if (pools[i] == p)
             return true;
 
@@ -118,12 +118,12 @@ is_child_of(struct ecs_Group* self, struct ecs_Group* other)
         return false;
 
     // and all types that parent group has this group must have too
-    for (int i = 0; i < other->own_count; ++i)
+    for (ecs_size_t i = 0; i < other->own_count; ++i)
         if (!has_pool(self->own_pools, self->own_count, other->own_pools[i]))
             return false;
 
     // and it must not contain any excluded types of other group
-    for (int i = 0; i < other->excl_count; ++i)
+    for (ecs_size_t i = 0; i < other->excl_count; ++i)
         if (has_pool(self->own_pools, self->own_count, other->excl_pools[i]))
             return false;
 
@@ -141,12 +141,12 @@ is_parent_of(struct ecs_Group* self, struct ecs_Group* other)
         return false;
 
     // and all types it owns that group must have too
-    for (int i = 0; i < self->own_count; ++i)
+    for (ecs_size_t i = 0; i < self->own_count; ++i)
         if (!has_pool(other->own_pools, other->own_count, self->own_pools[i]))
             return false;
 
     // and that group must not contain any excluded types of this group
-    for (int i = 0; i < self->excl_count; ++i)
+    for (ecs_size_t i = 0; i < self->excl_count; ++i)
         if (has_pool(other->own_pools, other->own_count, self->excl_pools[i]))
             return false;
 
@@ -156,7 +156,7 @@ is_parent_of(struct ecs_Group* self, struct ecs_Group* other)
 void
 ecs_add_group(struct ecs_Registry* registry, struct ecs_Group* group)
 {
-    for (int i = 0; i < registry->group_count; ++i)
+    for (ecs_size_t i = 0; i < registry->group_count; ++i)
     {
         struct ecs_Group* other_group = registry->groups[i];
         if (is_child_of(group, other_group))
@@ -191,7 +191,7 @@ ecs_add_group(struct ecs_Registry* registry, struct ecs_Group* group)
     }
 
     bool sortable = true;
-    for (int i = 0; i < group->own_count; ++i)
+    for (ecs_size_t i = 0; i < group->own_count; ++i)
     {
         if (!ecs_pool_sortable(group->own_pools[i]))
         {
@@ -206,7 +206,7 @@ ecs_add_group(struct ecs_Registry* registry, struct ecs_Group* group)
         registry->groups = SDL_realloc(registry->groups, sizeof(struct ecs_Group*) * registry->group_count);
         registry->groups[registry->group_count - 1] = group;
 
-        for (int i = 0; i < group->own_count; ++i)
+        for (ecs_size_t i = 0; i < group->own_count; ++i)
         {
             ecs_pool_set_hook(group->own_pools[i],
                               (struct ecs_Hook){ add_hook_impl, rmv_hook_impl, .ctx = group });
@@ -243,7 +243,7 @@ ecs_group_create(struct ecs_Pool* const* master_pools, ecs_size_t* Ts, ecs_size_
     group->size       = 0;
     group->child      = NULL;
 
-    for (int i = 0; i < Tc; ++i)
+    for (ecs_size_t i = 0; i < Tc; ++i)
     {
         if (Ts[i] & ECS_EXCL_MASK)
         {
@@ -279,7 +279,7 @@ ecs_group_free(struct ecs_Group* group)
     if (!group)
         return;
 
-    for (int i = 0; i < group->own_count; ++i)
+    for (ecs_size_t i = 0; i < group->own_count; ++i)
     {
         ecs_pool_set_hook(group->own_pools[i], (struct ecs_Hook){ 0 });
     }

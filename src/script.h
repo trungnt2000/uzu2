@@ -4,26 +4,20 @@
 #include "ecs.h"
 #include "lua.h"
 
-typedef struct spt_Entity
+struct spt_Entity
 {
     ecs_entity_t  entity;
     ecs_Registry* registry;
-} spt_Entity;
-
-typedef struct spt_EventScript
-{
-    lua_State* vm;
-} spt_EventScript;
-
-enum spt_lvm_Library
-{
-    SPT_LVM_LIB_ENTITY = 0,
-    SPT_LVM_LIB_ITEM   = 1
 };
 
-void       spt_lvm_push_entity(lua_State* vm, struct spt_Entity entity);
-spt_Entity spt_lvm_get_entity(lua_State* vm, struct spt_Entity entity);
+struct spt_EventScript
+{
+    lua_State* L;
+} spt_EventScript;
 
-lua_State* spt_load_lua_script(const char* file, int libs);
+void              spt_lua_push_entity(lua_State* L, struct spt_Entity entity);
+struct spt_Entity spt_lua_get_entity(lua_State* L, int index);
+
+lua_State* spt_load_lua_script(const char* file);
 
 #endif // SCRIPT_H

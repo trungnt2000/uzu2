@@ -2,6 +2,7 @@
 #define LOG_H
 #include "config.h"
 #include <stdio.h>
+
 #define INFO(...) (printf("[INFO] %20s -- %40s:\n\t", __FILE__, __func__), printf(__VA_ARGS__))
 
 #if ENABLE_ERROR_LOG

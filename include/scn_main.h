@@ -1,10 +1,13 @@
-#ifndef GAMESCR_H
-#define GAMESCR_H
+#ifndef SCENE_MAIN_H
+#define SCENE_MAIN_H
 #include "ecs.h"
-#include "toolbox.h"
 
-extern ecs_Registry* gRegistry;
-extern ecs_entity_t gPlayer;
+struct MainContext
+{
+    ecs_entity_t player;
+    ecs_entity_t current_object;
+};
+
 void scene_main_pause(void);
 void scene_main_resume(void);
-#endif // GAMESCR_H
+#endif // SCENE_MAIN_H

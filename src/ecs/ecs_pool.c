@@ -53,12 +53,6 @@ assure_page(ecs_size_t** sparse, u32 page)
     return sparse[page];
 }
 
-static inline void*
-component_offset(struct ecs_Pool* p, ecs_size_t idx)
-{
-    return (char*)p->data + p->traits.size * idx;
-}
-
 static void*
 assure_alignment(void* buffer, size_t alignment, size_t data_size)
 {
@@ -70,8 +64,14 @@ assure_alignment(void* buffer, size_t alignment, size_t data_size)
     return buffer;
 }
 
+static inline void*
+ecs_pool_component_offset(struct ecs_Pool* p, ecs_size_t idx)
+{
+    return (char*)p->data + p->traits.size * idx;
+}
+
 static inline void
-assure_size(struct ecs_Pool* p, ecs_size_t min_size)
+ecs_pool_assure_size(struct ecs_Pool* p, ecs_size_t min_size)
 {
     if (p->size < min_size)
     {
@@ -81,11 +81,11 @@ assure_size(struct ecs_Pool* p, ecs_size_t min_size)
         void*            new_buffer      = SDL_malloc(new_buffer_size);
         void*            new_data        = assure_alignment(new_buffer, p->traits.align, new_data_size);
         SDL_memcpy(new_data, p->data, p->size * p->traits.size);
-        SDL_free(p->data_buffer);
-        p->data        = new_data;
-        p->data_buffer = new_buffer;
-        p->size        = new_size;
-        p->entities    = SDL_realloc(p->entities, new_size * sizeof(ecs_entity_t));
+        SDL_free(p->unaligned_buffer);
+        p->data             = new_data;
+        p->unaligned_buffer = new_buffer;
+        p->size             = new_size;
+        p->entities         = SDL_realloc(p->entities, new_size * sizeof(ecs_entity_t));
     }
 }
 
@@ -99,10 +99,10 @@ ecs_pool_create(struct ecs_Registry* registry, struct ecs_TypeTraits traits, ecs
     p->registry = registry;
 
     const size_t data_size = traits.size * size;
-    p->data_buffer         = SDL_malloc(data_size + ALIGNMENT_EXTRA_SPACE);
-    ASSERT_MSG(p->data_buffer, "unable to allocate buffer");
+    p->unaligned_buffer    = SDL_malloc(data_size + ALIGNMENT_EXTRA_SPACE);
+    ASSERT_MSG(p->unaligned_buffer, "unable to allocate buffer");
 
-    p->data = assure_alignment(p->data_buffer, traits.align, data_size);
+    p->data = assure_alignment(p->unaligned_buffer, traits.align, data_size);
 
     p->size   = size;
     p->count  = 0;
@@ -136,13 +136,41 @@ ecs_pool_free(struct ecs_Pool* p)
             mem = mem + p->traits.size;
         }
     }
-    SDL_free(p->data_buffer);
+    SDL_free(p->unaligned_buffer);
     SDL_free(p->entities);
     SDL_free(p);
 }
 
 void*
-ecs_pool_add(struct ecs_Pool* p, ecs_entity_t ett, const void* data)
+ecs_pool_add(struct ecs_Pool* p, ecs_entity_t ett)
+{
+
+    u32 idx    = ECS_TO_INDEX(ett);
+    u32 page   = PAGE(idx);
+    u32 offset = OFFSET(idx);
+
+    ecs_size_t* pagemem = assure_page(p->sparse, page);
+
+    ASSERT(pagemem[offset] == TOMBSTONE);
+
+    ecs_pool_assure_size(p, p->count + 1);
+
+    ecs_size_t j    = p->count;
+    pagemem[offset] = j;
+    p->entities[j]  = ett;
+    p->count++;
+
+    if (p->hook.add != NULL)
+        j = p->hook.add(p->hook.ctx, p, ett, j);
+
+    void* component = ecs_pool_component_offset(p, j);
+
+    ecs_signal_emit(&p->signal[ECS_SIG_ADD], p->registry, ett, component);
+    return component;
+}
+
+void*
+ecs_pool_addv(struct ecs_Pool* p, ecs_entity_t ett, const void* data)
 {
     u32 idx    = ECS_TO_INDEX(ett);
     u32 page   = PAGE(idx);
@@ -152,52 +180,44 @@ ecs_pool_add(struct ecs_Pool* p, ecs_entity_t ett, const void* data)
 
     ASSERT(pagemem[offset] == TOMBSTONE);
 
-    assure_size(p, p->count + 1);
+    ecs_pool_assure_size(p, p->count + 1);
 
     ecs_size_t j    = p->count;
     pagemem[offset] = j;
     p->entities[j]  = ett;
     p->count++;
 
-    if (data != NULL)
-    {
-        SDL_memcpy(component_offset(p, j), data, p->traits.size);
-    }
-    else if (p->traits.default_value != NULL)
-    {
-        SDL_memcpy(component_offset(p, j), p->traits.default_value, p->traits.size);
-    }
+    SDL_memcpy(ecs_pool_component_offset(p, j), data, p->traits.size);
 
     if (p->hook.add != NULL)
         j = p->hook.add(p->hook.ctx, p, ett, j);
 
-    ecs_signal_emit(&p->signal[ECS_SIG_ADD], p->registry, ett, component_offset(p, j));
-    return component_offset(p, j);
+    void* component = ecs_pool_component_offset(p, j);
+
+    ecs_signal_emit(&p->signal[ECS_SIG_ADD], p->registry, ett, component);
+    return component;
 }
 
 void*
-ecs_pool_add_or_set(struct ecs_Pool* p, ecs_entity_t ett, const void* data)
+ecs_pool_assurev(struct ecs_Pool* p, ecs_entity_t ett, const void* data)
 {
-    u32 j = ecs_pool_index(p, ett);
-    if (j == TOMBSTONE)
-    {
-        return ecs_pool_add(p, ett, data);
-    }
-    else
-    {
-        void* mem = (u8*)p->data + p->traits.size * j;
-        SDL_memcpy(mem, data, p->traits.size);
-        ecs_signal_emit(&p->signal[ECS_SIG_SET], p->registry, ett, mem);
-        return mem;
-    }
+    void* component = ecs_pool_get(p, ett);
+    return component ? component : ecs_pool_addv(p, ett, data);
+}
+
+void*
+ecs_pool_assure(struct ecs_Pool* p, ecs_entity_t ett)
+{
+    void* component = ecs_pool_get(p, ett);
+    return component ? component : ecs_pool_add(p, ett);
 }
 
 void*
 ecs_pool_set(struct ecs_Pool* p, ecs_entity_t ett, const void* data)
 {
-    ecs_size_t j = ecs_pool_index(p, ett);
-    ASSERT_MSG(j != TOMBSTONE, "This pool does not contains given entity!");
-    return SDL_memcpy(component_offset(p, j), data, p->traits.size);
+    void* component = ecs_pool_get(p, ett);
+    ASSERT_MSG(component != NULL, "This pool does not contains given entity!");
+    return SDL_memcpy(component, data, p->traits.size);
 }
 
 void*
@@ -209,7 +229,7 @@ ecs_pool_get(struct ecs_Pool* p, ecs_entity_t ett)
     if (p->sparse[page] == NULL)
         return NULL;
     ecs_size_t j = p->sparse[page][offset];
-    return j != TOMBSTONE ? component_offset(p, j) : NULL;
+    return j != TOMBSTONE ? ecs_pool_component_offset(p, j) : NULL;
 }
 
 void*
@@ -222,12 +242,12 @@ ecs_pool_cpy(struct ecs_Pool* p, ecs_entity_t ett, const void* other)
     ecs_size_t* pagemem = assure_page(p->sparse, page);
     ASSERT(pagemem[offset] == TOMBSTONE);
 
-    assure_size(p, p->count + 1);
+    ecs_pool_assure_size(p, p->count + 1);
 
     ecs_size_t j    = p->count;
     pagemem[offset] = j;
     p->entities[j]  = ett;
-    void* mem       = component_offset(p, j);
+    void* mem       = ecs_pool_component_offset(p, j);
     if (p->traits.cpy != NULL)
         p->traits.cpy(mem, other);
     else
@@ -237,7 +257,7 @@ ecs_pool_cpy(struct ecs_Pool* p, ecs_entity_t ett, const void* other)
     if (p->hook.add != NULL)
         j = p->hook.add(p->hook.ctx, p, ett, j);
     p->count++;
-    return component_offset(p, j);
+    return ecs_pool_component_offset(p, j);
 }
 
 bool
@@ -257,7 +277,7 @@ ecs_pool_rmv(struct ecs_Pool* p, ecs_entity_t ett)
     j2 = p->count - 1;
     i2 = ECS_TO_INDEX(p->entities[j2]);
 
-    void* mem = component_offset(p, j1);
+    void* mem = ecs_pool_component_offset(p, j1);
     ecs_signal_emit(&p->signal[ECS_SIG_RMV], p->registry, ett, mem);
 
     // call destructor if any
@@ -350,7 +370,7 @@ ecs_pool_disconnect(struct ecs_Pool* p, int sig, ecs_Callback callback, void* ct
 const ecs_entity_t*
 ecs_pool_ett_rbegin(struct ecs_Pool* pool)
 {
-    return &pool->entities[pool->count - 1];
+    return &pool->entities[pool->count] - 1;
 }
 
 const ecs_entity_t*
@@ -362,7 +382,7 @@ ecs_pool_ett_rend(struct ecs_Pool* pool)
 void*
 ecs_pool_data_rbegin(struct ecs_Pool* pool)
 {
-    return (u8*)pool->data + pool->traits.size * (pool->count - 1);
+    return (u8*)pool->data + (pool->traits.size * pool->count) - pool->traits.size;
 }
 
 void*

@@ -16,14 +16,17 @@ set(SOURCE_FILES
   src/engine.c
   src/input.c
   src/enitity_factory.c
-  src/equipment.c
   src/inventory.c
   src/resources.c
   src/message.c
   src/item.c
   src/entity.c
+  src/string_utils.c
+
 
   src/ui/inventory.c
+  src/ui/menu.c
+  src/ui/equipment.c
 
   src/main.c
 

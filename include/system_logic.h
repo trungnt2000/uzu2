@@ -5,6 +5,8 @@
 #include "ecs.h"
 #include "graphics/view.h"
 
+struct MainContext;
+
 void system_motion_update(ecs_Registry* registry, float delta_time);
 
 void system_input_update(ecs_Registry* registry, OthoCamera* camera);
@@ -21,4 +23,12 @@ void system_box_collision_set_callback(void(void*, ecs_entity_t, ecs_entity_t), 
 void system_collision_manager_init(ecs_Registry* registry);
 
 void system_rotation_update(ecs_Registry* registry, float delta_time);
+
+void system_swing_weapon_update(ecs_Registry* registry);
+
+void system_affine_animation_update(ecs_Registry* registry, float delta_time);
+
+void system_find_closest_interacable_entity(ecs_Registry* registry, struct MainContext* main_context);
+
+void system_stats_update(ecs_Registry* registry);
 #endif // SYSTEM_LOGIC_H

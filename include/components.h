@@ -3,10 +3,12 @@
 #define COMPONENTS_H
 #include "cglm/cglm.h"
 #include "ecs.h"
+#include "equipment_system.h"
+#include "global.h"
 #include "graphics.h"
 #include "toolbox/common.h"
 
-enum
+enum ComponentId
 {
     TransformComp,
     SpriteComp,
@@ -21,9 +23,8 @@ enum
     CharacterAnimationControllerComp,
     FacingDirectionComp,
     HolderComp,
-    HandComp,
-    LocalTransformMatrixComp, // caculated when transform component changed
-    WorldTransformMatrixComp, //
+    LocalTransformMatrixComp,
+    WorldTransformMatrixComp,
     RelationshipComp,
     HitBoxComp,
     DestroyTag,
@@ -31,9 +32,26 @@ enum
     WorldTransformMatrixChangedTag,
     EntityTag,
     RotatorComp,
+    InteractableComp,
+    RefComp,
+    AffineAnimComp,
+    SwingWeaponComp,
     /* Stats components */
     SpeedComp,
-    ContactComp,
+    DefenseComp,
+    MagicalAtkPowComp,
+    PhysicalAtkPowerComp,
+    HealthPoolComp,
+    ManaPoolComp,
+
+    BaseStatsComp,
+    BaseStatsChangedTag,
+    StatModifiersComp,
+    StatModifiersChangedTag,
+
+    EquipmentChangedTag,
+    EquipmentSlotsComp,
+    /**/
     COMPONENT_CNT
 };
 
@@ -45,6 +63,11 @@ struct TransformComp
     vec2  scale;
     float rotation;
 };
+
+#define TRANSFORM_COMP_INIT                                                                                    \
+    {                                                                                                          \
+        .position = { 0.f, 0.f }, .scale = { 1.f, 1.f }, .rotation = 0.f                                       \
+    }
 
 /* this tag component use in case some thing have changed
  * our transform component */
@@ -68,6 +91,11 @@ struct SpriteComp
     bool      vert_flip;
 };
 
+#define SPRITE_COMP_INIT                                                                                       \
+    {                                                                                                          \
+        .color = COLOR_WHITE_INIT                                                                              \
+    }
+
 struct LocalTransformMatrixComp
 {
     mat3 value;
@@ -87,7 +115,7 @@ struct AnimationComp
 struct AnimationPoolComp
 {
     const Animation* animations;
-    int              count;
+    u32              count;
 };
 
 struct DrawOrderComp
@@ -97,7 +125,8 @@ struct DrawOrderComp
 
 struct VelocityComp
 {
-    vec2 value;
+    vec2  value;
+    float slowdown_factor;
 };
 
 struct MaterialComp
@@ -109,6 +138,8 @@ struct MaterialComp
 struct ControllerComp
 {
     vec2 desired_direction;
+    bool in_action;
+    u32  action;
 };
 
 struct InputComp
@@ -121,28 +152,15 @@ struct SpeedComp
     float value;
 };
 
-typedef enum CharacterAnimationState
-{
-    CHARACTER_ANIMATION_IDLE,
-    CHARACTER_ANIMATION_WALK,
-    CHARACTER_ANIMATION_HURT,
-    CHARACTER_ANIMATION_CNT,
-} CharacterAnimationState;
-
 struct CharacterAnimationControllerComp
 {
-    CharacterAnimationState state;
+    u32 state;
 };
 
 struct FacingDirectionComp
 {
     vec2 value;
     bool frezzed;
-};
-
-struct HandComp
-{
-    ecs_entity_t weapon;
 };
 
 struct HolderComp
@@ -157,6 +175,11 @@ struct RelationshipComp
     ecs_entity_t prev;  /* previous sibling */
     ecs_entity_t first; /* first child */
 };
+
+#define RELATIONSHIP_COMP_INIT                                                                                 \
+    {                                                                                                          \
+        ECS_NULL_ENT, ECS_NULL_ENT, ECS_NULL_ENT, ECS_NULL_ENT                                                 \
+    }
 
 struct DropComp
 {
@@ -182,33 +205,6 @@ struct WorldTransformMatrixChangedTag
     int dummy;
 };
 
-struct ContactComp
-{
-    ecs_entity_t next;
-    ecs_entity_t prev;
-};
-
-struct TransformState
-{
-    vec3  position;
-    vec2  scale;
-    float rotation;
-    float duration;
-};
-
-struct TransformClip
-{
-    struct TransformState* root;
-    struct TransformState* hand;
-    struct TransformState* weapon;
-};
-
-struct ERef
-{
-    ecs_entity_t hand;
-    ecs_entity_t weapon;
-};
-
 struct EquipedWeapon
 {
     u32 weapon_id;
@@ -219,32 +215,147 @@ struct EquipedSpell
     u32 spell_id;
 };
 
-enum
-{
-    ET_ENEMY,
-    ET_PLAYER,
-    ET_CHEST,
-    ET_PICKUPABLE,
-    ET_CNT,
-#define ET_UNKNOWN
-};
-
-#define ENEMY_MASK BIT(ET_ENEMY)
-#define PLAYER_MASK BIT(ET_PLAYER)
-
 struct EntityTag
 {
     u32 value;
 };
 
-#define RELATIONSHIP_COMP_INIT_EMPTY                                                                           \
-    {                                                                                                          \
-        .parent = ECS_NULL_ENT, .next = ECS_NULL_ENT, .prev = ECS_NULL_ENT, .first = ECS_NULL_ENT              \
-    }
-
 struct RotatorComp
 {
     float speed;
+};
+
+enum InteractCommand
+{
+    ICMD_TALK,
+    ICMD_BUY,
+    ICMD_SELL,
+    ICMD_CNT,
+};
+
+struct InteractableComp
+{
+    u32 commnads[ICMD_CNT];
+    u32 command_count;
+};
+
+struct AffineAnimComp
+{
+    const struct AffineAnimCmd* cmds;
+    float                       timer;
+    float                       initial_x;
+    float                       initial_y;
+    float                       initial_scale_x;
+    float                       initial_scale_y;
+    float                       initial_rotation;
+    bool                        should_reset_to_initial_state;
+    bool                        realative_to_initial_state;
+    int                         current_frame;
+    bool                        finished;
+    void (*finished_callback)(void*, ecs_Registry*, ecs_entity_t);
+    void* finished_callback_ctx;
+    bool  invert;
+};
+
+struct RefComp
+{
+    ecs_entity_t hand;
+    ecs_entity_t weapon;
+};
+
+struct SwingWeaponComp
+{
+    int dummy;
+};
+
+struct CastSpellComp
+{
+    bool  start_casting;
+    bool  cast_ended;
+    float cooldown_timer;
+};
+
+struct DefenseComp
+{
+    s16 physical;
+    s16 ice;
+    s16 lighting;
+    s16 fire;
+    s16 dark;
+    s16 holy;
+};
+
+struct HealthPoolComp
+{
+    s16 current;
+    s16 max;
+};
+
+struct ManaPoolComp
+{
+    s16 current;
+    s16 max;
+};
+
+struct PhysicalAtkPowerComp
+{
+    s16 value;
+};
+
+struct MagicalAtkPowComp
+{
+    s16 value;
+};
+
+struct EquipmentSlotsComp
+{
+    union
+    {
+        struct
+        {
+            u32 weapon;
+            u32 armor;
+            u32 boots;
+            u32 ring1;
+            u32 ring2;
+        };
+        u32 as_array[EQM_TYPE_CNT];
+    };
+};
+
+struct BaseStatsComp
+{
+    s16 strength;
+    s16 intelligent;
+    s16 vitality;
+    s16 luck;
+};
+
+struct StatModifiersComp
+{
+    struct StatModifier buff;
+    struct StatModifier debuff;
+    struct StatModifier equipments[EQM_TYPE_CNT];
+};
+
+#define STAT_MOFIFIERS_COMP_INIT                                                                               \
+    {                                                                                                          \
+        0                                                                                                      \
+    }
+
+struct StatModifiersChangedTag
+{
+    int dummy;
+};
+
+struct BaseStatsChangedTag
+{
+    int dummy;
+};
+
+struct EquipmentChangedTag
+{
+    u32 mask;
 };
 
 #endif // COMPONENTS_H

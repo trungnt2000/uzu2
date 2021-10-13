@@ -2,8 +2,8 @@
 #define TOOLBOX_SIGNAL_H
 #include "toolbox/common.h"
 
-typedef struct Signal  Signal;
-typedef struct Emitter Emitter;
+typedef struct Signal Signal;
+typedef struct MsgBus MsgBus;
 
 #define SLOT_FLAG_ONESHOT (1u)
 
@@ -14,10 +14,10 @@ void signal_connect(Signal* signal, bool (*func)(void*, const void*), void* ctx,
 bool signal_disconnect(Signal* signal, bool (*func)(void*, const void*), void* ctx);
 void signal_emit(Signal* signal, const void* data);
 
-Emitter* emitter_create(u32 numSingals);
-void     emitter_free(Emitter* emitter);
-void     emitter_connect(Emitter* emitter, int sig, bool (*func)(void*, const void*), void* ctx, u32 flags);
-void     emitter_disconnect(Emitter* emitter, int sig, bool (*func)(void*, const void*), void* ctx);
-void     emitter_emit(Emitter* emitter, int sig, const void* data);
+MsgBus* mbus_create(u32 numSingals);
+void    mbus_free(MsgBus* emitter);
+void    mbus_connect(MsgBus* emitter, int sig, bool (*func)(void*, const void*), void* ctx, u32 flags);
+void    mbus_disconnect(MsgBus* emitter, int sig, bool (*func)(void*, const void*), void* ctx);
+void    mbus_emit(MsgBus* emitter, int sig, const void* data);
 
 #endif // TOOLBOX_SIGNAL_H

@@ -4,7 +4,7 @@
 #define INITIAL_SIZE 16
 
 static void
-clear_callback(void* ctx, struct ecs_Registry* registry, ecs_entity_t ett, SDL_UNUSED void* unused)
+clear_callback(UNUSED void* ctx, struct ecs_Registry* registry, ecs_entity_t ett, UNUSED void* unused)
 {
     ecs_destroy(registry, ett);
 }
@@ -18,7 +18,7 @@ ecs_registry_create(const struct ecs_TypeTraits* type_traits, ecs_size_t cnt)
     reg->pools               = SDL_calloc(cnt, sizeof(void*));
     reg->group_count         = 0;
     reg->groups              = NULL;
-    for (int i = 0; i < cnt; ++i)
+    for (ecs_size_t i = 0; i < cnt; ++i)
     {
         reg->pools[i] = ecs_pool_create(reg, type_traits[i], INITIAL_SIZE);
     }
@@ -28,9 +28,9 @@ ecs_registry_create(const struct ecs_TypeTraits* type_traits, ecs_size_t cnt)
     reg->entities      = SDL_malloc(INITIAL_SIZE * sizeof(ecs_entity_t));
 
     for (u32 i = 0; i < INITIAL_SIZE - 1; ++i)
-        reg->entities[i] = ECS_ENT(i + 1, 0);
+        reg->entities[i] = ECS_TO_ENTITY(i + 1, 0);
 
-    reg->entities[INITIAL_SIZE - 1] = ECS_ENT(ECS_NULL_IDX, 0);
+    reg->entities[INITIAL_SIZE - 1] = ECS_TO_ENTITY(ECS_NULL_IDX, 0);
     return reg;
 }
 
@@ -40,7 +40,7 @@ ecs_registry_free(struct ecs_Registry* reg)
     if (reg != NULL)
     {
         ecs_each(reg, clear_callback, NULL);
-        for (int i = 0; i < reg->group_count; ++i)
+        for (ecs_size_t i = 0; i < reg->group_count; ++i)
         {
             struct ecs_Group* group = reg->groups[i];
             struct ecs_Group* child = NULL;
@@ -51,7 +51,7 @@ ecs_registry_free(struct ecs_Registry* reg)
                 group = child;
             }
         }
-        for (int i = 0; i < reg->type_count; ++i)
+        for (ecs_size_t i = 0; i < reg->type_count; ++i)
             ecs_pool_free(reg->pools[i]);
         SDL_free(reg->pools);
         SDL_free(reg->entities);
@@ -71,9 +71,9 @@ ecs_create(struct ecs_Registry* reg)
         reg->entities = SDL_realloc(reg->entities, reg->size * sizeof(ecs_entity_t));
         for (u32 i = reg->count; i < reg->size - 1; ++i)
         {
-            reg->entities[i] = ECS_ENT(i + 1, 0);
+            reg->entities[i] = ECS_TO_ENTITY(i + 1, 0);
         }
-        reg->entities[reg->size - 1] = ECS_ENT(ECS_NULL_IDX, 0);
+        reg->entities[reg->size - 1] = ECS_TO_ENTITY(ECS_NULL_IDX, 0);
         reg->destroy_index           = reg->count;
     }
 
@@ -112,23 +112,23 @@ _ecs_add(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id)
 {
     ASSERT_MSG(type_id < reg->type_count, "invalid type_id");
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
-    return ecs_pool_add(reg->pools[type_id], ett, NULL);
+    return ecs_pool_add(reg->pools[type_id], ett);
 }
 
 void*
-_ecs_add_ex(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id, const void* data)
+_ecs_addv(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id, const void* data)
 {
     ASSERT_MSG(type_id < reg->type_count, "invalid type_id");
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
-    return ecs_pool_add(reg->pools[type_id], ett, data);
+    return ecs_pool_addv(reg->pools[type_id], ett, data);
 }
 
 void*
-_ecs_add_or_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id, const void* data)
+_ecs_assurev(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id, const void* data)
 {
     ASSERT_MSG(type_id < reg->type_count, "invalid type_id");
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
-    return ecs_pool_add_or_set(reg->pools[type_id], ett, data);
+    return ecs_pool_assurev(reg->pools[type_id], ett, data);
 }
 
 void
@@ -146,7 +146,7 @@ ecs_rmv_all(struct ecs_Registry* reg, ecs_entity_t ett)
     struct ecs_Pool** pools;
 
     pools = reg->pools;
-    for (int i = 0; i < reg->type_count; ++i)
+    for (ecs_size_t i = 0; i < reg->type_count; ++i)
     {
         ecs_pool_rmv(pools[i], ett);
     }
@@ -161,13 +161,13 @@ _ecs_get(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id)
 }
 
 void*
-_ecs_get_or_add(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id)
+_ecs_assure(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id)
 {
     ASSERT_MSG(type_id < reg->type_count, "invalid type_id");
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
-    void* comp = ecs_pool_get(reg->pools[type_id], ett);
-    return comp ? comp : ecs_pool_add(reg->pools[type_id], ett, NULL);
+    return ecs_pool_assure(reg->pools[type_id], ett);
 }
+
 void
 ecs_each(struct ecs_Registry* reg, ecs_Callback callback, void* ctx)
 {
@@ -199,7 +199,7 @@ _ecs_raw(struct ecs_Registry* reg,
 }
 
 bool
-ecs_has(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id)
+ecs_has(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id)
 {
     ASSERT_MSG(type_id < reg->type_count, "invalid type_id");
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
@@ -213,7 +213,7 @@ ecs_clear(struct ecs_Registry* reg)
 }
 
 void*
-_ecs_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id, const void* data)
+_ecs_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id, const void* data)
 {
     ASSERT_MSG(type_id < reg->type_count, "invalid type_id");
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
@@ -222,13 +222,13 @@ _ecs_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_size_t type_id, const v
 }
 
 void
-_ecs_getn(struct ecs_Registry* reg, ecs_entity_t ett, const ecs_size_t* types, ecs_size_t cnt, void* arr[])
+_ecs_getn(struct ecs_Registry* reg, ecs_entity_t ett, const ecs_type_id_t* types, ecs_size_t cnt, void* arr[])
 {
     ASSERT_MSG(ecs_is_valid(reg, ett), "invalid entity");
 
     u32               type_count = reg->type_count;
     struct ecs_Pool** pools      = reg->pools;
-    for (int i = 0; i < cnt; ++i)
+    for (ecs_size_t i = 0; i < cnt; ++i)
     {
         ASSERT(types[i] < type_count);
         if ((arr[i] = ecs_pool_get(pools[types[i]], ett)) == NULL)

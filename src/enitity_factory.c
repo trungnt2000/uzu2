@@ -1,4 +1,5 @@
 #include "components.h"
+#include "entity.h"
 #include "entity_factory.h"
 
 static Animation     s_animation_job_lizzard[CHARACTER_ANIMATION_CNT];
@@ -7,14 +8,41 @@ static Animation     s_animation_job_knight[CHARACTER_ANIMATION_CNT];
 static Animation     s_animation_job_hunter[CHARACTER_ANIMATION_CNT];
 static const Sprite* s_sprite_wpn_anime_swd;
 
-typedef struct
-{
-    const Animation* animations;
-} CharacterParams;
+static const struct BaseStats s_base_stats_lizzard = {
+    .strength    = 1,
+    .intelligent = 1,
+    .vitality    = 1,
+    .luck        = 1,
+};
 
-const static CharacterParams s_params_job_lizzard = { .animations = s_animation_job_lizzard };
-const static CharacterParams s_params_job_wizzard = { .animations = s_animation_job_wizzard };
-const static CharacterParams s_params_job_knight  = { .animations = s_animation_job_knight };
+static const struct BaseStats s_base_stats_wizzard = {
+    .strength    = 1,
+    .intelligent = 1,
+    .vitality    = 1,
+    .luck        = 1,
+};
+
+static const struct BaseStats s_base_stats_knight = {
+    .strength    = 1,
+    .intelligent = 1,
+    .vitality    = 1,
+    .luck        = 1,
+};
+
+static const struct BaseStats s_base_stats_hunter = {
+    .strength    = 1,
+    .intelligent = 1,
+    .vitality    = 1,
+    .luck        = 1,
+};
+
+struct CharacterParams
+{
+    float            x;
+    float            y;
+    const Animation* animations;
+    struct BaseStats base_stats;
+};
 
 int
 entity_factory_init(const Resources* resources)
@@ -49,28 +77,28 @@ entity_factory_init(const Resources* resources)
     hurt_tmpl.sprite_height  = 28;
     hurt_tmpl.sprite_width   = 16;
 
-    const Sprite* lizzard_sprite = sprite_sheet_get(spritesheet, "lizzard.png");
+    const Sprite* lizzard_sprite = sprite_sheet_get(spritesheet, "character_lizzard.png");
     if (lizzard_sprite == NULL)
         LEAVE_ERROR(-1, "lizzard.png not found\n");
 
     animation_init_w_sprite(&s_animation_job_lizzard[CHARACTER_ANIMATION_IDLE], lizzard_sprite, &idle_tmpl);
-    animation_init_w_sprite(&s_animation_job_lizzard[CHARACTER_ANIMATION_WALK], lizzard_sprite, &idle_tmpl);
+    animation_init_w_sprite(&s_animation_job_lizzard[CHARACTER_ANIMATION_WALK], lizzard_sprite, &walk_tmpl);
     animation_init_w_sprite(&s_animation_job_lizzard[CHARACTER_ANIMATION_HURT], lizzard_sprite, &hurt_tmpl);
 
-    const Sprite* wizzard_sprite = sprite_sheet_get(spritesheet, "wizzard.png");
+    const Sprite* wizzard_sprite = sprite_sheet_get(spritesheet, "character_wizzard.png");
     if (wizzard_sprite == NULL)
         LEAVE_ERROR(-1, "wizard.png not found\n");
 
     animation_init_w_sprite(&s_animation_job_wizzard[CHARACTER_ANIMATION_IDLE], wizzard_sprite, &idle_tmpl);
-    animation_init_w_sprite(&s_animation_job_wizzard[CHARACTER_ANIMATION_WALK], wizzard_sprite, &idle_tmpl);
+    animation_init_w_sprite(&s_animation_job_wizzard[CHARACTER_ANIMATION_WALK], wizzard_sprite, &walk_tmpl);
     animation_init_w_sprite(&s_animation_job_wizzard[CHARACTER_ANIMATION_HURT], wizzard_sprite, &hurt_tmpl);
 
-    const Sprite* knight_sprite = sprite_sheet_get(spritesheet, "knight.png");
+    const Sprite* knight_sprite = sprite_sheet_get(spritesheet, "character_knight.png");
     if (knight_sprite == NULL)
         LEAVE_ERROR(-1, "knight.png not found\n");
 
     animation_init_w_sprite(&s_animation_job_knight[CHARACTER_ANIMATION_IDLE], knight_sprite, &idle_tmpl);
-    animation_init_w_sprite(&s_animation_job_knight[CHARACTER_ANIMATION_WALK], knight_sprite, &idle_tmpl);
+    animation_init_w_sprite(&s_animation_job_knight[CHARACTER_ANIMATION_WALK], knight_sprite, &walk_tmpl);
     animation_init_w_sprite(&s_animation_job_knight[CHARACTER_ANIMATION_HURT], knight_sprite, &hurt_tmpl);
 
     s_sprite_wpn_anime_swd = sprite_sheet_get(spritesheet, "anime_sword.png");
@@ -88,30 +116,93 @@ entity_factory_shutdown(void)
 }
 
 static ecs_entity_t
-make_character(ecs_Registry* registry, const CharacterParams* params)
+create_hand(ecs_Registry* registry, float anchor_x, float anchor_y)
 {
-    ecs_entity_t character = ecs_create(registry);
-    ecs_addv(registry, character, TransformComp, { .scale = { 1.f, 1.f } });
-    ecs_addv(registry, character, SpriteComp, { .color = COLOR_WHITE_INIT, .origin = { 8.f, 28.f } });
-    ecs_addv(registry, character, MaterialComp, { .ref = NULL });
-    ecs_addv(registry, character, AnimationComp, { .ref = &params->animations[CHARACTER_ANIMATION_IDLE] });
+    ecs_entity_t hand = ecs_create(registry);
+
+    ecs_addv(registry, hand, TransformComp, { .position = { anchor_x, anchor_y }, .scale = { 1.f, 1.f } });
+    ecs_addv(registry, hand, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry, hand, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry, hand, TransformChangedTag, { 0 });
+    ecs_addv(registry, hand, NameComp, { "hand" });
+
+    return hand;
+}
+
+struct BasicSpriteParams
+{
+    float               x;
+    float               y;
+    const Animation*    animations;
+    enum EntityTagValue tag;
+};
+
+static ecs_entity_t
+create_basic_sprite(ecs_Registry* registry, const struct BasicSpriteParams* params)
+{
+    ecs_entity_t basic_sprite = ecs_create(registry);
     ecs_addv(registry,
-             character,
+             basic_sprite,
+             TransformComp,
+             { .scale = { 1.f, 1.f }, .position = { params->x, params->y } });
+    ecs_addv(registry, basic_sprite, SpriteComp, { .color = COLOR_WHITE_INIT, .origin = { 8.f, 28.f } });
+    ecs_addv(registry, basic_sprite, MaterialComp, { .ref = NULL });
+    ecs_addv(registry, basic_sprite, AnimationComp, { .ref = &params->animations[CHARACTER_ANIMATION_IDLE] });
+    ecs_addv(registry,
+             basic_sprite,
              AnimationPoolComp,
              { .animations = params->animations, .count = CHARACTER_ANIMATION_CNT });
-    ecs_addv(registry, character, CharacterAnimationControllerComp, { CHARACTER_ANIMATION_IDLE });
-    ecs_addv(registry, character, VelocityComp, { GLM_VEC2_ZERO_INIT });
-    ecs_addv(registry, character, FacingDirectionComp, { { 1.f, 0.f }, false });
-    ecs_addv(registry, character, ControllerComp, { 0 });
-    ecs_addv(registry, character, SpeedComp, { 10.f * 16.f });
-    ecs_addv(registry, character, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
-    ecs_addv(registry, character, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
-    ecs_add(registry, character, TransformChangedTag);
+    ecs_addv(registry, basic_sprite, CharacterAnimationControllerComp, { CHARACTER_ANIMATION_IDLE });
+    ecs_addv(registry, basic_sprite, VelocityComp, { GLM_VEC2_ZERO_INIT, 0.25f });
+    ecs_addv(registry, basic_sprite, FacingDirectionComp, { { 1.f, 0.f }, false });
+    ecs_addv(registry, basic_sprite, ControllerComp, { 0 });
+    ecs_addv(registry, basic_sprite, SpeedComp, { 10.f * 16.f });
+    ecs_addv(registry, basic_sprite, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry, basic_sprite, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_add(registry, basic_sprite, TransformChangedTag);
+
+    return basic_sprite;
+}
+
+static void
+copy_character_params_to_sprite_params(const struct CharacterParams* character_params,
+                                       struct BasicSpriteParams*     basic_sprite_params)
+{
+    basic_sprite_params->x          = character_params->x;
+    basic_sprite_params->y          = character_params->y;
+    basic_sprite_params->animations = character_params->animations;
+}
+
+static void
+init_base_stats_component(struct BaseStatsComp* component, const struct BaseStats* base_stats)
+{
+    component->intelligent = base_stats->intelligent;
+    component->luck        = base_stats->luck;
+    component->vitality    = base_stats->vitality;
+    component->strength    = base_stats->strength;
+}
+
+static ecs_entity_t
+create_character(ecs_Registry* registry, const struct CharacterParams* params)
+{
+    struct BasicSpriteParams sprite_params = { 0 };
+    copy_character_params_to_sprite_params(params, &sprite_params);
+    ecs_entity_t character = create_basic_sprite(registry, &sprite_params);
+
     ecs_add(registry, character, InputComp);
     ecs_addv(registry,
              character,
              HitBoxComp,
              { .size = { 16.f, 28.f }, .anchor = { 8.f, 28.f }, .mask = ENEMY_MASK, .category = PLAYER_MASK });
+
+    ecs_entity_t hand = ett_add_child(registry, character, create_hand(registry, 15, -6));
+
+    ecs_addv(registry, character, RefComp, { .weapon = ECS_NULL_ENT, .hand = hand });
+
+    ecs_add(registry, character, SwingWeaponComp);
+
+    init_base_stats_component(ecs_add(registry, character, BaseStatsComp), &params->base_stats);
+
     return character;
 }
 
@@ -126,7 +217,7 @@ create_anime_sword(ecs_Registry* registry)
     ecs_add_ex(registry,
                anime_sword,
                TransformComp,
-               { .scale = { 1.f, 1.f }, .position = { 0.f, 0.f }, .rotation = 45.f });
+               { .scale = { 1.f, 1.f }, .position = { 0.f, 0.f }, .rotation = 90.f });
     ecs_add_ex(registry, anime_sword, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
     ecs_add_ex(registry, anime_sword, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
     ecs_add_ex(registry,
@@ -145,7 +236,40 @@ create_anime_sword(ecs_Registry* registry)
 }
 
 ecs_entity_t
-create_lizzard(ecs_Registry* registry)
+create_lizzard(ecs_Registry* registry, float x, float y)
 {
-    return make_character(registry, &s_params_job_lizzard);
+    struct CharacterParams character_params = { .x = x, .y = y, .animations = s_animation_job_lizzard };
+    return create_character(registry, &character_params);
+}
+
+ecs_entity_t
+spawn_player(ecs_Registry* registry, float x, float y, const struct PlayerData* player_data)
+{
+    struct CharacterParams params = { 0 };
+    params.x                      = x;
+    params.y                      = y;
+
+    switch (player_data->job)
+    {
+    case JOB_LIZZARD:
+        params.animations = s_animation_job_lizzard;
+        params.base_stats = s_base_stats_lizzard;
+        break;
+    case JOB_KNIGHT:
+        params.animations = s_animation_job_knight;
+        params.base_stats = s_base_stats_knight;
+        break;
+    case JOB_WIZZARD:
+        params.animations = s_animation_job_wizzard;
+        params.base_stats = s_base_stats_wizzard;
+        break;
+    case JOB_HUNTER:
+        params.animations = s_animation_job_hunter;
+        params.base_stats = s_base_stats_hunter;
+        break;
+    default:
+        ASSERT(0);
+    }
+
+    return create_character(registry, &params);
 }

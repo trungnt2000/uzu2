@@ -18,6 +18,6 @@ system_rotation_update(ecs_Registry* registry, float delta_time)
 
         transform->rotation += rotator->speed * delta_time;
 
-        ecs_add_or_set(registry, ett, TransformChangedTag, { 0 });
+        ecs_assure(registry, ett, TransformChangedTag);
     }
 }

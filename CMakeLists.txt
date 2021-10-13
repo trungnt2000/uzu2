@@ -56,7 +56,6 @@ endif()
 target_compile_features(${APP_NAME} INTERFACE c_std_11)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  target_compile_options(${APP_NAME} PRIVATE "-fno-strict-aliasing")
 endif()
 
 target_link_libraries(${APP_NAME} PRIVATE 

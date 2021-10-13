@@ -4,17 +4,17 @@
 static void
 tag_transform_has_changed(ecs_Registry* registry, ecs_entity_t entity)
 {
-    ecs_add_or_set(registry, entity, TransformChangedTag, { 0 });
+    ecs_assure(registry, entity, TransformChangedTag);
 }
 
 static void
 tag_to_destroy(ecs_Registry* registry, ecs_entity_t entity)
 {
-    ecs_add_or_set(registry, entity, DestroyTag, { 0 });
+    ecs_assure(registry, entity, DestroyTag);
 }
 
 void
-ett_tx_set_position(ecs_Registry* registry, ecs_entity_t entity, vec3 position)
+ett_set_position(ecs_Registry* registry, ecs_entity_t entity, vec3 position)
 {
     struct TransformComp* t = ecs_get(registry, entity, TransformComp);
     glm_vec3_copy(position, t->position);
@@ -22,14 +22,14 @@ ett_tx_set_position(ecs_Registry* registry, ecs_entity_t entity, vec3 position)
 }
 
 void
-ett_tx_set_rotation(ecs_Registry* registry, ecs_entity_t entity, float angle)
+ett_set_rotation(ecs_Registry* registry, ecs_entity_t entity, float angle)
 {
     struct TransformComp* t = ecs_get(registry, entity, TransformComp);
     t->rotation             = angle;
     tag_transform_has_changed(registry, entity);
 }
 void
-ett_tx_set_scale(ecs_Registry* registry, ecs_entity_t entity, vec2 scale)
+ett_set_scale(ecs_Registry* registry, ecs_entity_t entity, vec2 scale)
 {
     struct TransformComp* t = ecs_get(registry, entity, TransformComp);
     t->scale[0]             = scale[0];
@@ -38,20 +38,20 @@ ett_tx_set_scale(ecs_Registry* registry, ecs_entity_t entity, vec2 scale)
 }
 
 void
-ett_tx_rotate_by(ecs_Registry* registry, ecs_entity_t entity, float angle)
+ett_rotate_by(ecs_Registry* registry, ecs_entity_t entity, float angle)
 {
     struct TransformComp* t = ecs_get(registry, entity, TransformComp);
     t->rotation += angle;
     tag_transform_has_changed(registry, entity);
 }
 
-void
-ett_rs_add_child(ecs_Registry* reg, ecs_entity_t ett, ecs_entity_t child)
+ecs_entity_t
+ett_add_child(ecs_Registry* reg, ecs_entity_t ett, ecs_entity_t child)
 {
-    struct RelationshipComp* relationship = ecs_get_or_add(reg, ett, RelationshipComp);
+    struct RelationshipComp* relationship = ecs_assurev(reg, ett, RelationshipComp, RELATIONSHIP_COMP_INIT);
 
     struct RelationshipComp* child_relationship =
-        ecs_add_ex(reg, child, RelationshipComp, RELATIONSHIP_COMP_INIT_EMPTY);
+        ecs_assurev(reg, child, RelationshipComp, RELATIONSHIP_COMP_INIT);
 
     child_relationship->parent = ett;
     if (relationship->first != ECS_NULL_ENT)
@@ -61,37 +61,38 @@ ett_rs_add_child(ecs_Registry* reg, ecs_entity_t ett, ecs_entity_t child)
         child_relationship->next                          = relationship->first;
     }
     relationship->first = child;
+    return child;
 }
 
 bool
-ett_rs_has_parent(ecs_Registry* reg, ecs_entity_t ett)
+ett_has_parent(ecs_Registry* reg, ecs_entity_t ett)
 {
-    return ett_rs_get_parent(reg, ett) != ECS_NULL_ENT;
+    return ett_get_parent(reg, ett) != ECS_NULL_ENT;
 }
 
 ecs_entity_t
-ett_rs_get_parent(ecs_Registry* reg, ecs_entity_t ett)
+ett_get_parent(ecs_Registry* reg, ecs_entity_t ett)
 {
     struct RelationshipComp* relationship = ecs_get(reg, ett, RelationshipComp);
     return relationship ? relationship->parent : ECS_NULL_ENT;
 }
 
 ecs_entity_t
-ett_rs_get_first_child(ecs_Registry* reg, ecs_entity_t ett)
+ett_get_first_child(ecs_Registry* reg, ecs_entity_t ett)
 {
     struct RelationshipComp* relationship = ecs_get(reg, ett, RelationshipComp);
     return relationship ? relationship->first : ECS_NULL_ENT;
 }
 
 ecs_entity_t
-ett_rs_get_next_sibling(ecs_Registry* reg, ecs_entity_t ett)
+ett_get_next_sibling(ecs_Registry* reg, ecs_entity_t ett)
 {
     struct RelationshipComp* relationship = ecs_get(reg, ett, RelationshipComp);
     return relationship ? relationship->next : ECS_NULL_ENT;
 }
 
 ecs_entity_t
-ett_rs_get_prev_sibling(ecs_Registry* reg, ecs_entity_t ett)
+ett_get_prev_sibling(ecs_Registry* reg, ecs_entity_t ett)
 {
     struct RelationshipComp* relationship = ecs_get(reg, ett, RelationshipComp);
     return relationship ? relationship->prev : ECS_NULL_ENT;
@@ -109,7 +110,18 @@ ett_set_name_fmt(ecs_Registry* reg, ecs_entity_t ett, const char* restrict fmt, 
     if (!name_comp)
         name_comp = ecs_add(reg, ett, NameComp);
 
-    vsnprintf(name_comp->value, sizeof(name_comp->value), fmt, va_arg);
+    vsnprintf(name_comp->value, sizeof(name_comp->value) - 1, fmt, va_arg);
 
     va_end(va_arg);
+}
+
+void
+ett_attach_weapon(ecs_Registry* registry, ecs_entity_t entity, ecs_entity_t weapon)
+{
+    struct RefComp* ref_comp = ecs_get(registry, entity, RefComp);
+    ASSERT_MSG(ref_comp, "Unable to equip weapon");
+    ref_comp->weapon = weapon;
+
+    ett_set_position(registry, weapon, (vec3){ 3.f, 0.f, 0.f });
+    ett_add_child(registry, ref_comp->hand, weapon);
 }

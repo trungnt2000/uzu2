@@ -4,12 +4,32 @@
 #include "toolbox.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
+
+#define ECS_DEBUG
 
 /* use enum to easier debug */
 #ifndef ECS_TYPE_ID
 #define ECS_TYPE_ID ecs_size_t
 #endif
+
+#ifndef ECS_MEM_FUNC
+#define ECS_MEM_FUNC
+#include <stdlib.h>
+#define ECS_MALLOC(sz) malloc(sz)
+#define ECS_REALLOC(ptr, newsz) realloc(ptr, newsz)
+#define ECS_FREE(ptr) free(ptr)
+#endif // ECS_MEM_FUNC
+
+#ifndef ECS_ASSERT
+#include <assert.h>
+#define ECS_ASSERT(cond) assert(cond)
+#endif // ECS_ASSERT
+
+#define ECS_ASSERT_MSG(cond, msg) ASSERT((cond) && (msg))
+
+#ifndef ECS_UNUSED
+#define ECS_UNUSED
+#endif // ECS_UNUSED
 
 enum
 {
@@ -22,8 +42,8 @@ enum
 typedef struct ecs_Registry ecs_Registry;
 typedef struct ecs_Group    ecs_Group;
 
-typedef u32         ecs_entity_t;
-typedef u16         ecs_size_t;
+typedef uint32_t    ecs_entity_t;
+typedef uint32_t    ecs_size_t;
 typedef ECS_TYPE_ID ecs_type_id_t;
 
 typedef void (*ecs_FiniFunc)(void*);
@@ -44,8 +64,6 @@ struct ecs_TypeTraits
 
     /* component memory alignment */
     size_t align;
-
-    const void* default_value;
 
     const char* name;
 };
@@ -146,11 +164,10 @@ void* _ecs_add(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id
  * from other entity.
  */
 #define ecs_add(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_add(reg, ett, T))
-#define ecs_addv(reg, ett, T, ...) (_ecs_add_ex(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
+#define ecs_addv(reg, ett, T, ...) (_ecs_addv(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
+#define ecs_add_ex(reg, ett, T, ...) (_ecs_addv(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
 
-void* _ecs_add_ex(struct ecs_Registry* reg, ecs_entity_t, ecs_type_id_t type_id, const void* data);
-
-#define ecs_add_ex(reg, ett, T, ...) (_ecs_add_ex(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
+void* _ecs_addv(struct ecs_Registry* reg, ecs_entity_t, ecs_type_id_t type_id, const void* data);
 
 void* _ecs_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id, const void* data);
 
@@ -165,10 +182,9 @@ void* _ecs_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id
  */
 #define ecs_set(reg, ett, T, ...) ((ECS_COMP_NM(T)*)_ecs_set(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
 
-void* _ecs_add_or_set(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id, const void* data);
+void* _ecs_assurev(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id, const void* data);
 
-#define ecs_add_or_set(reg, ett, T, ...)                                                                       \
-    ((ECS_COMP_NM(T)*)_ecs_add_or_set(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
+#define ecs_assurev(reg, ett, T, ...) ((ECS_COMP_NM(T)*)_ecs_assurev(reg, ett, T, &(ECS_COMP_NM(T))__VA_ARGS__))
 
 /**
  * \brief Remove comonent from an entity. Component destructor will be invoke
@@ -185,9 +201,9 @@ void* _ecs_get(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id
 
 #define ecs_get(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_get(reg, ett, T))
 
-void* _ecs_get_or_add(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id);
+void* _ecs_assure(struct ecs_Registry* reg, ecs_entity_t ett, ecs_type_id_t type_id);
 
-#define ecs_get_or_add(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_get_or_add(reg, ett, T))
+#define ecs_assure(reg, ett, T) ((ECS_COMP_NM(T)*)_ecs_assure(reg, ett, T))
 
 void ecs_each(struct ecs_Registry* reg, ecs_Callback callback, void* ctx);
 
@@ -207,8 +223,8 @@ _ecs_getn(struct ecs_Registry* reg, ecs_entity_t ett, const ecs_type_id_t* types
 #define ecs_getn(reg, ett, out, ...)                                                                           \
     do                                                                                                         \
     {                                                                                                          \
-        ecs_type_id_t __Ts[] = __VA_ARGS__;                                                                    \
-        ecs_getn(reg, ett, __Ts, sizeof(__Ts) / sizeof(ecs_type_id_t), out);                                   \
+        ecs_type_id_t Ts[] = __VA_ARGS__;                                                                      \
+        ecs_getn(reg, ett, Ts, sizeof(Ts) / sizeof(ecs_type_id_t), out);                                       \
     } while (0)
 
 ecs_entity_t ecs_cpy(struct ecs_Registry* dstReg, ecs_Registry* srcReg, ecs_entity_t srcEtt);
@@ -264,8 +280,8 @@ void _ecs_view_init(struct ecs_View* view, struct ecs_Registry* registry, ecs_ty
 #define ecs_view_init(v, reg, ...)                                                                             \
     do                                                                                                         \
     {                                                                                                          \
-        ecs_type_id_t __Ts[] = __VA_ARGS__;                                                                    \
-        _ecs_view_init(v, reg, __Ts, sizeof(__Ts) / sizeof(ecs_type_id_t));                                    \
+        ecs_type_id_t Ts[] = __VA_ARGS__;                                                                      \
+        _ecs_view_init(v, reg, Ts, sizeof(Ts) / sizeof(ecs_type_id_t));                                        \
     } while (0)
 
 bool _ecs_view_next(struct ecs_View* v, ecs_entity_t* ett, void* comps[]);

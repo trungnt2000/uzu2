@@ -1,84 +1,75 @@
 #ifndef ITEM_H
 #define ITEM_H
 #include "ecs.h"
+#include "global.h"
 #include "graphics.h"
 
-typedef enum ItemId
+enum ItemCategory
 {
-  ITEM_RED_FLASK,
-  ITEM_BLUE_FLASK,
-  ITEM_BIG_RED_FLASK,
-  ITEM_BIG_BLUE_FLASK,
-
-  ITEM_FIRE_BALL,
-  ITEM_ICE_SPIKE,
-  ITEM_CNT
-} ItemId;
-
-typedef enum ItemCategory
-{
-  ITEM_CATEGORY_CONSUMABLE,
-  ITEM_CATEGORY_EQUIPMENT,
-  ITEM_CATEGORY_SPELL,
-  ITEM_CATEGORY_KEY,
-  ITEM_CATEGORY_CNT
-} ItemCategory;
+    ITEM_CATEGORY_CONSUMABLE,
+    ITEM_CATEGORY_EQUIPMENT,
+    ITEM_CATEGORY_SPELL,
+    ITEM_CATEGORY_KEY,
+    ITEM_CATEGORY_CNT
+};
 
 struct ItemConsumable
 {
-  int hp; // amount hit points to heal
-  int mp; // amount mana points to heal
+    s16 hp;
+    s16 mp;
 };
 
 struct ItemEquipment
 {
-  int weapon_id;
+    u32 id;
 };
 
 struct ItemSpell
 {
-  int spell_id;
+    u32 id;
 };
 
 struct ItemKey
 {
-  int key_id;
+    u32 id;
 };
 
-typedef union ItemData
+union ItemData
 {
-  struct ItemConsumable consumable;
-  struct ItemEquipment  equipment;
-  struct ItemSpell      spell;
-  struct ItemKey        key;
-} ItemData;
+    struct ItemConsumable consumable;
+    struct ItemEquipment  equipment;
+    struct ItemSpell      spell;
+    struct ItemKey        key;
+};
 
-typedef struct Item
+struct Item
 {
-  const char*       name;
-  const char*       description;
-  ItemData          data;
-  const Sprite*     icon;
-  enum ItemCategory category;
-  bool              stackable;
-} Item;
+    const char*       name;
+    const char*       description;
+    const char*       icon_name;
+    union ItemData    data;
+    const Sprite*     icon;
+    enum ItemCategory category;
+    bool              stackable;
+};
 
-typedef struct ItemStock
+struct ItemStock
 {
-  enum ItemId item_id;
-  u32         price;
-  u32         quality;
-} ItemStock;
+    u32 item_id;
+    u32 price;
+    u32 quantity;
+};
 
 /* load item icons */
 int item_init(const SpriteSheet* spritesheet);
 
 #define item_stackable(id) (g_items[id].stackable)
-#define item_icon(id) (g_items[id].icon)
+#define item_icon(id) ((const struct Sprite*)&g_item_icons[id])
 #define item_data(id) (g_items[id].data)
 #define item_category(id) (g_items[id].category)
 #define item_description(id) (g_items[id].description)
 #define item_name(id) (g_items[id].name)
 
-extern const Item g_items[ITEM_CNT];
+extern const struct Item g_items[ITEM_CNT];
+extern struct Sprite     g_item_icons[ITEM_CNT];
 #endif

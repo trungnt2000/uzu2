@@ -24,13 +24,12 @@ system_rendering_sprite_shutdown(void)
 void
 system_rendering_sprite_update(SDL_UNUSED ecs_Registry* registry)
 {
-    struct SpriteComp*               sp       = ecs_group_data_begin(s_sprite_group, 0);
-    struct WorldTransformMatrixComp* tx       = ecs_group_data_begin(s_sprite_group, 1);
-    const struct MaterialComp*       mt       = ecs_group_data_begin(s_sprite_group, 2);
-    int                              siz      = ecs_group_size(s_sprite_group);
-    const ecs_entity_t*              entities = ecs_group_ett_begin(s_sprite_group);
+    struct SpriteComp*               sp    = ecs_group_data_begin(s_sprite_group, 0);
+    struct WorldTransformMatrixComp* tx    = ecs_group_data_begin(s_sprite_group, 1);
+    const struct MaterialComp*       mt    = ecs_group_data_begin(s_sprite_group, 2);
+    ecs_size_t                       count = ecs_group_size(s_sprite_group);
 
-    for (int i = 0; i < siz; ++i)
+    for (ecs_size_t i = 0; i < count; ++i)
     {
         vec3 world_position = { 0 };
         glm_mat3_mulv(tx[i].value, (vec3){ 0.f, 0.f, 1.f }, world_position);

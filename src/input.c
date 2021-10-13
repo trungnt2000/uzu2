@@ -2,7 +2,7 @@
 #include "toolbox.h"
 #include <string.h>
 
-static const int s_tbn_to_scancode[BTN_CNT] = {
+static const SDL_Scancode s_tbn_to_scancode[BTN_CNT] = {
     [BTN_UP] = SDL_SCANCODE_W,        [BTN_DOWN] = SDL_SCANCODE_S,     [BTN_LEFT] = SDL_SCANCODE_A,
     [BTN_RIGHT] = SDL_SCANCODE_D,     [BTN_INTERACT] = SDL_SCANCODE_E, [BTN_CANCEL] = SDL_SCANCODE_Q,
     [BTN_MENU] = SDL_SCANCODE_ESCAPE, [BTN_JUMP] = SDL_SCANCODE_SPACE, [BTN_INVENTORY] = SDL_SCANCODE_I,
@@ -42,7 +42,7 @@ update_button_state(void)
     s_curr_button_state = 0;
 
     for (int i = 0; i < BTN_CNT; ++i)
-        s_curr_button_state |= (keyboard_state[s_tbn_to_scancode[i]] & 1) << i;
+        s_curr_button_state |= (keyboard_state[s_tbn_to_scancode[i]] & 1u) << i;
 }
 
 void
@@ -56,7 +56,7 @@ input_update()
     if (s_callback_stack_cnt > 0)
     {
         cb = s_callback_stack[s_callback_stack_cnt - 1];
-        cb.fn(cb.data, s_curr_button_state, s_prev_button_state);
+        cb.fn(cb.data);
     }
 }
 

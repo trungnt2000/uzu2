@@ -83,7 +83,7 @@ struct ecs_Pool
 {
     ecs_size_t*           sparse[ECS_PAGE_COUNT];
     ecs_entity_t*         entities;
-    void*                 data_buffer;
+    void*                 unaligned_buffer;
     void*                 data;
     ecs_size_t            count;
     ecs_size_t            size;
@@ -94,16 +94,20 @@ struct ecs_Pool
 };
 
 struct ecs_Pool*
-ecs_pool_create(struct ecs_Registry* ecs_Registry, struct ecs_TypeTraits traits, ecs_size_t initialSize);
+ecs_pool_create(struct ecs_Registry* ecs_Registry, struct ecs_TypeTraits traits, ecs_size_t initial_size);
 
 void ecs_pool_free(struct ecs_Pool* pool);
+
+void* ecs_pool_add(struct ecs_Pool* pool, ecs_entity_t ett);
 
 /**
  * add given entity to this pool also initialize it with given data
  */
-void* ecs_pool_add(struct ecs_Pool* pool, ecs_entity_t ett, const void* data);
+void* ecs_pool_addv(struct ecs_Pool* pool, ecs_entity_t ett, const void* data);
 
-void* ecs_pool_add_or_set(struct ecs_Pool*, ecs_entity_t ett, const void* data);
+void* ecs_pool_assure(struct ecs_Pool* p, ecs_entity_t ett);
+
+void* ecs_pool_assurev(struct ecs_Pool*, ecs_entity_t ett, const void* data);
 
 /* get component memory associated with given entity if any
  * otherwise return NULL */

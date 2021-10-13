@@ -40,11 +40,10 @@ struct MsgCommandSelected
 
 void ems_init(void);
 void ems_shutdown(void);
-void ems_broadcastfn(enum MsgId msg_id, const void* data);
+void _ems_broadcast(enum MsgId msg_id, const void* data);
 void ems_connect(enum MsgId msg_id, bool (*fn)(void*, const void*), void* ctx, u32 flags);
 void ems_disconnect(enum MsgId msg_id, bool (*fn)(void*, const void*), void* ctx);
 
-/* wrapper macro */
-#define ems_broadcast(T, ...) ems_broadcastfn(T, &(struct T)__VA_ARGS__)
+#define ems_broadcast(T, ...) _ems_broadcast(T, &(struct T)__VA_ARGS__)
 
 #endif // MESSAGE_H

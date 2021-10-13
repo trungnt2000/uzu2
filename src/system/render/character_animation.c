@@ -16,8 +16,8 @@ system_rendering_character_animation_update(ecs_Registry* registry)
     struct FacingDirectionComp*              facing_direction;
     struct SpriteComp*                       sprite;
 
-    float                   magnitude2;
-    CharacterAnimationState next_state;
+    float magnitude2;
+    u32   next_state;
 
     ecs_view_init(&view,
                   registry,
@@ -39,7 +39,7 @@ system_rendering_character_animation_update(ecs_Registry* registry)
 
         magnitude2 = VEC2_MAG2(velocity->value);
 
-        if (magnitude2 > 0.1f)
+        if (magnitude2 > 1.f)
             next_state = CHARACTER_ANIMATION_WALK;
         else
             next_state = CHARACTER_ANIMATION_IDLE;

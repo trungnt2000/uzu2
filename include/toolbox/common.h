@@ -34,8 +34,8 @@ typedef u32 (*HashFunc)(const void* v);
 
 #define ASSERT(cd) SDL_assert(cd)
 #if defined(_MSC_VER)
-#define ASSERT_MSG(cd, msg)                                                                                      \
-  __pragma(warning(push)) __pragma(warning(disable : 4127)) ASSERT((cd) && (msg)) __pragma(warning(pop))
+#define ASSERT_MSG(cd, msg)                                                                                    \
+    __pragma(warning(push)) __pragma(warning(disable : 4127)) ASSERT((cd) && (msg)) __pragma(warning(pop))
 #else
 #define ASSERT_MSG(cd, msg) ASSERT((cd) && (msg))
 #endif
@@ -54,8 +54,8 @@ typedef u32 (*HashFunc)(const void* v);
 
 typedef struct Callback
 {
-  void (*func)(void* ctx, const void*);
-  void* ctx;
+    void (*func)(void* ctx, const void*);
+    void* ctx;
 } Callback;
 
 // clang-format off
@@ -71,6 +71,10 @@ INLINE u32
 maxu(u32 a, u32 b)
 { return a > b ? a : b; }
 
+INLINE u32
+minu(u32 a, u32 b)
+{ return a < b ? a : b; }
+
 INLINE int
 sign(int x)
 { return (x > 0) - (x < 0); }
@@ -81,7 +85,7 @@ clamp(int lower, int upper, int x)
 
 INLINE int
 signf(float x)
-{ return (x > 0) - (x < 0); }
+{ return (x > 0.f) - (x < 0.f); }
 
 INLINE float
 maxf(float a, float b)

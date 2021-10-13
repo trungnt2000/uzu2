@@ -7,27 +7,25 @@
 #define INVENTORY_ROW_CNT 3
 #define ITEM_SLOTS_PER_CATEGORY (INVENTORY_ROW_CNT * INVENTORY_COLUMN_CNT)
 #define DROP_ALL (-1)
-#define MAX_ITEMS_PER_SLOT 64
+#define MAX_ITEMS_PER_SLOT 99
 
-typedef struct ItemSlot
+struct ItemSlot
 {
-  enum ItemId item_id;
-  int         quality;
-} ItemSlot;
+    enum ItemId item_id;
+    int         quantity;
+};
 
-void inventory_init(void);
+void inv_init(void);
 
-ItemSlot inventory_get_slot(ItemCategory category, int row, int column);
+struct ItemSlot inv_get_slot(enum ItemCategory category, int row, int column);
 
 /* return number of items was added */
-int inventory_add_item(ItemId id, int quality);
+int inv_add_item(enum ItemId id, int quality);
 
-void inventory_clear(void);
+void inv_clear(void);
 
-void inventory_drop_item(ItemCategory category, int row, int column, int quality);
+void inv_drop_item(enum ItemCategory category, int row, int column, int quality);
 
-bool inventory_has_item(ItemId id);
-
-
+bool inv_has_item(enum ItemId id);
 
 #endif // INVENTORY_H
