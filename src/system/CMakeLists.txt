@@ -5,6 +5,9 @@ set(SYSTEM_SOURCE_FILES
   src/system/render/character_animation.c
 
   src/system/equipment.c
+  src/system/camera.c
+  src/system/stats.c
+  src/system/interactable_entity.c
 
   src/system/logic/motion.c
   src/system/logic/input.c

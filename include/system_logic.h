@@ -28,7 +28,9 @@ void system_swing_weapon_update(ecs_Registry* registry);
 
 void system_affine_animation_update(ecs_Registry* registry, float delta_time);
 
-void system_find_closest_interacable_entity(ecs_Registry* registry, struct MainContext* main_context);
+void system_interactable_entity_update(ecs_Registry* registry);
 
 void system_stats_update(ecs_Registry* registry);
+
+void system_camera_update(ecs_Registry* registry, ecs_entity_t camera_target, struct OthoCamera* camera);
 #endif // SYSTEM_LOGIC_H

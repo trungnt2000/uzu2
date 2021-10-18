@@ -12,7 +12,7 @@ enum SortingLayer
 void
 system_rendering_sprite_init(ecs_Registry* registry)
 {
-    ecs_create_group(registry, s_sprite_group, { SpriteComp, WorldTransformMatrixComp, MaterialComp });
+    ecs_create_group(registry, s_sprite_group, { SpriteComp, WorldTransformMatrixComp });
 }
 
 void
@@ -26,7 +26,6 @@ system_rendering_sprite_update(SDL_UNUSED ecs_Registry* registry)
 {
     struct SpriteComp*               sp    = ecs_group_data_begin(s_sprite_group, 0);
     struct WorldTransformMatrixComp* tx    = ecs_group_data_begin(s_sprite_group, 1);
-    const struct MaterialComp*       mt    = ecs_group_data_begin(s_sprite_group, 2);
     ecs_size_t                       count = ecs_group_size(s_sprite_group);
 
     for (ecs_size_t i = 0; i < count; ++i)
@@ -36,7 +35,7 @@ system_rendering_sprite_update(SDL_UNUSED ecs_Registry* registry)
 
         int draw_order = (int)(world_position[1] * 10.f);
         draw_sprite_ex(&sp[i].sprite,
-                       mt[i].ref,
+                       sp[i].material,
                        tx[i].value,
                        sp[i].origin,
                        sp[i].color,

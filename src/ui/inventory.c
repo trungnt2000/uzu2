@@ -5,6 +5,7 @@
 #include "input.h"
 #include "inventory.h"
 #include "item.h"
+#include "scn_main.h"
 #include "string_utils.h"
 #include "ui/equipment.h"
 #include "ui/menu.h"
@@ -46,6 +47,7 @@ static const Sprite* s_sprite_spell_icon;
 static const Sprite* s_sprite_key_ivon;
 static const Sprite* s_sprite_active_tab;
 static const Font*   s_font_8px;
+static ecs_Registry* s_registry;
 
 static vec2 s_icon_pos[ITEM_CATEGORY_CNT] = {
     { INV_X + 12, INV_Y + 5 },
@@ -65,8 +67,9 @@ static vec4 s_text_color = COLOR_INIT(0x4a, 0x3d, 0x3c, 0xff);
 #define DESC_MAX_LEN ((sizeof s_description) - 1)
 
 int
-ui_inventory_init(const Resources* resources)
+ui_inventory_init(const Resources* resources, ecs_Registry* registry)
 {
+    s_registry = registry;
     s_font_8px = &resources->font_8px;
 
     /* a small shortcut */
@@ -125,11 +128,14 @@ close()
 {
     s_visible = false;
     input_pop();
+    scene_main_resume();
 }
 
-static const char s_option_use[]   = "Use";
-static const char s_option_drop[]  = "Drop";
-static const char s_option_equip[] = "Equip";
+static const char s_option_use[]        = "Use";
+static const char s_option_drop[]       = "Drop";
+static const char s_option_equip[]      = "Equip";
+static const char s_option_ring_slot1[] = "Ring 1";
+static const char s_option_ring_slot2[] = "Ring 2";
 
 static const char* s_options_consumable[] = {
     s_option_use,
@@ -138,9 +144,8 @@ static const char* s_options_consumable[] = {
 };
 
 static const char* s_options_equipment[] = {
-    s_option_use,
-    s_option_drop,
     s_option_equip,
+    s_option_drop,
     NULL,
 };
 
@@ -156,10 +161,17 @@ static const char* s_options_spell[] = {
     NULL,
 };
 
+static const char* s_options_equip_ring[] = {
+    s_option_ring_slot1,
+    s_option_ring_slot2,
+    NULL,
+};
+
 static void handle_consumable_option(void*, const char*, u32);
 static void handle_equipment_option(void*, const char*, u32);
 static void handle_spell_option(void*, const char*, u32);
 static void handle_key_option(void*, const char*, u32);
+static void handle_equip_ring_option(void*, const char*, u32);
 
 static void
 handle_use_item(void)
@@ -202,7 +214,26 @@ handle_consumable_option(UNUSED void* ctx, const char* option, u32 index)
 static void
 handle_equipment_option(UNUSED void* ctx, const char* option, u32 index)
 {
-    ui_equipment_show();
+    const struct ItemSlot slot = inv_get_slot(ITEM_CATEGORY_EQUIPMENT, s_cur_y, s_cur_x);
+    if (g_equipments[g_items[slot.item_id].data.equipment.id].type == EQM_TYPE_RING)
+    {
+        ui_menu_set_options(s_options_equip_ring);
+        ui_menu_callback(handle_equip_ring_option, NULL);
+        ui_menu_display();
+    }
+    else
+    {
+        switch (g_equipments[g_items[slot.item_id].data.equipment.id].type)
+        {
+        case EQM_TYPE_ARMOR:
+            eqm_equip_armor(s_registry, g_main_ctx.player, g_items[slot.item_id].data.equipment.id);
+            break;
+        case EQM_TYPE_BOOTS:
+            eqm_equip_boots(s_registry, g_main_ctx.player, g_items[slot.item_id].data.equipment.id);
+            break;
+        }
+        ui_equipment_show();
+    }
 }
 
 static void
@@ -213,6 +244,16 @@ handle_spell_option(UNUSED void* ctx, const char* option, u32 index)
 static void
 handle_key_option(UNUSED void* ctx, const char* option, u32 index)
 {
+}
+
+static void
+handle_equip_ring_option(void* ctx, const char* option, u32 index)
+{
+    const struct ItemSlot slot = inv_get_slot(ITEM_CATEGORY_EQUIPMENT, s_cur_y, s_cur_x);
+    if (index == 0)
+        eqm_equip_ring1(s_registry, g_main_ctx.player, g_items[slot.item_id].data.equipment.id);
+    else
+        eqm_equip_ring2(s_registry, g_main_ctx.player, g_items[slot.item_id].data.equipment.id);
 }
 
 static void
@@ -268,6 +309,7 @@ ui_inventory_show()
 {
     s_visible = true;
     input_push(INPUT_CALLBACK1(process_input));
+    scene_main_pause();
 }
 
 static void

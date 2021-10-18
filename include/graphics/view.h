@@ -51,4 +51,6 @@ float otho_camera_view_bot(OthoCamera* cam);
 float otho_camera_view_left(OthoCamera* cam);
 float otho_camera_view_right(OthoCamera* cam);
 
+void otho_camera_get_position(const OthoCamera* cam, vec2 position_return);
+
 #endif // VIEW_H

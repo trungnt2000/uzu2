@@ -30,7 +30,7 @@ typedef struct Tile
 } Tile;
 
 /* shader for rendering tilemap */
-static GLuint sShader;
+static GLuint s_shader;
 
 /* where view-projecttion matrix is located inside our shader */
 static int s_view_projection_matrix_loaction;
@@ -79,7 +79,7 @@ map_renderer_init(void)
 void
 map_renderer_fini(void)
 {
-    glDeleteProgram(sShader);
+    glDeleteProgram(s_shader);
     glDeleteBuffers(1, &s_vbo);
     glDeleteBuffers(1, &s_ebo);
     glDeleteVertexArrays(1, &s_vao);
@@ -90,35 +90,35 @@ void
 map_render(OthoCamera* view)
 {
     Tile   tile;
-    tile_t tileId;
-    int    idx = s_tile_count * NUM_VERT_COMPS * 4;
+    tile_t tile_id;
+    u32    idx = s_tile_count * NUM_VERT_COMPS * 4;
     float  x1, x2, y1, y2;
     float  wallz;
     int    x, y, i, j;
-    int    firstCol, firstRow, lastCol, lastRow;
+    int    first_col, first_row, last_col, last_row;
     float* ptr = &s_vertex_buffer[idx];
 
     prepare();
 
-    firstCol = (int)otho_camera_view_left(view) / TILE_SIZE;
-    firstRow = (int)otho_camera_view_top(view) / TILE_SIZE;
+    first_col = (int)otho_camera_view_left(view) / TILE_SIZE;
+    first_row = (int)otho_camera_view_top(view) / TILE_SIZE;
 
-    lastCol = (int)otho_camera_view_right(view) / TILE_SIZE;
-    lastRow = (int)otho_camera_view_bot(view) / TILE_SIZE;
+    last_col = (int)otho_camera_view_right(view) / TILE_SIZE;
+    last_row = (int)otho_camera_view_bot(view) / TILE_SIZE;
 
-    firstCol = max(0, firstCol);
-    firstRow = max(0, firstRow);
+    first_col = max(0, first_col);
+    first_row = max(0, first_row);
 
-    lastCol = min(lastCol, g_map_width - 1);
-    lastRow = min(lastRow, g_map_height - 1);
+    last_col = min(last_col, g_map_width - 1);
+    last_row = min(last_row, g_map_height - 1);
 
     /* draw wall */
-    for (i = firstRow, y = firstRow * TILE_SIZE; i <= lastRow; ++i, y += TILE_SIZE)
+    for (i = first_row, y = first_row * TILE_SIZE; i <= last_row; ++i, y += TILE_SIZE)
     {
-        for (j = firstCol, x = firstCol * TILE_SIZE; j <= lastCol; ++j, x += TILE_SIZE)
+        for (j = first_col, x = first_col * TILE_SIZE; j <= last_col; ++j, x += TILE_SIZE)
         {
-            tileId = getwall(j, i);
-            if (tileId == 0)
+            tile_id = getwall(j, i);
+            if (tile_id == 0)
                 continue;
 
             if (s_tile_count == MAX_TILES)
@@ -132,7 +132,7 @@ map_render(OthoCamera* view)
             y1    = (float)y;
             y2    = (float)(y + TILE_SIZE);
             wallz = getwallz(x, y);
-            tile  = s_tileset[tileId - 1];
+            tile  = s_tileset[tile_id - 1];
 
             /* top-left */
             ptr[0] = x1;
@@ -167,12 +167,12 @@ map_render(OthoCamera* view)
         }
     }
     /* draw floor */
-    for (i = firstRow, y = firstRow * TILE_SIZE; i <= lastRow; ++i, y += TILE_SIZE)
+    for (i = first_row, y = first_row * TILE_SIZE; i <= last_row; ++i, y += TILE_SIZE)
     {
-        for (j = firstCol, x = firstCol * TILE_SIZE; j <= lastCol; ++j, x += TILE_SIZE)
+        for (j = first_col, x = first_col * TILE_SIZE; j <= last_col; ++j, x += TILE_SIZE)
         {
-            tileId = getfloor(j, i);
-            if (tileId == 0)
+            tile_id = getfloor(j, i);
+            if (tile_id == 0)
                 continue;
 
             if (s_tile_count == MAX_TILES)
@@ -185,7 +185,7 @@ map_render(OthoCamera* view)
             x2   = (float)(x + TILE_SIZE);
             y1   = (float)y;
             y2   = (float)(y + TILE_SIZE);
-            tile = s_tileset[tileId - 1];
+            tile = s_tileset[tile_id - 1];
 
             /* top-left */
             ptr[0] = x1;
@@ -227,14 +227,14 @@ flush(OthoCamera* view)
 {
     // update our vertex buffer
     mat4 view_projection_matrix;
-    u32  updtSiz   = s_tile_count * TILE_VERT_SIZ * 4;
-    u32  indiceCnt = s_tile_count * 6;
+    u32  updt_size    = s_tile_count * TILE_VERT_SIZ * 4;
+    u32  indice_count = s_tile_count * 6;
     glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, updtSiz, s_vertex_buffer);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, updt_size, s_vertex_buffer);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     otho_camera_get_view_projection_matrix(view, view_projection_matrix);
-    glUseProgram(sShader);
+    glUseProgram(s_shader);
     glUniformMatrix4fv(s_view_projection_matrix_loaction, 1, GL_FALSE, (float*)view_projection_matrix);
     glBindVertexArray(s_vao);
     texture_bind(&s_tileset_texture);
@@ -242,7 +242,7 @@ flush(OthoCamera* view)
 
     // draw all tiles
     glBindVertexArray(s_vao);
-    glDrawElements(GL_TRIANGLES, (int)indiceCnt, GL_UNSIGNED_SHORT, (void*)0);
+    glDrawElements(GL_TRIANGLES, (int)indice_count, GL_UNSIGNED_SHORT, (void*)0);
     glDisable(GL_DEPTH_TEST);
 
     glBindVertexArray(0);
@@ -251,19 +251,19 @@ flush(OthoCamera* view)
 
     s_tile_count = 0;
     s_draw_count++;
-    s_vertex_count += indiceCnt;
+    s_vertex_count += indice_count;
 }
 
 static int
 load_resources(void)
 {
     /* load shaders */
-    if (create_shader_form_file("res/shader/tile.vert", "res/shader/tile.frag", &sShader) != 0)
+    if (create_shader_form_file("res/shader/tile.vert", "res/shader/tile.frag", &s_shader) != 0)
     {
         UZU_ERROR("fail to load map shader\n");
         return -1;
     }
-    s_view_projection_matrix_loaction = glGetUniformLocation(sShader, "u_vpMat");
+    s_view_projection_matrix_loaction = glGetUniformLocation(s_shader, "u_vpMat");
 
     /* load textures */
     if (texture_load(&s_tileset_texture, "res/titleset.png") != 0)
@@ -277,11 +277,11 @@ load_resources(void)
 static void
 init_vao(void)
 {
-    size_t       attrOffset;
-    u16*         indices = NULL;
-    const size_t eboSiz  = sizeof(u16) * MAX_TILES * 6;
+    size_t       attribute_offset;
+    u16*         indices      = NULL;
+    const size_t ebo_buf_size = sizeof(*indices) * MAX_TILES * 6;
 
-    indices = SDL_malloc(eboSiz);
+    indices = SDL_malloc(ebo_buf_size);
     for (u16 i = 0; i < MAX_TILES; ++i)
     {
         indices[(i * 6) + 0] = (i * 4) + 0;
@@ -302,16 +302,16 @@ init_vao(void)
     glBufferData(GL_ARRAY_BUFFER, sizeof(s_vertex_buffer), 0, GL_DYNAMIC_DRAW);
 
     // struct {vec3 pos; vec2 uv;}
-    attrOffset = 0;
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, TILE_VERT_SIZ, (void*)attrOffset);
+    attribute_offset = 0;
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, TILE_VERT_SIZ, (void*)attribute_offset);
     glEnableVertexAttribArray(0);
-    attrOffset += sizeof(float) * 3;
+    attribute_offset += sizeof(float) * 3;
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, TILE_VERT_SIZ, (void*)attrOffset);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, TILE_VERT_SIZ, (void*)attribute_offset);
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, eboSiz, indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ebo_buf_size, indices, GL_STATIC_DRAW);
 
     glBindVertexArray(0);
 
@@ -329,23 +329,23 @@ prepare(void)
 static int
 init_tileset(void)
 {
-    u32   colCnt    = s_tileset_texture.width / TILE_SIZE;
-    u32   rowCnt    = s_tileset_texture.height / TILE_SIZE;
-    u32   idx       = 0;
-    float texWidth  = (float)s_tileset_texture.width;
-    float texHeight = (float)s_tileset_texture.height;
+    int   colCnt         = s_tileset_texture.width / TILE_SIZE;
+    int   rowCnt         = s_tileset_texture.height / TILE_SIZE;
+    int   idx            = 0;
+    float texture_width  = (float)s_tileset_texture.width;
+    float texture_height = (float)s_tileset_texture.height;
 
-    for (u32 i = 0; i < rowCnt; ++i)
+    for (int i = 0; i < rowCnt; ++i)
     {
-        for (u32 j = 0; j < colCnt; ++j)
+        for (int j = 0; j < colCnt; ++j)
         {
-            s_tileset[idx].u1 = (float)(j * TILE_SIZE) / texWidth;
-            s_tileset[idx].u2 = (float)((j + 1) * TILE_SIZE) / texWidth;
-            s_tileset[idx].v1 = (float)(i * TILE_SIZE) / texHeight;
-            s_tileset[idx].v2 = (float)((i + 1) * TILE_SIZE) / texHeight;
+            s_tileset[idx].u1 = (float)(j * TILE_SIZE) / texture_width;
+            s_tileset[idx].u2 = (float)((j + 1) * TILE_SIZE) / texture_width;
+            s_tileset[idx].v1 = (float)(i * TILE_SIZE) / texture_height;
+            s_tileset[idx].v2 = (float)((i + 1) * TILE_SIZE) / texture_height;
             ++idx;
         }
     }
-    s_tileset_size = idx;
+    s_tileset_size = (u32)idx;
     return 0;
 }

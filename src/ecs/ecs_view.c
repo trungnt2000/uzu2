@@ -2,6 +2,58 @@
 
 #define INDEX_MASK 0xfff
 
+static bool
+are_all_pool_contain_given_entity(struct ecs_Pool** pool_list, u32 pool_count, ecs_entity_t entity)
+{
+    for (u32 i = 0; i < pool_count; ++i)
+    {
+        if (!ecs_pool_contains(pool_list[i], entity))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+are_any_pool_contain_given_entity(struct ecs_Pool** pool_list, u32 pool_count, ecs_entity_t entity)
+{
+    for (u32 i = 0; i < pool_count; ++i)
+        if (ecs_pool_contains(pool_list[i], entity))
+            return true;
+    return false;
+}
+
+static void
+get_components_form_pool_list(struct ecs_Pool** pool_list,
+                              u32               pool_count,
+                              ecs_entity_t      entity,
+                              void**            components)
+{
+    for (u32 i = 0; i < pool_count; ++i)
+    {
+        components[i] = ecs_pool_get(pool_list[i], entity);
+    }
+}
+
+void
+ecs_view_for_each(struct ecs_View* view, void (*fn)(void*, ecs_Registry*, ecs_entity_t, void* as_array))
+{
+    void** components = SDL_stack_alloc(void*, view->reqd_count);
+
+    for (const ecs_entity_t* iter = view->ett_iter; iter != view->ett_end; ++iter)
+    {
+        if (are_all_pool_contain_given_entity(view->required_pools, view->reqd_count, *iter) &&
+            are_any_pool_contain_given_entity(view->excluded_pools, view->excl_count, *iter))
+        {
+            get_components_form_pool_list(view->required_pools, view->reqd_count, *iter, components);
+            fn(NULL, NULL, *iter, components);
+        }
+    }
+
+    SDL_stack_free(component);
+}
+
 void
 _ecs_view_init(struct ecs_View* view, ecs_Registry* reg, ecs_size_t* types, u32 cnt)
 {

@@ -146,7 +146,6 @@ create_basic_sprite(ecs_Registry* registry, const struct BasicSpriteParams* para
              TransformComp,
              { .scale = { 1.f, 1.f }, .position = { params->x, params->y } });
     ecs_addv(registry, basic_sprite, SpriteComp, { .color = COLOR_WHITE_INIT, .origin = { 8.f, 28.f } });
-    ecs_addv(registry, basic_sprite, MaterialComp, { .ref = NULL });
     ecs_addv(registry, basic_sprite, AnimationComp, { .ref = &params->animations[CHARACTER_ANIMATION_IDLE] });
     ecs_addv(registry,
              basic_sprite,
@@ -214,32 +213,24 @@ create_anime_sword(ecs_Registry* registry)
     const float sw = (float)s_sprite_wpn_anime_swd->rect.w;
     const float sh = (float)s_sprite_wpn_anime_swd->rect.h;
 
-    ecs_add_ex(registry,
-               anime_sword,
-               TransformComp,
-               { .scale = { 1.f, 1.f }, .position = { 0.f, 0.f }, .rotation = 90.f });
-    ecs_add_ex(registry, anime_sword, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
-    ecs_add_ex(registry, anime_sword, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
-    ecs_add_ex(registry,
-               anime_sword,
-               SpriteComp,
-               {
-                   .sprite = *s_sprite_wpn_anime_swd,
-                   .color  = COLOR_WHITE_INIT,
-                   .origin = { sw / 2.f, sh },
-               });
-    ecs_add_ex(registry, anime_sword, MaterialComp, { .ref = NULL });
+    ecs_addv(registry,
+             anime_sword,
+             TransformComp,
+             { .scale = { 1.f, 1.f }, .position = { 0.f, 0.f }, .rotation = 90.f });
+    ecs_addv(registry, anime_sword, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry, anime_sword, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry,
+             anime_sword,
+             SpriteComp,
+             {
+                 .sprite = *s_sprite_wpn_anime_swd,
+                 .color  = COLOR_WHITE_INIT,
+                 .origin = { sw / 2.f, sh },
+             });
 
     ecs_add(registry, anime_sword, TransformChangedTag);
 
     return anime_sword;
-}
-
-ecs_entity_t
-create_lizzard(ecs_Registry* registry, float x, float y)
-{
-    struct CharacterParams character_params = { .x = x, .y = y, .animations = s_animation_job_lizzard };
-    return create_character(registry, &character_params);
 }
 
 ecs_entity_t
@@ -249,27 +240,86 @@ spawn_player(ecs_Registry* registry, float x, float y, const struct PlayerData* 
     params.x                      = x;
     params.y                      = y;
 
+    SDL_memcpy(&params.base_stats, &player_data->stats, sizeof(struct BaseStats));
     switch (player_data->job)
     {
     case JOB_LIZZARD:
         params.animations = s_animation_job_lizzard;
-        params.base_stats = s_base_stats_lizzard;
         break;
     case JOB_KNIGHT:
         params.animations = s_animation_job_knight;
-        params.base_stats = s_base_stats_knight;
         break;
     case JOB_WIZZARD:
         params.animations = s_animation_job_wizzard;
-        params.base_stats = s_base_stats_wizzard;
         break;
     case JOB_HUNTER:
         params.animations = s_animation_job_hunter;
-        params.base_stats = s_base_stats_hunter;
-        break;
     default:
         ASSERT(0);
     }
 
-    return create_character(registry, &params);
+    ecs_entity_t player = create_character(registry, &params);
+    ecs_addv(registry, player, EntityTag, { ENTITY_TAG_PLAYER });
+    return player;
+}
+
+ecs_entity_t
+spawn_npc(ecs_Registry* registry, const struct NpcParams* params)
+{
+    ecs_entity_t npc = ecs_create(registry);
+
+    const float sw = (float)params->animations[0].frames[0].rect.w;
+    const float sh = (float)params->animations[0].frames[0].rect.h;
+
+    ecs_addv(registry, npc, TransformComp, { .scale = { 1.f, 1.f }, .position = { params->x, params->y } });
+    ecs_addv(registry, npc, SpriteComp, { .color = COLOR_WHITE_INIT, .origin = { sw / 2.f, sh } });
+    ecs_addv(registry, npc, AnimationComp, { .ref = &params->animations[NPC_ANIMATION_IDLE] });
+    ecs_addv(registry,
+             npc,
+             AnimationPoolComp,
+             { .animations = params->animations, .count = NPC_ANIMATION_CNT });
+    ecs_addv(registry, npc, CharacterAnimationControllerComp, { CHARACTER_ANIMATION_IDLE });
+    ecs_addv(registry, npc, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry,
+             npc,
+             HitBoxComp,
+             { .size = { sw, sh }, .anchor = { sw / 2.f, sh / 2.f }, .category = INTERACTABLE_MASK });
+    ecs_addv(registry, npc, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_add(registry, npc, TransformChangedTag);
+
+    SDL_memcpy(ecs_add(registry, npc, InteractableComp)->commnads, params->commands, sizeof(params->commands));
+    return npc;
+}
+
+ecs_entity_t
+spawn_weapon(ecs_Registry* registry, const Sprite* sprite)
+{
+    ecs_entity_t weapon = ecs_create(registry);
+
+    const float sw = (float)sprite->rect.w;
+    const float sh = (float)sprite->rect.h;
+
+    ecs_addv(registry,
+             weapon,
+             TransformComp,
+             { .scale = { 1.f, 1.f }, .position = { 0.f, 0.f }, .rotation = 90.f });
+    ecs_addv(registry, weapon, LocalTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry, weapon, WorldTransformMatrixComp, { GLM_MAT3_IDENTITY_INIT });
+    ecs_addv(registry,
+             weapon,
+             SpriteComp,
+             {
+                 .sprite = *sprite,
+                 .color  = COLOR_WHITE_INIT,
+                 .origin = { sw / 2.f, sh },
+             });
+
+    ecs_add(registry, weapon, TransformChangedTag);
+
+    return weapon;
+}
+
+ecs_entity_t
+spawn_testing_npc(ecs_Registry* registry, float x, float y)
+{
 }

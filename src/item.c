@@ -97,6 +97,7 @@ const struct Item g_items[ITEM_CNT] = {
     .data.equipment.id = EQM_WOODEN_RING,
   },
 
+  /*= Boots =*/
   [ITEM_IRON_BOOTS] = {
     .category = ITEM_CATEGORY_EQUIPMENT,
     .name = "Iron Boots",

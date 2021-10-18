@@ -3,6 +3,7 @@
 #define GLOBAL_H
 
 #include "cglm/cglm.h"
+#include "constances.h"
 #include "ecs.h"
 
 enum Action
@@ -79,6 +80,23 @@ enum EntityTagValue
     ENTITY_TAG_CNT
 };
 
+enum NpcAnimationState
+{
+    NPC_ANIMATION_IDLE,
+    NPC_ANIMATION_WALK,
+    NPC_ANIMATION_CNT,
+};
+
+enum InteractCommand
+{
+    INTERACT_CMD_TALK,
+    INTERACT_CMD_BUY,
+    INTERACT_CMD_SELL,
+    INTERACT_CMD_CNT,
+};
+
+#define INTERACT_CMD_NONE INTERACT_CMD_CNT
+
 #define ENTITY_TAG_UNKNOWN ENTITY_TAG_CNT
 #define ENEMY_MASK BIT(ENTITY_TAG_ENEMY)
 #define PLAYER_MASK BIT(ENTITY_TAG_PLAYER)
@@ -120,8 +138,6 @@ enum ItemId
 
     ITEM_CNT
 };
-
-extern const char* g_text_interact_commands[];
 
 struct AffineAnimCmd
 {
@@ -172,6 +188,23 @@ struct Defense
     s16 dark;
 };
 
+#define MODIFIER_TYPE_SHIFT (12)
+#define MODIFIER_VALUE_SHIFT (0)
+#define MODIFIER_TYPE_MASK (0xf)
+#define MODIFIER_VALUE_MASK (0xfff)
+
+enum ModifierType
+{
+    MODIFIER_TYPE_FLAT,
+    MODIFIER_TYPE_PERCENT,
+};
+
+#define MODIFIER_INIT(type, value) (((type) << MODIFIER_TYPE_SHIFT) | ((value) << MODIFIER_VALUE_SHIFT))
+#define MODIFIER_FLAT_INIT(value) MODIFIER_INIT(MODIFIER_TYPE_FLAT, value)
+#define MODEFIER_PERCENT_INIT(value) MODIFIER_INIT(MODIFIER_TYPE_PERCENT, value)
+#define MODIFIER_TYPE(modifier) (((modifier) >> MODIFIER_TYPE_SHIFT) & MODIFIER_TYPE_MASK)
+#define MODIFIER_VALUE(modifier) (((modifier) >> MODIFIER_VALUE_SHIFT) & MODIFIER_VALUE_MASK)
+
 struct StatModifier
 {
     bool active;
@@ -208,6 +241,9 @@ struct PlayerData
 
     s16 current_hit_points;
     s16 current_mana_points;
+
+    float position_x;
+    float position_y;
 
     struct BaseStats stats;
 };

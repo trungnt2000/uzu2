@@ -39,18 +39,18 @@ get_closest(ecs_Registry* registry, ecs_entity_t* entities, u32 count, vec2 play
 }
 
 void
-system_find_closest_interacable_entity(ecs_Registry* registry, struct MainState* main_state)
+system_interactable_entity_update(ecs_Registry* registry)
 {
 
     vec2 player_position;
     vec2 current_object_position;
 
-    ett_get_world_position(registry, main_state->player, player_position);
-    ett_get_world_position(registry, main_state->current_object, current_object_position);
+    ett_get_world_position(registry, g_main_ctx.player, player_position);
+    ett_get_world_position(registry, g_main_ctx.current_object, current_object_position);
 
     float distance_to_player2 = glm_vec2_distance2(player_position, current_object_position);
 
-    bool should_update_current_object = main_state->current_object == ECS_NULL_ENT ||
+    bool should_update_current_object = g_main_ctx.current_object == ECS_NULL_ENT ||
                                         distance_to_player2 > (MAX_DISTANCE_TO_PLAYER * MAX_DISTANCE_TO_PLAYER);
 
     if (should_update_current_object)

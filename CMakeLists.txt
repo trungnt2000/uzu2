@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(uzu LANGUAGES C)
 
-option(ENABLE_TESTING "Enable Test Builds" ON)
+option(ENABLE_TESTING "Enable Test Builds" OFF)
 
 include(src/CMakeLists.txt)
 
@@ -36,29 +36,27 @@ find_package(SDL2_image 2.0 REQUIRED)
 find_package(SDL2_mixer 2.0 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Lua 5.2 REQUIRED)
-# major security bug introduced in FreeType version 2.6
-# https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15999
 find_package(Freetype REQUIRED)
 add_subdirectory(external/cglm EXCLUDE_FROM_ALL)
 
-set(APP_NAME "uzu_app")
+set(GAME_EXE_NAME "uzu")
 
 add_library(project_warnings INTERFACE)
 include(cmake/CompilerWarnings.cmake)
 set_project_warnings(project_warnings)
 
-add_executable(${APP_NAME} ${SOURCE_FILES})
+add_executable(${GAME_EXE_NAME} ${SOURCE_FILES})
 
 if(MSVC OR CMAKE_C_COMPILER_ID STREQUAL "MSVC" OR NOT CMAKE_C_COMPILER_ID)
   string(REGEX REPLACE "/W[3|4]" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 endif()
 
-target_compile_features(${APP_NAME} INTERFACE c_std_11)
+target_compile_features(${GAME_EXE_NAME} INTERFACE c_std_11)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 endif()
 
-target_link_libraries(${APP_NAME} PRIVATE 
+target_link_libraries(${GAME_EXE_NAME} PRIVATE 
   project_warnings
   ${SDL2_LIBRARIES}
   ${SDL2_IMAGE_LIBRARIES} 
@@ -79,7 +77,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   set(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_DIRS}/SDL2)
 endif()
 
-target_include_directories(${APP_NAME} PRIVATE 
+target_include_directories(${GAME_EXE_NAME} PRIVATE 
   ${SDL2_INCLUDE_DIRS}
   ${SDL2_IMAGE_INCLUDE_DIRS} 
   ${SDL2_MIXER_INCLUDE_DIRS} 
@@ -94,7 +92,7 @@ target_include_directories(${APP_NAME} PRIVATE
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
 if(ENABLE_PCH)
   target_precompile_headers(
-    ${APP_NAME}
+    ${GAME_EXE_NAME}
     PRIVATE
     "src/precompiled.h"
 )
@@ -111,13 +109,13 @@ macro(post_build_copy APP FILE_LIST)
 endmacro()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  #set_target_properties(${APP_NAME} 
+  #set_target_properties(${GAME_EXE_NAME} 
     #PROPERTIES LINK_FLAGS "/NODEFAULTLIB:MSVCRT")
-  target_compile_definitions(${APP_NAME} PUBLIC NOMINMAX PRIVATE HAVE_M_PI)
+  target_compile_definitions(${GAME_EXE_NAME} PUBLIC NOMINMAX PRIVATE HAVE_M_PI)
 
   if(SDL2_FOUND)
     get_target_property(SDL2_DLL SDL2::SDL2 LOCATION)
-    post_build_copy(${APP_NAME} "${SDL2_DLL}")
+    post_build_copy(${GAME_EXE_NAME} "${SDL2_DLL}")
   endif()
 
   if(LUA_FOUND)
@@ -125,7 +123,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     get_filename_component(__LUA_LIBRARY_FILE_NAME ${__LUA_FIRST_LIB} NAME_WE)
     get_filename_component(__LUA_LIBRARY_DIR ${__LUA_FIRST_LIB} DIRECTORY)
     set(LUA_DLL "${__LUA_LIBRARY_DIR}/${__LUA_LIBRARY_FILE_NAME}.dll")
-    post_build_copy(${APP_NAME} "${LUA_DLL}")
+    post_build_copy(${GAME_EXE_NAME} "${LUA_DLL}")
   endif()
 
   if(SDL2_IMAGE_FOUND)
@@ -135,7 +133,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     foreach( _file ${_DLLS} )
       list( APPEND SDL2_IMAGE_DLLS  "${SDL2_IMAGE_LIBRARY_DIR}/${_file}.dll" )
     endforeach()
-    post_build_copy(${APP_NAME} "${SDL2_IMAGE_DLLS}")
+    post_build_copy(${GAME_EXE_NAME} "${SDL2_IMAGE_DLLS}")
   endif()
 
   if(SDL2_MIXER_FOUND)
@@ -146,14 +144,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     foreach( _file ${_DLLS} )
       list( APPEND SDL2_MIXER_DLLS  "${SDL2_MIXER_LIBRARY_DIR}/${_file}.dll" )
     endforeach()
-    post_build_copy(${APP_NAME} "${SDL2_MIXER_DLLS}")
+    post_build_copy(${GAME_EXE_NAME} "${SDL2_MIXER_DLLS}")
   endif()
 
 endif()
 
-add_custom_command(TARGET ${APP_NAME} PRE_BUILD
+add_custom_command(TARGET ${GAME_EXE_NAME} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} 
-  -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${APP_NAME}>/res)
+  -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:${GAME_EXE_NAME}>/res)
 
 
 if(ENABLE_TESTING)

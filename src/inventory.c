@@ -26,8 +26,28 @@ inv_get_slot(enum ItemCategory category, int row, int column)
     return *GET_ITEM_SLOT(category, row, column);
 }
 
-int
-inv_add_item(enum ItemId id, int quantity)
+static int
+add_unstackable_item(enum ItemId id, int quantity)
+{
+    int              added   = 0;
+    struct ItemSlot* slots   = s_item_slots[item_category(id)];
+    const int        n_slots = ITEM_SLOTS_PER_CATEGORY;
+
+    for (int i = 0; i < n_slots && quantity; ++i)
+    {
+        if (slots[i].quantity == 0)
+        {
+            --quantity;
+            ++added;
+            slots[i].quantity = 1;
+            slots[i].item_id  = id;
+        }
+    }
+    return added;
+}
+
+static int
+add_stackable_item(enum ItemId id, int quantity)
 {
     int              added   = 0;
     struct ItemSlot* slots   = s_item_slots[item_category(id)];
@@ -61,6 +81,12 @@ inv_add_item(enum ItemId id, int quantity)
         }
     }
     return added;
+}
+
+int
+inv_add_item(enum ItemId id, int quantity)
+{
+    return g_items[id].stackable ? add_stackable_item(id, quantity) : add_unstackable_item(id, quantity);
 }
 
 void

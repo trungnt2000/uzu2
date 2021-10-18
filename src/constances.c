@@ -1,10 +1,8 @@
 #include "constances.h"
 
-
-const char gCmdTalk[]             = "TALK";
-const char gCmdBuy[]              = "BUY";
-const char gCmdSell[]             = "SELL";
-const char gCmdOpen[]             = "OPEN";
-const char gCmdClose[]            = "CLOSE";
-const char gCmdExamine[]          = "EXAMINE";
-
+const char g_command_talk[]    = "Talk";
+const char g_command_buy[]     = "Buy";
+const char g_command_sell[]    = "Sell";
+const char g_command_open[]    = "Open";
+const char g_commnad_close[]   = "Close";
+const char g_command_examine[] = "Examine";

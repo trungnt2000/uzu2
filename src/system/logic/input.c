@@ -2,6 +2,8 @@
 #include "components.h"
 #include "ecs.h"
 #include "entity.h"
+#include "scn_main.h"
+#include "ui/menu.h"
 
 static void
 get_mouse_position(OthoCamera* view, vec2 position_return)
@@ -12,7 +14,7 @@ get_mouse_position(OthoCamera* view, vec2 position_return)
 }
 
 void
-update_facing_direction(ecs_Registry* registry, OthoCamera* camera)
+sync_facing_direction(ecs_Registry* registry, OthoCamera* camera)
 {
     struct ecs_View view;
     ecs_entity_t    ett;
@@ -35,6 +37,11 @@ update_facing_direction(ecs_Registry* registry, OthoCamera* camera)
             glm_vec2_normalize_to(to_mouse, facing_direction->value);
         }
     }
+}
+
+void
+interact_callback(void* ctx, const char* option, u32 index)
+{
 }
 
 static void
@@ -74,11 +81,23 @@ update_desired_direction(ecs_Registry* registry)
         {
             controller->action = ACTION_ATTACK;
         }
+
+        if (button_pressed(BTN_INTERACT))
+        {
+            ecs_entity_t current_object = g_main_ctx.current_object;
+            if (current_object != ECS_NULL_ENT)
+            {
+                struct InteractableComp* interactable = ecs_get(registry, current_object, InteractableComp);
+                ui_menu_callback(interact_callback, registry);
+                ui_menu_set_options(interactable->commnads);
+                ui_menu_display();
+            }
+        }
     }
 }
 
 static void
-update_hand_direction(ecs_Registry* registry)
+sync_hand_direction(ecs_Registry* registry)
 {
     struct ecs_View view = { 0 };
 
@@ -122,7 +141,7 @@ update_hand_direction(ecs_Registry* registry)
 void
 system_input_update(ecs_Registry* registry, OthoCamera* camera)
 {
-    update_facing_direction(registry, camera);
-    update_hand_direction(registry);
+    sync_facing_direction(registry, camera);
+    sync_hand_direction(registry);
     update_desired_direction(registry);
 }

@@ -139,3 +139,4 @@ otho_camera_to_view_coords(OthoCamera* cam, vec2 src, vec2 dst)
     dst[0] = tmp[0];
     dst[1] = tmp[1];
 }
+

@@ -16,13 +16,11 @@ enum ComponentId
     AnimationPoolComp,
     DrawOrderComp,
     VelocityComp,
-    MaterialComp,
     AnimationComp,
     InputComp,
     ControllerComp,
     CharacterAnimationControllerComp,
     FacingDirectionComp,
-    HolderComp,
     LocalTransformMatrixComp,
     WorldTransformMatrixComp,
     RelationshipComp,
@@ -69,8 +67,6 @@ struct TransformComp
         .position = { 0.f, 0.f }, .scale = { 1.f, 1.f }, .rotation = 0.f                                       \
     }
 
-/* this tag component use in case some thing have changed
- * our transform component */
 struct TransformChangedTag
 {
     int dummy;
@@ -85,6 +81,7 @@ struct SpriteComp
 {
     vec4      color;
     Material* material;
+    bool      unique_material;
     vec2      origin;
     Sprite    sprite;
     bool      hori_flip;
@@ -129,12 +126,6 @@ struct VelocityComp
     float slowdown_factor;
 };
 
-struct MaterialComp
-{
-    const Material* ref;
-    bool            shared;
-};
-
 struct ControllerComp
 {
     vec2 desired_direction;
@@ -161,11 +152,6 @@ struct FacingDirectionComp
 {
     vec2 value;
     bool frezzed;
-};
-
-struct HolderComp
-{
-    ecs_entity_t holder;
 };
 
 struct RelationshipComp
@@ -225,18 +211,9 @@ struct RotatorComp
     float speed;
 };
 
-enum InteractCommand
-{
-    ICMD_TALK,
-    ICMD_BUY,
-    ICMD_SELL,
-    ICMD_CNT,
-};
-
 struct InteractableComp
 {
-    u32 commnads[ICMD_CNT];
-    u32 command_count;
+    const char* commnads[MAX_INTERACT_COMMAND];
 };
 
 struct AffineAnimComp
